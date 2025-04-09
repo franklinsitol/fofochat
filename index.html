@@ -37,7 +37,7 @@
     .screen.active {
       display: flex;
     }
-    input, button {
+    input, button, textarea {
       padding: 12px;
       border: none;
       border-radius: 12px;
@@ -96,7 +96,8 @@
       <h3>Olá, <span id="nickname"></span> 💖</h3>
       <canvas id="qrCanvas"></canvas>
       <button onclick="generateQR()">🔄 Novo QR Code</button>
-      <input type="file" accept="image/*" onchange="scanQR(this)">
+      <button onclick="document.getElementById('qrInput').click()">Adicionar Contato por QR 📷</button>
+      <input id="qrInput" type="file" accept="image/*" onchange="scanQR(this)" style="display:none">
       <div id="contactsList"></div>
       <textarea id="messageInput" placeholder="Mensagem fofa..."></textarea>
       <button onclick="sendMessage()">Enviar 💌</button>
@@ -193,7 +194,6 @@
     }
 
     function editName(id, newNick) {
-      // Apenas localmente por enquanto
       gun.get('fofochat_users').get(id).get('nick').put(newNick);
     }
 
