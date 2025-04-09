@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FofoChat 💬</title>
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #fce4ec;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      background: #fff0f6;
+      border-radius: 20px;
+      box-shadow: 0 0 20px #f8bbd0;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .screen {
+      display: none;
+      flex-direction: column;
+      gap: 1em;
+    }
+    .screen.active {
+      display: flex;
+    }
+    input, button {
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+    button {
+      background: #f48fb1;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ec407a;
+    }
+    .contact-card {
+      background: #ffeef8;
+      padding: 10px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-message {
+      background: #f8bbd0;
+      border-radius: 12px;
+      padding: 10px;
+      margin: 5px 0;
+    }
+    .notification {
+      background: #ff4081;
+      color: white;
+      padding: 10px;
+      border-radius: 12px;
+      animation: pop 0.5s;
+      text-align: center;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="loginScreen" class="screen active">
+      <h2>FofoChat 💬</h2>
+      <input id="pinInput" placeholder="PIN de 4 dígitos" maxlength="4" type="password">
+      <button onclick="login()">Entrar</button>
+      <hr>
+      <input id="nameInput" placeholder="Seu nome">
+      <input id="nickInput" placeholder="Seu apelido fofo">
+      <button onclick="register()">Cadastrar</button>
+    </div>
+
+    <div id="mainScreen" class="screen">
+      <h3>Olá, <span id="nickname"></span> 💖</h3>
+      <canvas id="qrCanvas"></canvas>
+      <button onclick="generateQR()">🔄 Novo QR Code</button>
+      <input type="file" accept="image/*" onchange="scanQR(this)">
+      <div id="contactsList"></div>
+      <textarea id="messageInput" placeholder="Mensagem fofa..."></textarea>
+      <button onclick="sendMessage()">Enviar 💌</button>
+      <div id="chatBox"></div>
+    </div>
+  </div>
+
+  <script>
+    const gun = Gun();
+    let user = null;
+
+    function login() {
+      const pin = document.getElementById('pinInput').value;
+      if (pin.length === 4) {
+        const stored = localStorage.getItem('fofochat_' + pin);
+        if (stored) {
+          user = JSON.parse(stored);
+          showMain();
+        } else {
+          alert('PIN não cadastrado!');
+        }
+      }
+    }
+
+    function register() {
+      const pin = document.getElementById('pinInput').value;
+      const name = document.getElementById('nameInput').value;
+      const nick = document.getElementById('nickInput').value;
+      if (pin.length === 4 && name && nick) {
+        user = { pin, name, nick, id: Date.now().toString(), contacts: [] };
+        localStorage.setItem('fofochat_' + pin, JSON.stringify(user));
+        gun.get('fofochat_users').get(user.id).put(user);
+        showMain();
+      }
+    }
+
+    function showMain() {
+      document.getElementById('loginScreen').classList.remove('active');
+      document.getElementById('mainScreen').classList.add('active');
+      document.getElementById('nickname').innerText = user.nick;
+      generateQR();
+      loadContacts();
+      listenMessages();
+    }
+
+    function generateQR() {
+      QRCode.toCanvas(document.getElementById('qrCanvas'), user.id);
+    }
+
+    function scanQR(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height);
+          if (code) addContact(code.data);
+        }
+        img.src = e.target.result;
+      }
+      reader.readAsDataURL(file);
+    }
+
+    function addContact(id) {
+      gun.get('fofochat_users').get(id).once(data => {
+        if (data && !user.contacts.includes(id)) {
+          user.contacts.push(id);
+          localStorage.setItem('fofochat_' + user.pin, JSON.stringify(user));
+          loadContacts();
+        }
+      });
+    }
+
+    function loadContacts() {
+      const container = document.getElementById('contactsList');
+      container.innerHTML = '';
+      user.contacts.forEach(id => {
+        gun.get('fofochat_users').get(id).once(data => {
+          const div = document.createElement('div');
+          div.className = 'contact-card';
+          div.innerHTML = `
+            <span contenteditable onblur="editName('${id}', this.innerText)">${data.nick || 'Contato'}</span>
+            <button onclick="removeContact('${id}')">❌</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function editName(id, newNick) {
+      // Apenas localmente por enquanto
+      gun.get('fofochat_users').get(id).get('nick').put(newNick);
+    }
+
+    function removeContact(id) {
+      user.contacts = user.contacts.filter(c => c !== id);
+      localStorage.setItem('fofochat_' + user.pin, JSON.stringify(user));
+      loadContacts();
+    }
+
+    function sendMessage() {
+      const text = document.getElementById('messageInput').value;
+      if (text) {
+        const now = Date.now();
+        user.contacts.forEach(id => {
+          gun.get('fofochat_messages').get(id).set({ from: user.nick, text, time: now });
+        });
+        document.getElementById('messageInput').value = '';
+      }
+    }
+
+    function listenMessages() {
+      gun.get('fofochat_messages').get(user.id).map().on(msg => {
+        if (msg && Date.now() - msg.time < 86400000) {
+          const box = document.getElementById('chatBox');
+          const div = document.createElement('div');
+          div.className = 'chat-message';
+          div.textContent = `${msg.from}: ${msg.text}`;
+          box.appendChild(div);
+          showNotification(`Nova mensagem de ${msg.from}!`);
+        }
+      });
+    }
+
+    function showNotification(text) {
+      const div = document.createElement('div');
+      div.className = 'notification';
+      div.textContent = text;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 3000);
+    }
+  </script>
+</body>
+</html>
