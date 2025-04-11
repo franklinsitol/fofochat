@@ -68,6 +68,14 @@
       padding: 10px;
       margin: 5px 0;
     }
+    .chat-message.sent {
+      align-self: flex-end;
+      background: #f48fb1;
+    }
+    .chat-message.received {
+      align-self: flex-start;
+      background: #f8bbd0;
+    }
     .notification {
       background: #ff4081;
       color: white;
@@ -79,6 +87,10 @@
     #reader {
       width: 100%;
       margin-top: 10px;
+    }
+    #chatBox {
+      display: flex;
+      flex-direction: column;
     }
     @keyframes pop {
       0% { transform: scale(0.9); opacity: 0; }
@@ -227,7 +239,7 @@
       gun.get('fofochat_messages').get(user.id + '_to_' + id).map().once(msg => {
         if (msg && msg.text && Date.now() - msg.time < 86400000) {
           const div = document.createElement('div');
-          div.className = 'chat-message';
+          div.className = 'chat-message sent';
           div.textContent = `Você: ${msg.text}`;
           chatBox.appendChild(div);
         }
@@ -236,7 +248,7 @@
       gun.get('fofochat_messages').get(id + '_to_' + user.id).map().on(msg => {
         if (msg && msg.text && Date.now() - msg.time < 86400000) {
           const div = document.createElement('div');
-          div.className = 'chat-message';
+          div.className = 'chat-message received';
           div.textContent = `${nick}: ${msg.text}`;
           chatBox.appendChild(div);
         }
@@ -251,7 +263,7 @@
         gun.get('fofochat_messages').get(user.id + '_to_' + currentChatId).set(msg);
         const box = document.getElementById('chatBox');
         const div = document.createElement('div');
-        div.className = 'chat-message';
+        div.className = 'chat-message sent';
         div.textContent = `Você: ${text}`;
         box.appendChild(div);
         document.getElementById('messageInput').value = '';
