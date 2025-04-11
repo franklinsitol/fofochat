@@ -119,6 +119,7 @@
     const gun = Gun();
     let user = null;
     let currentChatId = null;
+    let currentChatNick = '';
 
     function login() {
       const pin = document.getElementById('pinInput').value;
@@ -194,8 +195,8 @@
         if (data && !user.contacts.includes(id)) {
           user.contacts.push(id);
           localStorage.setItem('fofochat_' + user.pin, JSON.stringify(user));
-          loadContacts();
         }
+        loadContacts();
       });
     }
 
@@ -204,24 +205,27 @@
       container.innerHTML = '';
       user.contacts.forEach(id => {
         gun.get('fofochat_users').get(id).once(data => {
-          const div = document.createElement('div');
-          div.className = 'contact-card';
-          div.innerText = data.nick || 'Contato';
-          div.onclick = () => openChat(id, data.nick);
-          container.appendChild(div);
+          if (data) {
+            const div = document.createElement('div');
+            div.className = 'contact-card';
+            div.innerText = data.nick || 'Contato';
+            div.onclick = () => openChat(id, data.nick);
+            container.appendChild(div);
+          }
         });
       });
     }
 
     function openChat(id, nick) {
       currentChatId = id;
+      currentChatNick = nick;
       document.getElementById('chatSection').style.display = 'block';
       document.getElementById('currentContactNick').innerText = nick;
       const chatBox = document.getElementById('chatBox');
       chatBox.innerHTML = '';
 
       gun.get('fofochat_messages').get(user.id + '_to_' + id).map().once(msg => {
-        if (msg && msg.text) {
+        if (msg && msg.text && Date.now() - msg.time < 86400000) {
           const div = document.createElement('div');
           div.className = 'chat-message';
           div.textContent = `Você: ${msg.text}`;
@@ -230,7 +234,7 @@
       });
 
       gun.get('fofochat_messages').get(id + '_to_' + user.id).map().on(msg => {
-        if (msg && msg.text) {
+        if (msg && msg.text && Date.now() - msg.time < 86400000) {
           const div = document.createElement('div');
           div.className = 'chat-message';
           div.textContent = `${nick}: ${msg.text}`;
@@ -243,7 +247,8 @@
       const text = document.getElementById('messageInput').value;
       if (text && currentChatId) {
         const now = Date.now();
-        gun.get('fofochat_messages').get(user.id + '_to_' + currentChatId).set({ from: user.nick, text, time: now });
+        const msg = { from: user.nick, text, time: now };
+        gun.get('fofochat_messages').get(user.id + '_to_' + currentChatId).set(msg);
         const box = document.getElementById('chatBox');
         const div = document.createElement('div');
         div.className = 'chat-message';
