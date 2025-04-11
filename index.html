@@ -60,6 +60,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      cursor: pointer;
     }
     .chat-message {
       background: #f8bbd0;
@@ -94,27 +95,30 @@
       <hr>
       <input id="nameInput" placeholder="Seu nome">
       <input id="nickInput" placeholder="Seu apelido fofo">
-      <button onclick="register()">Cadastrar</button>
+      <button onclick="register()">Criar Conta 💖</button>
     </div>
 
     <div id="mainScreen" class="screen">
       <h3>Olá, <span id="nickname"></span> 💖</h3>
       <canvas id="qrCanvas"></canvas>
-      <button onclick="generateQR()">🔄 Novo QR Code</button>
       <button onclick="document.getElementById('qrInput').click()">Adicionar Contato por Imagem 🖼️</button>
       <button onclick="startCameraScan()">Escanear QR com Câmera 📷</button>
       <input id="qrInput" type="file" accept="image/*" onchange="scanQR(this)" style="display:none">
       <div id="reader" style="display:none;"></div>
       <div id="contactsList"></div>
-      <textarea id="messageInput" placeholder="Mensagem fofa..."></textarea>
-      <button onclick="sendMessage()">Enviar 💌</button>
-      <div id="chatBox"></div>
+      <div id="chatSection" style="display:none;">
+        <h4>Conversando com <span id="currentContactNick"></span></h4>
+        <div id="chatBox"></div>
+        <textarea id="messageInput" placeholder="Mensagem fofa..."></textarea>
+        <button onclick="sendMessage()">Enviar 💌</button>
+      </div>
     </div>
   </div>
 
   <script>
     const gun = Gun();
     let user = null;
+    let currentChatId = null;
 
     function login() {
       const pin = document.getElementById('pinInput').value;
@@ -145,13 +149,8 @@
       document.getElementById('loginScreen').classList.remove('active');
       document.getElementById('mainScreen').classList.add('active');
       document.getElementById('nickname').innerText = user.nick;
-      generateQR();
-      loadContacts();
-      listenMessages();
-    }
-
-    function generateQR() {
       QRCode.toCanvas(document.getElementById('qrCanvas'), user.id);
+      loadContacts();
     }
 
     function scanQR(input) {
@@ -207,32 +206,44 @@
         gun.get('fofochat_users').get(id).once(data => {
           const div = document.createElement('div');
           div.className = 'contact-card';
-          div.innerHTML = `
-            <span contenteditable onblur="editName('${id}', this.innerText)">${data.nick || 'Contato'}</span>
-            <button onclick="removeContact('${id}')">❌</button>
-          `;
+          div.innerText = data.nick || 'Contato';
+          div.onclick = () => openChat(id, data.nick);
           container.appendChild(div);
         });
       });
     }
 
-    function editName(id, newNick) {
-      gun.get('fofochat_users').get(id).get('nick').put(newNick);
-    }
+    function openChat(id, nick) {
+      currentChatId = id;
+      document.getElementById('chatSection').style.display = 'block';
+      document.getElementById('currentContactNick').innerText = nick;
+      const chatBox = document.getElementById('chatBox');
+      chatBox.innerHTML = '';
 
-    function removeContact(id) {
-      user.contacts = user.contacts.filter(c => c !== id);
-      localStorage.setItem('fofochat_' + user.pin, JSON.stringify(user));
-      loadContacts();
+      gun.get('fofochat_messages').get(user.id + '_to_' + id).map().once(msg => {
+        if (msg && msg.text) {
+          const div = document.createElement('div');
+          div.className = 'chat-message';
+          div.textContent = `Você: ${msg.text}`;
+          chatBox.appendChild(div);
+        }
+      });
+
+      gun.get('fofochat_messages').get(id + '_to_' + user.id).map().on(msg => {
+        if (msg && msg.text) {
+          const div = document.createElement('div');
+          div.className = 'chat-message';
+          div.textContent = `${nick}: ${msg.text}`;
+          chatBox.appendChild(div);
+        }
+      });
     }
 
     function sendMessage() {
       const text = document.getElementById('messageInput').value;
-      if (text) {
+      if (text && currentChatId) {
         const now = Date.now();
-        user.contacts.forEach(id => {
-          gun.get('fofochat_messages').get(id).set({ from: user.nick, text, time: now });
-        });
+        gun.get('fofochat_messages').get(user.id + '_to_' + currentChatId).set({ from: user.nick, text, time: now });
         const box = document.getElementById('chatBox');
         const div = document.createElement('div');
         div.className = 'chat-message';
@@ -240,27 +251,6 @@
         box.appendChild(div);
         document.getElementById('messageInput').value = '';
       }
-    }
-
-    function listenMessages() {
-      gun.get('fofochat_messages').get(user.id).map().on(msg => {
-        if (msg && Date.now() - msg.time < 86400000) {
-          const box = document.getElementById('chatBox');
-          const div = document.createElement('div');
-          div.className = 'chat-message';
-          div.textContent = `${msg.from}: ${msg.text}`;
-          box.appendChild(div);
-          showNotification(`Nova mensagem de ${msg.from}!`);
-        }
-      });
-    }
-
-    function showNotification(text) {
-      const div = document.createElement('div');
-      div.className = 'notification';
-      div.textContent = text;
-      document.body.appendChild(div);
-      setTimeout(() => div.remove(), 3000);
     }
   </script>
 </body>
