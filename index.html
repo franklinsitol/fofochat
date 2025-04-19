@@ -426,6 +426,19 @@
             display: flex;
             align-items: center;
             margin-bottom: 20px;
+            justify-content: space-between;
+        }
+
+        .profile-header-left {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .profile-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .profile-avatar {
@@ -543,13 +556,22 @@
             cursor: pointer;
         }
 
+        .qr-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
         .logout-btn {
             background: none;
             border: none;
             color: var(--accent);
             font-size: 1.5rem;
             cursor: pointer;
-            margin-left: auto;
+            padding: 5px;
         }
 
         @media (max-width: 480px) {
@@ -673,14 +695,16 @@
         <!-- Tela Principal (Contatos) -->
         <div id="mainScreen" class="screen">
             <div class="profile-header">
-                <div class="avatar profile-avatar" id="userAvatar"></div>
-                <div class="profile-info">
-                    <div class="profile-name" id="profileName">Carregando...</div>
-                    <div class="profile-nickname" id="profileNickname"></div>
+                <div class="profile-header-left">
+                    <div class="avatar profile-avatar" id="userAvatar"></div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="profileName">Carregando...</div>
+                        <div class="profile-nickname" id="profileNickname"></div>
+                    </div>
                 </div>
-                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
-                <div class="qr-container" style="margin-left: 10px; padding: 10px; cursor: pointer;" id="showQrBtn">
-                    <i class="fas fa-qrcode" style="font-size: 1.5rem; color: var(--accent);"></i>
+                <div class="profile-header-right">
+                    <button class="qr-btn" id="showQrBtn"><i class="fas fa-qrcode"></i></button>
+                    <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
             
@@ -818,7 +842,9 @@
             currentScreen: 'userSelect',
             pushNotifications: [],
             messageListeners: {},
-            activeChat: null
+            activeChat: null,
+            lastScannedQR: null,
+            processedMessages: new Set()
         };
 
         // Elementos do DOM
@@ -1149,6 +1175,7 @@
             state.currentUser = null;
             state.currentContact = null;
             state.activeChat = null;
+            state.processedMessages.clear();
             
             // Volta para a tela de seleção de usuário
             showScreen('userSelect');
@@ -1171,12 +1198,18 @@
             // Remove listener antigo se existir
             if (state.messageListeners[state.currentUser.id]) {
                 state.messageListeners[state.currentUser.id].off();
+                delete state.messageListeners[state.currentUser.id];
             }
+            
+            // Limpa mensagens processadas
+            state.processedMessages.clear();
             
             // Cria novo listener
             state.messageListeners[state.currentUser.id] = 
                 gun.get('users').get(state.currentUser.id).get('messages').map().on((message, id) => {
-                    if (!message || isMessageExpired(message.timestamp)) return;
+                    if (!message || isMessageExpired(message.timestamp) || state.processedMessages.has(id)) return;
+                    
+                    state.processedMessages.add(id);
                     
                     // Verifica se é uma mensagem nova e não lida
                     if (message.receiver === state.currentUser.id && !message.read) {
@@ -1581,6 +1614,8 @@
         }
 
         function startQrScanner() {
+            state.lastScannedQR = null; // Reseta o último QR code escaneado
+            
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(function(stream) {
                     elements.video.srcObject = stream;
@@ -1590,9 +1625,6 @@
                     elements.video.onplaying = () => {
                         elements.scanOverlay.style.display = 'none';
                     };
-                    
-                    let lastScanned = '';
-                    let lastScanTime = 0;
                     
                     function tick() {
                         if (elements.video.readyState === elements.video.HAVE_ENOUGH_DATA) {
@@ -1608,34 +1640,31 @@
                             });
                             
                             if (code) {
-                                const now = Date.now();
-                                // Evitar ler o mesmo código múltiplas vezes em sequência
-                                if (code.data !== lastScanned || now - lastScanTime > 2000) {
-                                    lastScanned = code.data;
-                                    lastScanTime = now;
-                                    
-                                    try {
-                                        const qrData = JSON.parse(code.data);
-                                        if (qrData.app === 'BunnyChat' && qrData.userId && qrData.token) {
-                                            // Verificar se não é o próprio usuário
-                                            if (qrData.userId === state.currentUser.id) {
-                                                showNotification('Você não pode adicionar a si mesmo!');
-                                                return;
-                                            }
-                                            
-                                            // Verifica se o QR Code é válido
-                                            gun.get('users').get(qrData.userId).once((user) => {
-                                                if (user && user.qrToken === qrData.token) {
-                                                    stopQrScanner();
-                                                    addContact(qrData.userId);
-                                                } else {
-                                                    showNotification('QR Code inválido ou expirado');
-                                                }
-                                            });
+                                try {
+                                    const qrData = JSON.parse(code.data);
+                                    if (qrData.app === 'BunnyChat' && qrData.userId && qrData.token) {
+                                        // Verificar se não é o próprio usuário
+                                        if (qrData.userId === state.currentUser.id) {
+                                            showNotification('Você não pode adicionar a si mesmo!');
+                                            return;
                                         }
-                                    } catch (e) {
-                                        console.error('Erro ao ler QR Code:', e);
+                                        
+                                        // Evitar processar o mesmo QR code múltiplas vezes
+                                        if (state.lastScannedQR === qrData.userId) return;
+                                        state.lastScannedQR = qrData.userId;
+                                        
+                                        // Verifica se o QR Code é válido
+                                        gun.get('users').get(qrData.userId).once((user) => {
+                                            if (user && user.qrToken === qrData.token) {
+                                                stopQrScanner();
+                                                addContact(qrData.userId);
+                                            } else {
+                                                showNotification('QR Code inválido ou expirado');
+                                            }
+                                        });
                                     }
+                                } catch (e) {
+                                    console.error('Erro ao ler QR Code:', e);
                                 }
                             }
                         }
@@ -1667,6 +1696,7 @@
                 elements.video.srcObject = null;
             }
             elements.scanOverlay.style.display = 'flex';
+            state.lastScannedQR = null;
         }
 
         // Event Listeners
