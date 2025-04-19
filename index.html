@@ -513,6 +513,45 @@
             color: var(--accent);
         }
 
+        .push-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+            cursor: pointer;
+        }
+
+        .push-notification i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .push-notification .close-btn {
+            margin-left: 10px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-left: auto;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 10px;
@@ -559,37 +598,6 @@
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
-        }
-
-        /* Push notification */
-        .push-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--primary);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            animation: slideIn 0.3s ease;
-            max-width: 300px;
-            cursor: pointer;
-        }
-
-        .push-notification i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-
-        .push-notification .close-btn {
-            margin-left: 10px;
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
         }
     </style>
 </head>
@@ -670,7 +678,8 @@
                     <div class="profile-name" id="profileName">Carregando...</div>
                     <div class="profile-nickname" id="profileNickname"></div>
                 </div>
-                <div class="qr-container" style="margin-left: auto; padding: 10px; cursor: pointer;" id="showQrBtn">
+                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="qr-container" style="margin-left: 10px; padding: 10px; cursor: pointer;" id="showQrBtn">
                     <i class="fas fa-qrcode" style="font-size: 1.5rem; color: var(--accent);"></i>
                 </div>
             </div>
@@ -807,7 +816,9 @@
             messages: {},
             qrScanner: null,
             currentScreen: 'userSelect',
-            pushNotifications: []
+            pushNotifications: [],
+            messageListeners: {},
+            activeChat: null
         };
 
         // Elementos do DOM
@@ -843,7 +854,8 @@
                 sendMessage: document.getElementById('sendMessageBtn'),
                 backToMainFromEditContact: document.getElementById('backToMainFromEditContact'),
                 saveContact: document.getElementById('saveContactBtn'),
-                deleteContact: document.getElementById('deleteContactBtn')
+                deleteContact: document.getElementById('deleteContactBtn'),
+                logout: document.getElementById('logoutBtn')
             },
             inputs: {
                 pin1: document.getElementById('pin1'),
@@ -1126,6 +1138,22 @@
             });
         }
 
+        function logout() {
+            // Remove listeners de mensagens
+            if (state.messageListeners[state.currentUser.id]) {
+                state.messageListeners[state.currentUser.id].off();
+                delete state.messageListeners[state.currentUser.id];
+            }
+            
+            // Limpa o estado
+            state.currentUser = null;
+            state.currentContact = null;
+            state.activeChat = null;
+            
+            // Volta para a tela de seleção de usuário
+            showScreen('userSelect');
+        }
+
         function setupUserListeners(userId) {
             // Ouvinte para atualizações do próprio usuário
             gun.get('users').get(userId).on((user) => {
@@ -1140,46 +1168,60 @@
         function setupMessageListeners() {
             if (!state.currentUser) return;
             
-            // Ouvinte para novas mensagens
-            gun.get('users').get(state.currentUser.id).get('messages').map().on((message, id) => {
-                if (!message || isMessageExpired(message.timestamp)) return;
-                
-                // Verifica se é uma mensagem nova e não lida
-                if (message.receiver === state.currentUser.id && !message.read) {
-                    // Obtém os dados do remetente
-                    gun.get('users').get(message.sender).once((sender) => {
-                        if (sender) {
-                            const senderName = sender.name || 'Alguém';
-                            
-                            // Mostra notificação push
-                            showPushNotification(`Nova mensagem de ${senderName}`, () => {
-                                openChat(message.sender);
-                            });
-                            
-                            // Atualiza a lista de mensagens se estiver na tela certa
-                            if (state.currentScreen === 'main' && elements.contents.messages.style.display === 'block') {
-                                loadRecentMessages();
+            // Remove listener antigo se existir
+            if (state.messageListeners[state.currentUser.id]) {
+                state.messageListeners[state.currentUser.id].off();
+            }
+            
+            // Cria novo listener
+            state.messageListeners[state.currentUser.id] = 
+                gun.get('users').get(state.currentUser.id).get('messages').map().on((message, id) => {
+                    if (!message || isMessageExpired(message.timestamp)) return;
+                    
+                    // Verifica se é uma mensagem nova e não lida
+                    if (message.receiver === state.currentUser.id && !message.read) {
+                        // Obtém os dados do remetente
+                        gun.get('users').get(message.sender).once((sender) => {
+                            if (sender) {
+                                const senderName = sender.name || 'Alguém';
+                                
+                                // Mostra notificação push apenas se não estiver no chat com o remetente
+                                if (!(state.currentScreen === 'chat' && state.currentContact && state.currentContact.id === message.sender)) {
+                                    showPushNotification(`Nova mensagem de ${senderName}`, () => {
+                                        openChat(message.sender);
+                                    });
+                                }
+                                
+                                // Atualiza a lista de mensagens se estiver na tela certa
+                                if (state.currentScreen === 'main' && elements.contents.messages.style.display === 'block') {
+                                    loadRecentMessages();
+                                }
+                                
+                                // Atualiza o chat se estiver aberto com o remetente
+                                if (state.currentScreen === 'chat' && state.currentContact && state.currentContact.id === message.sender) {
+                                    loadChatMessages(message.sender);
+                                }
+                                
+                                // Marca a mensagem como lida
+                                gun.get('users').get(state.currentUser.id).get('messages').get(id).put({
+                                    ...message,
+                                    read: true
+                                });
                             }
-                            
-                            // Atualiza o chat se estiver aberto com o remetente
-                            if (state.currentScreen === 'chat' && state.currentContact && state.currentContact.id === message.sender) {
-                                loadChatMessages(message.sender);
-                            }
-                            
-                            // Marca a mensagem como lida
-                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put({
-                                ...message,
-                                read: true
-                            });
-                        }
-                    });
-                }
-            });
+                        });
+                    }
+                });
         }
 
         // Funções de contatos
         function addContact(contactId) {
             if (!state.currentUser || state.currentUser.contacts[contactId]) return;
+            
+            // Verifica se não está tentando adicionar a si mesmo
+            if (contactId === state.currentUser.id) {
+                showNotification('Você não pode adicionar a si mesmo!');
+                return;
+            }
             
             // Primeiro obtemos os dados do contato
             gun.get('users').get(contactId).once((contact) => {
@@ -1196,9 +1238,16 @@
                     addedAt: Date.now()
                 };
                 
-                gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(contactData);
+                gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(contactData, (ack) => {
+                    if (ack.err) {
+                        showNotification('Erro ao adicionar contato');
+                    } else {
+                        showNotification(`Contato ${contact.name} adicionado!`);
+                        showScreen('main');
+                    }
+                });
                 
-                // Adiciona o usuário atual como contato do outro usuário (se ele permitir)
+                // Adiciona o usuário atual como contato do outro usuário
                 const reverseContactData = {
                     id: state.currentUser.id,
                     name: state.currentUser.name,
@@ -1207,9 +1256,6 @@
                 };
                 
                 gun.get('users').get(contactId).get('contacts').get(state.currentUser.id).put(reverseContactData);
-                
-                showNotification(`Contato ${contact.name} adicionado!`);
-                showScreen('main');
             });
         }
 
@@ -1258,15 +1304,21 @@
         }
 
         function editContact(contactId) {
-            const contact = state.contacts[contactId];
-            if (!contact) return;
-            
-            state.currentContact = contact;
-            
-            elements.inputs.editContactName.value = contact.name || '';
-            elements.inputs.editContactNickname.value = contact.nickname || '';
-            
-            showScreen('editContact');
+            gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).once((contact) => {
+                if (!contact) return;
+                
+                state.currentContact = {
+                    id: contactId,
+                    name: contact.name,
+                    nickname: contact.nickname,
+                    addedAt: contact.addedAt
+                };
+                
+                elements.inputs.editContactName.value = contact.name || '';
+                elements.inputs.editContactNickname.value = contact.nickname || '';
+                
+                showScreen('editContact');
+            });
         }
 
         function saveContactChanges() {
@@ -1283,13 +1335,18 @@
             
             // Atualiza o contato no GunDB
             gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put({
-                ...state.currentContact,
                 name: newName,
-                nickname: newNickname || newName
+                nickname: newNickname || newName,
+                id: contactId,
+                addedAt: state.currentContact.addedAt || Date.now()
+            }, (ack) => {
+                if (ack.err) {
+                    showNotification('Erro ao salvar alterações');
+                } else {
+                    showNotification('Contato atualizado!');
+                    showScreen('main');
+                }
             });
-            
-            showNotification('Contato atualizado!');
-            showScreen('main');
         }
 
         function deleteContact() {
@@ -1411,6 +1468,9 @@
         function openChat(contactId) {
             if (!state.currentUser) return;
             
+            // Define o chat ativo
+            state.activeChat = contactId;
+            
             // Obtém os dados do contato
             gun.get('users').get(contactId).once((contact) => {
                 if (!contact) {
@@ -1469,7 +1529,7 @@
                 
                 // Marca a mensagem como lida se for do outro usuário
                 if (!isSender && !message.read) {
-                    gun.get('users').get(state.currentUser.id).get('messages').get(contactId).get(id).put({
+                    gun.get('users').get(state.currentUser.id).get('messages').get(id).put({
                         ...message,
                         read: true
                     });
@@ -1527,13 +1587,12 @@
                     elements.video.setAttribute('playsinline', true);
                     elements.video.play();
                     
-                    // Esconde o overlay quando o vídeo começar
                     elements.video.onplaying = () => {
                         elements.scanOverlay.style.display = 'none';
                     };
                     
-                    // Processa os frames para detectar QR Codes
-                    requestAnimationFrame(tick);
+                    let lastScanned = '';
+                    let lastScanTime = 0;
                     
                     function tick() {
                         if (elements.video.readyState === elements.video.HAVE_ENOUGH_DATA) {
@@ -1549,21 +1608,34 @@
                             });
                             
                             if (code) {
-                                try {
-                                    const qrData = JSON.parse(code.data);
-                                    if (qrData.app === 'BunnyChat' && qrData.userId && qrData.token) {
-                                        // Verifica se o QR Code é válido
-                                        gun.get('users').get(qrData.userId).once((user) => {
-                                            if (user && user.qrToken === qrData.token) {
-                                                stopQrScanner();
-                                                addContact(qrData.userId);
-                                            } else {
-                                                showNotification('QR Code inválido ou expirado');
+                                const now = Date.now();
+                                // Evitar ler o mesmo código múltiplas vezes em sequência
+                                if (code.data !== lastScanned || now - lastScanTime > 2000) {
+                                    lastScanned = code.data;
+                                    lastScanTime = now;
+                                    
+                                    try {
+                                        const qrData = JSON.parse(code.data);
+                                        if (qrData.app === 'BunnyChat' && qrData.userId && qrData.token) {
+                                            // Verificar se não é o próprio usuário
+                                            if (qrData.userId === state.currentUser.id) {
+                                                showNotification('Você não pode adicionar a si mesmo!');
+                                                return;
                                             }
-                                        });
+                                            
+                                            // Verifica se o QR Code é válido
+                                            gun.get('users').get(qrData.userId).once((user) => {
+                                                if (user && user.qrToken === qrData.token) {
+                                                    stopQrScanner();
+                                                    addContact(qrData.userId);
+                                                } else {
+                                                    showNotification('QR Code inválido ou expirado');
+                                                }
+                                            });
+                                        }
+                                    } catch (e) {
+                                        console.error('Erro ao ler QR Code:', e);
                                     }
-                                } catch (e) {
-                                    console.error('Erro ao ler QR Code:', e);
                                 }
                             }
                         }
@@ -1572,6 +1644,8 @@
                             requestAnimationFrame(tick);
                         }
                     }
+                    
+                    requestAnimationFrame(tick);
                 })
                 .catch(function(err) {
                     console.error('Erro ao acessar a câmera:', err);
@@ -1738,6 +1812,8 @@
             elements.buttons.saveContact.addEventListener('click', saveContactChanges);
             
             elements.buttons.deleteContact.addEventListener('click', deleteContact);
+            
+            elements.buttons.logout.addEventListener('click', logout);
             
             // Tabs
             elements.tabs.contacts.addEventListener('click', () => {
