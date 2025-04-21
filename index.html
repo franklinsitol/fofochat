@@ -760,6 +760,252 @@
             </div>
         </div>
         
+        function startQrScanner() {
+    state.lastScannedQR = null; // Reseta o último QR code escaneado
+    
+    // Mostra feedback visual enquanto a câmera está sendo acessada
+    elements.scanOverlay.innerHTML = `
+        <div>
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Acessando a câmera...</p>
+        </div>
+    `;
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        } 
+    })
+    .then(function(stream) {
+        elements.video.srcObject = stream;
+        elements.video.setAttribute('playsinline', true);
+        
+        elements.video.onloadedmetadata = () => {
+            elements.video.play()
+                .then(() => {
+                    elements.scanOverlay.style.display = 'none';
+                    scanFrame(); // Inicia o loop de verificação
+                })
+                .catch(err => {
+                    console.error('Erro ao reproduzir vídeo:', err);
+                    showCameraError();
+                });
+        };
+        
+        elements.video.onerror = () => {
+            showCameraError();
+        };
+    })
+    .catch(function(err) {
+        console.error('Erro ao acessar a câmera:', err);
+        showCameraError();
+    });
+    
+    function scanFrame() {
+        if (state.currentScreen !== 'scan') {
+            stopQrScanner();
+            return;
+        }
+        
+        if (elements.video.readyState === elements.video.HAVE_ENOUGH_DATA) {
+            const canvasElement = document.createElement('canvas');
+            canvasElement.width = elements.video.videoWidth;
+            canvasElement.height = elements.video.videoHeight;
+            const canvas = canvasElement.getContext('2d');
+            canvas.drawImage(elements.video, 0, 0, canvasElement.width, canvasElement.height);
+            
+            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            
+            try {
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert',
+                    // Aumenta a tolerância para diferentes tipos de QR codes
+                    maxScansPerRotation: 10
+                });
+                
+                if (code) {
+                    handleScannedCode(code.data);
+                }
+            } catch (e) {
+                console.error('Erro ao processar QR code:', e);
+            }
+        }
+        
+        if (state.currentScreen === 'scan') {
+            requestAnimationFrame(scanFrame);
+        }
+    }
+    
+    function handleScannedCode(data) {
+        try {
+            const qrData = JSON.parse(data);
+            
+            // Validação mais robusta do QR code
+            if (!qrData || !qrData.app || qrData.app !== 'BunnyChat' || !qrData.userId || !qrData.token) {
+                showNotification('QR Code inválido');
+                return;
+            }
+            
+            // Verificar se não é o próprio usuário
+            if (state.currentUser && qrData.userId === state.currentUser.id) {
+                showNotification('Você não pode adicionar a si mesmo!');
+                return;
+            }
+            
+            // Evitar processar o mesmo QR code múltiplas vezes
+            if (state.lastScannedQR === qrData.userId) return;
+            state.lastScannedQR = qrData.userId;
+            
+            // Feedback visual de QR code detectado
+            elements.scanOverlay.innerHTML = `
+                <div style="background-color: rgba(0, 255, 0, 0.3); border-radius: 15px; padding: 10px;">
+                    <i class="fas fa-check-circle"></i>
+                    <p>QR Code detectado!</p>
+                    <p>Processando...</p>
+                </div>
+            `;
+            elements.scanOverlay.style.display = 'flex';
+            
+            // Verifica se o QR Code é válido
+            gun.get('users').get(qrData.userId).once((user) => {
+                if (user && user.qrToken === qrData.token) {
+                    stopQrScanner();
+                    addContact(qrData.userId);
+                } else {
+                    showNotification('QR Code inválido ou expirado');
+                    elements.scanOverlay.style.display = 'none';
+                }
+            });
+        } catch (e) {
+            console.error('Erro ao ler QR Code:', e);
+            showNotification('QR Code não reconhecido');
+        }
+    }
+    
+    function showCameraError() {
+        elements.scanOverlay.innerHTML = `
+            <div>
+                <i class="fas fa-camera-slash"></i>
+                <p>Não foi possível acessar a câmera</p>
+                <p style="font-size: 0.8rem; margin-top: 5px;">${err?.message || 'Verifique as permissões'}</p>
+                <button id="tryAgainBtn" class="btn btn-small" style="margin-top: 10px;">
+                    <i class="fas fa-sync-alt"></i> Tentar novamente
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('tryAgainBtn').addEventListener('click', startQrScanner);
+    }
+}
+
+function stopQrScanner() {
+    if (elements.video.srcObject) {
+        elements.video.srcObject.getTracks().forEach(track => {
+            track.stop();
+        });
+        elements.video.srcObject = null;
+    }
+    elements.scanOverlay.style.display = 'flex';
+    elements.scanOverlay.innerHTML = `
+        <div>
+            <i class="fas fa-camera"></i>
+            <p>Posicione o QR Code dentro da área de visualização</p>
+        </div>
+    `;
+    state.lastScannedQR = null;
+}
+Melhorias implementadas:
+Feedback visual melhorado:
+
+Adicionei um indicador de carregamento enquanto a câmera está sendo acessada
+
+Feedback claro quando o QR code é detectado
+
+Mensagens de erro mais descritivas
+
+Validação mais robusta:
+
+Verificação mais completa da estrutura do QR code
+
+Tratamento de erros aprimorado
+
+Desempenho do scanner:
+
+Configurações otimizadas para a câmera
+
+Parâmetros ajustados para melhor detecção de QR codes
+
+Gerenciamento de recursos:
+
+Liberação adequada dos recursos da câmera
+
+Prevenção de vazamentos de memória
+
+Testes recomendados:
+Verifique se o navegador tem permissão para acessar a câmera
+
+Teste com diferentes tipos de QR codes (claro/escuro, diferentes tamanhos)
+
+Verifique o console do navegador para mensagens de erro
+
+Teste em diferentes dispositivos móveis
+
+Se o problema persistir, podemos:
+
+Adicionar um modo de depuração para ver o que a câmera está "vendo"
+
+Implementar fallback para leitura de imagem estática
+
+Adicionar mais feedback visual durante o processo de escaneamento
+
+Você gostaria que eu implementasse alguma dessas soluções alternativas ou prefere testar primeiro as alterações que já fiz?
+
+Preciso do código completo revisado pois não sei programar
+The server is busy. Please try again later.
+
+Apenas o qrcode que não está reconhecendo, só falta isso para ficar perfeito
+
+Abaixo estou colocando o código da primeira versão que funcionava:
+
+ <!-- Tela de QR Code -->
+        <div id="qrScreen" class="screen">
+            <button class="back-button" id="backToMainFromQr"><i class="fas fa-arrow-left"></i></button>
+            <div class="logo">
+                <i class="fas fa-qrcode bounce" style="color: #FF6B8B;"></i>
+                <h1>Meu QR Code</h1>
+                <p>Compartilhe este código para adicionar você como contato</p>
+            </div>
+            
+            <div class="qr-container">
+                <canvas id="qrCodeCanvas"></canvas>
+                <button id="regenerateQrBtn" class="btn btn-small"><i class="fas fa-sync-alt"></i> Gerar novo QR</button>
+            </div>
+            
+            <div class="input-group">
+                <label>Seu ID único</label>
+                <input type="text" id="userIdDisplay" readonly style="background-color: #f5f5f5; cursor: text;">
+            </div>
+        </div>
+        
+        <!-- Tela de Adicionar Contato -->
+        <div id="addContactScreen" class="screen">
+            <button class="back-button" id="backToMainFromAddContact"><i class="fas fa-arrow-left"></i></button>
+            <div class="logo">
+                <i class="fas fa-user-plus pulse" style="color: #FF9BB3;"></i>
+                <h1>Adicionar Contato</h1>
+            </div>
+            
+            <div class="input-group">
+                <button id="scanQrBtn" class="btn"><i class="fas fa-camera"></i> Escanear QR Code</button>
+                <p style="text-align: center; margin: 15px 0;">ou</p>
+                <label for="contactId">Digite o ID do contato</label>
+                <input type="text" id="contactId" placeholder="Cole o ID do contato aqui">
+                <button id="addContactByIdBtn" class="btn btn-secondary" style="margin-top: 10px;">Adicionar por ID</button>
+            </div>
+        </div>
+        
         <!-- Tela de Scanner QR -->
         <div id="scanScreen" class="screen">
             <button class="back-button" id="backToAddContactFromScan"><i class="fas fa-arrow-left"></i></button>
