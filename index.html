@@ -177,7 +177,6 @@
             text-align: center;
             font-size: 1.5rem;
             border-radius: 15px;
-            -webkit-text-security: disc;
         }
 
         .qr-container {
@@ -426,19 +425,6 @@
             display: flex;
             align-items: center;
             margin-bottom: 20px;
-            justify-content: space-between;
-        }
-
-        .profile-header-left {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-
-        .profile-header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .profile-avatar {
@@ -471,107 +457,6 @@
 
         .edit-icon:hover {
             color: var(--accent);
-        }
-
-        .user-list {
-            margin-bottom: 20px;
-        }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .user-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .user-info {
-            flex-grow: 1;
-        }
-
-        .user-name {
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 3px;
-        }
-
-        .user-nickname {
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .user-actions {
-            display: flex;
-        }
-
-        .user-actions button {
-            background: none;
-            border: none;
-            color: var(--text-light);
-            font-size: 1rem;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-
-        .user-actions button:hover {
-            color: var(--accent);
-        }
-
-        .push-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--primary);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            animation: slideIn 0.3s ease;
-            max-width: 300px;
-            cursor: pointer;
-        }
-
-        .push-notification i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-
-        .push-notification .close-btn {
-            margin-left: 10px;
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-
-        .qr-btn {
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-        }
-
-        .logout-btn {
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
         }
 
         @media (max-width: 480px) {
@@ -625,45 +510,31 @@
 </head>
 <body>
     <div class="container">
-        <!-- Tela de Seleção de Usuário -->
-        <div id="userSelectScreen" class="screen active">
-            <div class="logo">
-                <i class="fas fa-users pulse" style="color: #FF6B8B;"></i>
-                <h1>BunnyChat</h1>
-                <p>Escolha seu perfil ou crie um novo</p>
-            </div>
-            
-            <div id="usersList" class="user-list"></div>
-            
-            <button id="newUserBtn" class="btn"><i class="fas fa-user-plus"></i> Novo Usuário</button>
-            <button id="loginExistingBtn" class="btn btn-secondary"><i class="fas fa-sign-in-alt"></i> Acessar com PIN</button>
-        </div>
-        
         <!-- Tela de Login -->
-        <div id="loginScreen" class="screen">
-            <button class="back-button" id="backToUserSelectFromLogin"><i class="fas fa-arrow-left"></i></button>
+        <div id="loginScreen" class="screen active">
             <div class="logo">
                 <i class="fas fa-heart bounce" style="color: #FF6B8B;"></i>
-                <h1>Acessar com PIN</h1>
-                <p>Digite o PIN de 4 dígitos do usuário</p>
+                <h1>BunnyChat</h1>
+                <p>Mensagens fofinhas que desaparecem em 24h 🐰</p>
             </div>
             
             <div class="input-group">
                 <label for="loginPin">Digite seu PIN de 4 dígitos</label>
                 <div class="pin-input">
-                    <input type="password" id="pin1" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="pin2" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="pin3" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="pin4" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="number" id="pin1" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="pin2" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="pin3" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="pin4" maxlength="1" min="0" max="9" pattern="[0-9]">
                 </div>
             </div>
             
             <button id="loginBtn" class="btn">Entrar</button>
+            <button id="registerBtn" class="btn btn-secondary">Cadastrar</button>
         </div>
         
         <!-- Tela de Cadastro -->
         <div id="registerScreen" class="screen">
-            <button class="back-button" id="backToUserSelectFromRegister"><i class="fas fa-arrow-left"></i></button>
+            <button class="back-button" id="backToLoginFromRegister"><i class="fas fa-arrow-left"></i></button>
             <div class="logo">
                 <i class="fas fa-user-plus pulse" style="color: #FF9BB3;"></i>
                 <h1>Criar conta</h1>
@@ -682,10 +553,10 @@
             <div class="input-group">
                 <label for="registerPin">Crie um PIN de 4 dígitos</label>
                 <div class="pin-input">
-                    <input type="password" id="regPin1" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="regPin2" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="regPin3" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-                    <input type="password" id="regPin4" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="number" id="regPin1" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="regPin2" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="regPin3" maxlength="1" min="0" max="9" pattern="[0-9]">
+                    <input type="number" id="regPin4" maxlength="1" min="0" max="9" pattern="[0-9]">
                 </div>
             </div>
             
@@ -695,16 +566,13 @@
         <!-- Tela Principal (Contatos) -->
         <div id="mainScreen" class="screen">
             <div class="profile-header">
-                <div class="profile-header-left">
-                    <div class="avatar profile-avatar" id="userAvatar"></div>
-                    <div class="profile-info">
-                        <div class="profile-name" id="profileName">Carregando...</div>
-                        <div class="profile-nickname" id="profileNickname"></div>
-                    </div>
+                <div class="avatar profile-avatar" id="userAvatar"></div>
+                <div class="profile-info">
+                    <div class="profile-name" id="profileName">Carregando...</div>
+                    <div class="profile-nickname" id="profileNickname"></div>
                 </div>
-                <div class="profile-header-right">
-                    <button class="qr-btn" id="showQrBtn"><i class="fas fa-qrcode"></i></button>
-                    <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+                <div class="qr-container" style="margin-left: auto; padding: 10px; cursor: pointer;" id="showQrBtn">
+                    <i class="fas fa-qrcode" style="font-size: 1.5rem; color: var(--accent);"></i>
                 </div>
             </div>
             
@@ -839,18 +707,12 @@
             contacts: {},
             messages: {},
             qrScanner: null,
-            currentScreen: 'userSelect',
-            pushNotifications: [],
-            messageListeners: {},
-            activeChat: null,
-            lastScannedQR: null,
-            processedMessages: new Set()
+            currentScreen: 'login'
         };
 
         // Elementos do DOM
         const elements = {
             screens: {
-                userSelect: document.getElementById('userSelectScreen'),
                 login: document.getElementById('loginScreen'),
                 register: document.getElementById('registerScreen'),
                 main: document.getElementById('mainScreen'),
@@ -861,11 +723,9 @@
                 editContact: document.getElementById('editContactScreen')
             },
             buttons: {
-                newUser: document.getElementById('newUserBtn'),
-                loginExisting: document.getElementById('loginExistingBtn'),
-                backToUserSelectFromLogin: document.getElementById('backToUserSelectFromLogin'),
-                backToUserSelectFromRegister: document.getElementById('backToUserSelectFromRegister'),
                 login: document.getElementById('loginBtn'),
+                register: document.getElementById('registerBtn'),
+                backToLoginFromRegister: document.getElementById('backToLoginFromRegister'),
                 completeRegister: document.getElementById('completeRegisterBtn'),
                 showQr: document.getElementById('showQrBtn'),
                 backToMainFromQr: document.getElementById('backToMainFromQr'),
@@ -880,8 +740,7 @@
                 sendMessage: document.getElementById('sendMessageBtn'),
                 backToMainFromEditContact: document.getElementById('backToMainFromEditContact'),
                 saveContact: document.getElementById('saveContactBtn'),
-                deleteContact: document.getElementById('deleteContactBtn'),
-                logout: document.getElementById('logoutBtn')
+                deleteContact: document.getElementById('deleteContactBtn')
             },
             inputs: {
                 pin1: document.getElementById('pin1'),
@@ -900,7 +759,6 @@
                 editContactNickname: document.getElementById('editContactNickname')
             },
             displays: {
-                usersList: document.getElementById('usersList'),
                 profileName: document.getElementById('profileName'),
                 profileNickname: document.getElementById('profileNickname'),
                 userAvatar: document.getElementById('userAvatar'),
@@ -949,41 +807,6 @@
             }, 3000);
         }
 
-        function showPushNotification(message, onClick) {
-            // Remove notificações antigas
-            state.pushNotifications.forEach(notif => notif.remove());
-            state.pushNotifications = [];
-            
-            const notification = document.createElement('div');
-            notification.className = 'push-notification';
-            notification.innerHTML = `
-                <i class="fas fa-comment-dots"></i>
-                <span>${message}</span>
-                <button class="close-btn"><i class="fas fa-times"></i></button>
-            `;
-            
-            const closeBtn = notification.querySelector('.close-btn');
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                notification.remove();
-            });
-            
-            if (onClick) {
-                notification.addEventListener('click', () => {
-                    onClick();
-                    notification.remove();
-                });
-            }
-            
-            document.body.appendChild(notification);
-            state.pushNotifications.push(notification);
-            
-            // Remove automaticamente após 10 segundos
-            setTimeout(() => {
-                notification.remove();
-            }, 10000);
-        }
-
         function generateAvatarIcon(name) {
             if (!name) return '?';
             const names = name.split(' ');
@@ -1003,87 +826,6 @@
             return (now - messageTime) > 24 * 60 * 60 * 1000; // 24 horas
         }
 
-        // Gerenciamento de múltiplos usuários
-        function getLocalUsers() {
-            const usersJson = localStorage.getItem('bunnyChatUsers');
-            return usersJson ? JSON.parse(usersJson) : [];
-        }
-
-        function saveLocalUsers(users) {
-            localStorage.setItem('bunnyChatUsers', JSON.stringify(users));
-        }
-
-        function addLocalUser(userId, name, nickname) {
-            const users = getLocalUsers();
-            if (!users.some(u => u.id === userId)) {
-                users.push({ id: userId, name, nickname });
-                saveLocalUsers(users);
-            }
-        }
-
-        function removeLocalUser(userId) {
-            const users = getLocalUsers().filter(u => u.id !== userId);
-            saveLocalUsers(users);
-        }
-
-        function loadLocalUsers() {
-            const users = getLocalUsers();
-            elements.displays.usersList.innerHTML = '';
-            
-            if (users.length === 0) {
-                elements.displays.usersList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-user-slash"></i>
-                        <p>Nenhum usuário cadastrado</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            users.forEach(user => {
-                const userElement = document.createElement('div');
-                userElement.className = 'user-item';
-                userElement.innerHTML = `
-                    <div class="avatar">${generateAvatarIcon(user.name)}</div>
-                    <div class="user-info">
-                        <div class="user-name">${user.name}</div>
-                        <div class="user-nickname">@${user.nickname || user.name}</div>
-                    </div>
-                    <div class="user-actions">
-                        <button class="login-user-btn" data-user-id="${user.id}"><i class="fas fa-sign-in-alt"></i></button>
-                        <button class="remove-user-btn" data-user-id="${user.id}"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
-                
-                elements.displays.usersList.appendChild(userElement);
-                
-                // Adiciona event listeners aos botões
-                userElement.querySelector('.login-user-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    prepareLogin(user.id);
-                });
-                
-                userElement.querySelector('.remove-user-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (confirm(`Remover ${user.name} deste dispositivo?`)) {
-                        removeLocalUser(user.id);
-                        loadLocalUsers();
-                    }
-                });
-                
-                // Também permite clicar em qualquer lugar do item para login
-                userElement.addEventListener('click', () => {
-                    prepareLogin(user.id);
-                });
-            });
-        }
-
-        function prepareLogin(userId) {
-            localStorage.setItem('bunnyChatLastUserId', userId);
-            showScreen('login');
-            elements.inputs.pin1.focus();
-        }
-
         // Funções de navegação
         function showScreen(screenName) {
             // Esconde todas as telas
@@ -1097,24 +839,15 @@
             
             // Ações específicas por tela
             switch(screenName) {
-                case 'userSelect':
-                    loadLocalUsers();
-                    break;
                 case 'main':
                     loadContacts();
                     loadRecentMessages();
-                    setupMessageListeners();
                     break;
                 case 'qr':
                     generateQrCode();
                     break;
                 case 'scan':
                     startQrScanner();
-                    break;
-                case 'chat':
-                    if (state.currentContact) {
-                        loadChatMessages(state.currentContact.id);
-                    }
                     break;
             }
         }
@@ -1135,10 +868,9 @@
             // Salva o usuário no GunDB
             gun.get('users').get(userId).put(user);
             
-            // Salva localmente para acesso rápido
-            addLocalUser(userId, name, nickname);
-            localStorage.setItem('bunnyChatLastUserId', userId);
-            localStorage.setItem(`bunnyChatPin_${userId}`, pin);
+            // Salva no localStorage para login automático
+            localStorage.setItem('bunnyChatUserId', userId);
+            localStorage.setItem('bunnyChatUserPin', pin);
             
             return user;
         }
@@ -1164,23 +896,6 @@
             });
         }
 
-        function logout() {
-            // Remove listeners de mensagens
-            if (state.messageListeners[state.currentUser.id]) {
-                state.messageListeners[state.currentUser.id].off();
-                delete state.messageListeners[state.currentUser.id];
-            }
-            
-            // Limpa o estado
-            state.currentUser = null;
-            state.currentContact = null;
-            state.activeChat = null;
-            state.processedMessages.clear();
-            
-            // Volta para a tela de seleção de usuário
-            showScreen('userSelect');
-        }
-
         function setupUserListeners(userId) {
             // Ouvinte para atualizações do próprio usuário
             gun.get('users').get(userId).on((user) => {
@@ -1192,69 +907,9 @@
             });
         }
 
-        function setupMessageListeners() {
-            if (!state.currentUser) return;
-            
-            // Remove listener antigo se existir
-            if (state.messageListeners[state.currentUser.id]) {
-                state.messageListeners[state.currentUser.id].off();
-                delete state.messageListeners[state.currentUser.id];
-            }
-            
-            // Limpa mensagens processadas
-            state.processedMessages.clear();
-            
-            // Cria novo listener
-            state.messageListeners[state.currentUser.id] = 
-                gun.get('users').get(state.currentUser.id).get('messages').map().on((message, id) => {
-                    if (!message || isMessageExpired(message.timestamp) || state.processedMessages.has(id)) return;
-                    
-                    state.processedMessages.add(id);
-                    
-                    // Verifica se é uma mensagem nova e não lida
-                    if (message.receiver === state.currentUser.id && !message.read) {
-                        // Obtém os dados do remetente
-                        gun.get('users').get(message.sender).once((sender) => {
-                            if (sender) {
-                                const senderName = sender.name || 'Alguém';
-                                
-                                // Mostra notificação push apenas se não estiver no chat com o remetente
-                                if (!(state.currentScreen === 'chat' && state.currentContact && state.currentContact.id === message.sender)) {
-                                    showPushNotification(`Nova mensagem de ${senderName}`, () => {
-                                        openChat(message.sender);
-                                    });
-                                }
-                                
-                                // Atualiza a lista de mensagens se estiver na tela certa
-                                if (state.currentScreen === 'main' && elements.contents.messages.style.display === 'block') {
-                                    loadRecentMessages();
-                                }
-                                
-                                // Atualiza o chat se estiver aberto com o remetente
-                                if (state.currentScreen === 'chat' && state.currentContact && state.currentContact.id === message.sender) {
-                                    loadChatMessages(message.sender);
-                                }
-                                
-                                // Marca a mensagem como lida
-                                gun.get('users').get(state.currentUser.id).get('messages').get(id).put({
-                                    ...message,
-                                    read: true
-                                });
-                            }
-                        });
-                    }
-                });
-        }
-
         // Funções de contatos
         function addContact(contactId) {
             if (!state.currentUser || state.currentUser.contacts[contactId]) return;
-            
-            // Verifica se não está tentando adicionar a si mesmo
-            if (contactId === state.currentUser.id) {
-                showNotification('Você não pode adicionar a si mesmo!');
-                return;
-            }
             
             // Primeiro obtemos os dados do contato
             gun.get('users').get(contactId).once((contact) => {
@@ -1271,16 +926,9 @@
                     addedAt: Date.now()
                 };
                 
-                gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(contactData, (ack) => {
-                    if (ack.err) {
-                        showNotification('Erro ao adicionar contato');
-                    } else {
-                        showNotification(`Contato ${contact.name} adicionado!`);
-                        showScreen('main');
-                    }
-                });
+                gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(contactData);
                 
-                // Adiciona o usuário atual como contato do outro usuário
+                // Adiciona o usuário atual como contato do outro usuário (se ele permitir)
                 const reverseContactData = {
                     id: state.currentUser.id,
                     name: state.currentUser.name,
@@ -1289,6 +937,9 @@
                 };
                 
                 gun.get('users').get(contactId).get('contacts').get(state.currentUser.id).put(reverseContactData);
+                
+                showNotification(`Contato ${contact.name} adicionado!`);
+                showScreen('main');
             });
         }
 
@@ -1337,21 +988,15 @@
         }
 
         function editContact(contactId) {
-            gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).once((contact) => {
-                if (!contact) return;
-                
-                state.currentContact = {
-                    id: contactId,
-                    name: contact.name,
-                    nickname: contact.nickname,
-                    addedAt: contact.addedAt
-                };
-                
-                elements.inputs.editContactName.value = contact.name || '';
-                elements.inputs.editContactNickname.value = contact.nickname || '';
-                
-                showScreen('editContact');
-            });
+            const contact = state.contacts[contactId];
+            if (!contact) return;
+            
+            state.currentContact = contact;
+            
+            elements.inputs.editContactName.value = contact.name || '';
+            elements.inputs.editContactNickname.value = contact.nickname || '';
+            
+            showScreen('editContact');
         }
 
         function saveContactChanges() {
@@ -1368,18 +1013,13 @@
             
             // Atualiza o contato no GunDB
             gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put({
+                ...state.currentContact,
                 name: newName,
-                nickname: newNickname || newName,
-                id: contactId,
-                addedAt: state.currentContact.addedAt || Date.now()
-            }, (ack) => {
-                if (ack.err) {
-                    showNotification('Erro ao salvar alterações');
-                } else {
-                    showNotification('Contato atualizado!');
-                    showScreen('main');
-                }
+                nickname: newNickname || newName
             });
+            
+            showNotification('Contato atualizado!');
+            showScreen('main');
         }
 
         function deleteContact() {
@@ -1501,9 +1141,6 @@
         function openChat(contactId) {
             if (!state.currentUser) return;
             
-            // Define o chat ativo
-            state.activeChat = contactId;
-            
             // Obtém os dados do contato
             gun.get('users').get(contactId).once((contact) => {
                 if (!contact) {
@@ -1562,7 +1199,7 @@
                 
                 // Marca a mensagem como lida se for do outro usuário
                 if (!isSender && !message.read) {
-                    gun.get('users').get(state.currentUser.id).get('messages').get(id).put({
+                    gun.get('users').get(state.currentUser.id).get('messages').get(contactId).get(id).put({
                         ...message,
                         read: true
                     });
@@ -1614,17 +1251,19 @@
         }
 
         function startQrScanner() {
-            state.lastScannedQR = null; // Reseta o último QR code escaneado
-            
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(function(stream) {
                     elements.video.srcObject = stream;
                     elements.video.setAttribute('playsinline', true);
                     elements.video.play();
                     
+                    // Esconde o overlay quando o vídeo começar
                     elements.video.onplaying = () => {
                         elements.scanOverlay.style.display = 'none';
                     };
+                    
+                    // Processa os frames para detectar QR Codes
+                    requestAnimationFrame(tick);
                     
                     function tick() {
                         if (elements.video.readyState === elements.video.HAVE_ENOUGH_DATA) {
@@ -1643,16 +1282,6 @@
                                 try {
                                     const qrData = JSON.parse(code.data);
                                     if (qrData.app === 'BunnyChat' && qrData.userId && qrData.token) {
-                                        // Verificar se não é o próprio usuário
-                                        if (qrData.userId === state.currentUser.id) {
-                                            showNotification('Você não pode adicionar a si mesmo!');
-                                            return;
-                                        }
-                                        
-                                        // Evitar processar o mesmo QR code múltiplas vezes
-                                        if (state.lastScannedQR === qrData.userId) return;
-                                        state.lastScannedQR = qrData.userId;
-                                        
                                         // Verifica se o QR Code é válido
                                         gun.get('users').get(qrData.userId).once((user) => {
                                             if (user && user.qrToken === qrData.token) {
@@ -1673,8 +1302,6 @@
                             requestAnimationFrame(tick);
                         }
                     }
-                    
-                    requestAnimationFrame(tick);
                 })
                 .catch(function(err) {
                     console.error('Erro ao acessar a câmera:', err);
@@ -1696,28 +1323,11 @@
                 elements.video.srcObject = null;
             }
             elements.scanOverlay.style.display = 'flex';
-            state.lastScannedQR = null;
         }
 
         // Event Listeners
         function setupEventListeners() {
             // Navegação
-            elements.buttons.newUser.addEventListener('click', () => {
-                showScreen('register');
-            });
-            
-            elements.buttons.loginExisting.addEventListener('click', () => {
-                showScreen('login');
-            });
-            
-            elements.buttons.backToUserSelectFromLogin.addEventListener('click', () => {
-                showScreen('userSelect');
-            });
-            
-            elements.buttons.backToUserSelectFromRegister.addEventListener('click', () => {
-                showScreen('userSelect');
-            });
-            
             elements.buttons.login.addEventListener('click', () => {
                 const pin = getPinFromInputs([
                     elements.inputs.pin1,
@@ -1731,7 +1341,7 @@
                     return;
                 }
                 
-                const userId = localStorage.getItem('bunnyChatLastUserId');
+                const userId = localStorage.getItem('bunnyChatUserId');
                 if (userId) {
                     loginUser(userId, pin, (success) => {
                         if (success) {
@@ -1747,8 +1357,16 @@
                         }
                     });
                 } else {
-                    showNotification('Nenhum usuário selecionado');
+                    showNotification('Nenhum usuário cadastrado. Cadastre-se primeiro.');
                 }
+            });
+            
+            elements.buttons.register.addEventListener('click', () => {
+                showScreen('register');
+            });
+            
+            elements.buttons.backToLoginFromRegister.addEventListener('click', () => {
+                showScreen('login');
             });
             
             elements.buttons.completeRegister.addEventListener('click', () => {
@@ -1843,8 +1461,6 @@
             
             elements.buttons.deleteContact.addEventListener('click', deleteContact);
             
-            elements.buttons.logout.addEventListener('click', logout);
-            
             // Tabs
             elements.tabs.contacts.addEventListener('click', () => {
                 elements.tabs.contacts.classList.add('active');
@@ -1869,8 +1485,8 @@
             ];
             
             pinInputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    if (e.inputType === 'insertText' && input.value.length === 1 && index < pinInputs.length - 1) {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < pinInputs.length - 1) {
                         pinInputs[index + 1].focus();
                     }
                 });
@@ -1890,8 +1506,8 @@
             ];
             
             regPinInputs.forEach((input, index) => {
-                input.addEventListener('input', (e) => {
-                    if (e.inputType === 'insertText' && input.value.length === 1 && index < regPinInputs.length - 1) {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < regPinInputs.length - 1) {
                         regPinInputs[index + 1].focus();
                     }
                 });
@@ -1905,22 +1521,20 @@
             
             // Verifica se há um usuário logado no carregamento
             window.addEventListener('DOMContentLoaded', () => {
-                loadLocalUsers();
+                const userId = localStorage.getItem('bunnyChatUserId');
+                const pin = localStorage.getItem('bunnyChatUserPin');
                 
-                const lastUserId = localStorage.getItem('bunnyChatLastUserId');
-                const lastUserPin = lastUserId ? localStorage.getItem(`bunnyChatPin_${lastUserId}`) : null;
-                
-                if (lastUserId && lastUserPin) {
-                    // Tenta fazer login automático
-                    loginUser(lastUserId, lastUserPin, (success) => {
-                        if (success) {
-                            showScreen('main');
-                        } else {
-                            showScreen('userSelect');
-                        }
-                    });
-                } else {
-                    showScreen('userSelect');
+                if (userId && pin) {
+                    // Auto-preenche o PIN se estiver salvo
+                    if (pin.length === 4) {
+                        elements.inputs.pin1.value = pin[0];
+                        elements.inputs.pin2.value = pin[1];
+                        elements.inputs.pin3.value = pin[2];
+                        elements.inputs.pin4.value = pin[3];
+                    }
+                    
+                    // Foca no botão de login
+                    elements.buttons.login.focus();
                 }
             });
         }
