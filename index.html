@@ -39,6 +39,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         
         header {
@@ -65,13 +66,26 @@
             display: flex;
         }
         
+        /* Estilo especial para a tela de chat */
+        #chatScreen.active {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--light);
+            z-index: 1000;
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
+        }
+        
         .chat-header {
             display: flex;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
             background-color: var(--primary);
             color: white;
-            border-radius: 10px 10px 0 0;
         }
         
         .back-button {
@@ -101,8 +115,6 @@
             padding: 15px;
             background-color: white;
             overflow-y: auto;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .message-item {
@@ -134,7 +146,9 @@
         
         .message-input {
             display: flex;
-            margin-top: 10px;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
         }
         
         .message-input input {
@@ -323,7 +337,7 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            display: flex;
+            display: none; /* Inicialmente escondido */
             flex-direction: column;
             gap: 10px;
             z-index: 100;
@@ -361,7 +375,7 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
+            z-index: 1100;
             display: none;
             flex-direction: column;
             align-items: center;
@@ -437,7 +451,19 @@
             width: 120px;
             border-radius: 10px;
             border: 2px solid var(--primary);
-            z-index: 1001;
+            z-index: 1101;
+        }
+        
+        .sync-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            z-index: 100;
         }
         
         @media (max-width: 600px) {
@@ -469,6 +495,12 @@
             
             .floating-btn i {
                 font-size: 1.2rem;
+            }
+            
+            .sync-status {
+                bottom: 15px;
+                left: 15px;
+                font-size: 0.7rem;
             }
         }
     </style>
@@ -570,7 +602,7 @@
             </div>
         </div>
         
-        <!-- Tela de chat -->
+        <!-- Tela de chat (modal) -->
         <div id="chatScreen" class="screen">
             <div class="chat-header">
                 <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
@@ -596,19 +628,24 @@
                 <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
-        
-        <!-- Botões flutuantes -->
-        <div class="floating-buttons">
-            <button id="showContactsBtn" class="floating-btn" title="Contatos">
-                <i class="fas fa-address-book"></i>
-            </button>
-            <button id="showQRBtn" class="floating-btn" title="Meu QR Code">
-                <i class="fas fa-qrcode"></i>
-            </button>
-            <button id="scanQRBtn" class="floating-btn" title="Escanear QR">
-                <i class="fas fa-camera"></i>
-            </button>
-        </div>
+    </div>
+
+    <!-- Botões flutuantes (fora do container principal) -->
+    <div class="floating-buttons">
+        <button id="showContactsBtn" class="floating-btn" title="Contatos">
+            <i class="fas fa-address-book"></i>
+        </button>
+        <button id="showQRBtn" class="floating-btn" title="Meu QR Code">
+            <i class="fas fa-qrcode"></i>
+        </button>
+        <button id="scanQRBtn" class="floating-btn" title="Escanear QR">
+            <i class="fas fa-camera"></i>
+        </button>
+    </div>
+
+    <!-- Status de sincronização -->
+    <div id="syncStatus" class="sync-status" style="display: none;">
+        <i class="fas fa-sync-alt"></i> <span>Sincronizando...</span>
     </div>
 
     <!-- Container de chamada WebRTC -->
@@ -658,6 +695,8 @@
             processedMessages: new Set(),
             currentCamera: 'environment',
             contactsCache: {},
+            syncInProgress: false,
+            offlineMode: false,
             
             // Estado para chamadas WebRTC
             rtcConnection: null,
@@ -723,7 +762,9 @@
                 localVideo: document.getElementById('localVideo'),
                 callContainer: document.getElementById('callContainer'),
                 callerName: document.getElementById('callerName'),
-                callStatus: document.getElementById('callStatus')
+                callStatus: document.getElementById('callStatus'),
+                syncStatus: document.getElementById('syncStatus'),
+                floatingButtons: document.querySelector('.floating-buttons')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -736,23 +777,53 @@
         function init() {
             setupEventListeners();
             checkForExistingUser();
+            setupNetworkMonitoring();
             
             // Verifica se é um dispositivo móvel
             if (!isMobileDevice()) {
                 elements.buttons.switchCamera.style.display = 'block';
             }
             
-            // Mostra a tela principal por padrão se já tiver usuário
-            if (state.currentUser) {
-                showScreen('main');
-            } else {
-                showScreen('userSelect');
-            }
+            // Inicia a sincronização periódica
+            setInterval(syncContacts, 30000);
         }
 
         // Verifica se é um dispositivo móvel
         function isMobileDevice() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Monitora o status da rede
+        function setupNetworkMonitoring() {
+            window.addEventListener('online', () => {
+                state.offlineMode = false;
+                updateSyncStatus();
+                syncContacts();
+            });
+            
+            window.addEventListener('offline', () => {
+                state.offlineMode = true;
+                updateSyncStatus();
+            });
+            
+            // Verificação inicial
+            state.offlineMode = !navigator.onLine;
+            updateSyncStatus();
+        }
+
+        // Atualiza o status de sincronização
+        function updateSyncStatus() {
+            if (state.offlineMode) {
+                elements.displays.syncStatus.style.display = 'block';
+                elements.displays.syncStatus.innerHTML = '<i class="fas fa-wifi-slash"></i> <span>Modo offline - Dados locais</span>';
+                elements.displays.syncStatus.style.backgroundColor = 'rgba(255, 153, 0, 0.7)';
+            } else if (state.syncInProgress) {
+                elements.displays.syncStatus.style.display = 'block';
+                elements.displays.syncStatus.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> <span>Sincronizando...</span>';
+                elements.displays.syncStatus.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            } else {
+                elements.displays.syncStatus.style.display = 'none';
+            }
         }
 
         // Verifica se há usuário salvo localmente
@@ -762,24 +833,42 @@
                 try {
                     state.currentUser = JSON.parse(savedUser);
                     
-                    // Carrega contatos do cache local
+                    // Carrega contatos do cache local primeiro
                     const cachedContacts = localStorage.getItem('bunnyChatContacts');
                     if (cachedContacts) {
                         state.contactsCache = JSON.parse(cachedContacts);
+                        renderContacts(state.contactsCache);
                     }
+                    
+                    // Sincroniza com o GunDB
+                    syncContacts();
                     
                     // Carrega mensagens do cache local
                     const cachedMessages = localStorage.getItem('bunnyChatMessages');
                     if (cachedMessages) {
                         state.processedMessages = new Set(JSON.parse(cachedMessages));
                     }
+                    
+                    // Mostra a tela principal
+                    showScreen('main');
                 } catch (e) {
                     console.error('Erro ao carregar dados locais:', e);
-                    localStorage.removeItem('bunnyChatUser');
-                    localStorage.removeItem('bunnyChatContacts');
-                    localStorage.removeItem('bunnyChatMessages');
+                    clearLocalData();
+                    showScreen('userSelect');
                 }
+            } else {
+                showScreen('userSelect');
             }
+        }
+
+        // Limpa todos os dados locais
+        function clearLocalData() {
+            localStorage.removeItem('bunnyChatUser');
+            localStorage.removeItem('bunnyChatContacts');
+            localStorage.removeItem('bunnyChatMessages');
+            state.contactsCache = {};
+            state.processedMessages = new Set();
+            state.currentUser = null;
         }
 
         // Configura os event listeners
@@ -856,10 +945,22 @@
             state.currentScreen = screenName;
             elements.screens[screenName].classList.add('active');
             
+            // Controla a visibilidade dos botões flutuantes
+            updateFloatingButtonsVisibility();
+            
             // Mostra a seção de contatos por padrão na tela principal
             if (screenName === 'main') {
                 elements.sections.contacts.style.display = 'block';
                 loadContacts();
+            }
+        }
+
+        // Atualiza a visibilidade dos botões flutuantes
+        function updateFloatingButtonsVisibility() {
+            if (state.currentScreen === 'main' || state.currentScreen === 'chat') {
+                elements.displays.floatingButtons.style.display = 'flex';
+            } else {
+                elements.displays.floatingButtons.style.display = 'none';
             }
         }
 
@@ -916,15 +1017,39 @@
                     localStorage.setItem('bunnyChatUser', JSON.stringify(user));
                     showScreen('main');
                     loadContacts();
-                    
-                    // Carrega contatos do cache local
-                    const cachedContacts = localStorage.getItem('bunnyChatContacts');
-                    if (cachedContacts) {
-                        state.contactsCache = JSON.parse(cachedContacts);
-                    }
                 } else {
                     alert('Usuário não encontrado');
                 }
+            });
+        }
+
+        // Sincroniza contatos com o GunDB
+        function syncContacts() {
+            if (!state.currentUser || state.offlineMode) return;
+            
+            state.syncInProgress = true;
+            updateSyncStatus();
+            
+            gun.get('users').get(state.currentUser.id).get('contacts').map().once((contact, id) => {
+                if (!contact) {
+                    // Remove do cache se o contato foi deletado no GunDB
+                    if (state.contactsCache[id]) {
+                        delete state.contactsCache[id];
+                        localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                        renderContacts(state.contactsCache);
+                    }
+                    return;
+                }
+                
+                // Verifica se o contato no GunDB é mais recente que no cache local
+                if (!state.contactsCache[id] || (contact.timestamp > (state.contactsCache[id].timestamp || 0))) {
+                    state.contactsCache[id] = contact;
+                    localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                    renderContacts(state.contactsCache);
+                }
+                
+                state.syncInProgress = false;
+                updateSyncStatus();
             });
         }
 
@@ -939,24 +1064,22 @@
                 renderContacts(state.contactsCache);
             }
             
-            // Depois carrega do banco de dados para atualizar
-            gun.get('users').get(state.currentUser.id).get('contacts').map().once((contact, id) => {
-                if (!contact) return;
-                
-                // Atualiza o cache local
-                state.contactsCache[id] = contact;
-                localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-                
-                // Renderiza os contatos
-                renderContacts(state.contactsCache);
-            });
+            // Depois sincroniza com o GunDB
+            if (!state.offlineMode) {
+                syncContacts();
+            }
         }
 
         // Renderiza a lista de contatos
         function renderContacts(contacts) {
             elements.displays.contactsList.innerHTML = '';
             
-            Object.entries(contacts).forEach(([id, contact]) => {
+            // Ordena contatos por nome
+            const sortedContacts = Object.entries(contacts).sort((a, b) => {
+                return a[1].name.localeCompare(b[1].name);
+            });
+            
+            sortedContacts.forEach(([id, contact]) => {
                 const contactElement = document.createElement('div');
                 contactElement.className = 'contact-item';
                 
@@ -1003,15 +1126,20 @@
         function removeContact(contactId) {
             if (!confirm('Tem certeza que deseja remover este contato?')) return;
             
-            // Remove do banco de dados
-            gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(null);
-            
-            // Remove do cache local
-            delete state.contactsCache[contactId];
-            localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-            
-            // Recarrega a lista de contatos
-            loadContacts();
+            // Remove do GunDB
+            gun.get('users').get(state.currentUser.id).get('contacts').get(contactId).put(null, ack => {
+                if (!ack.err) {
+                    // Remove do cache local
+                    delete state.contactsCache[contactId];
+                    localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                    loadContacts();
+                    
+                    // Remove a reciprocidade (opcional)
+                    gun.get('users').get(contactId).get('contacts').get(state.currentUser.id).put(null);
+                } else {
+                    alert('Erro ao remover contato. Tente novamente.');
+                }
+            });
         }
 
         // Mostra a tela de chat
@@ -1041,18 +1169,23 @@
                 read: false
             };
             
-            // Salva a mensagem para o remetente
-            gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
+            // Salva a mensagem para o remetente no GunDB
+            gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message, ack => {
+                if (!ack.err) {
+                    // Salva no cache local
+                    state.processedMessages.add(messageId);
+                    localStorage.setItem('bunnyChatMessages', JSON.stringify(Array.from(state.processedMessages)));
+                }
+            });
             
-            // Salva a mensagem para o destinatário
+            // Salva a mensagem para o destinatário no GunDB
             gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
-            
-            // Salva no cache local
-            state.processedMessages.add(messageId);
-            localStorage.setItem('bunnyChatMessages', JSON.stringify(Array.from(state.processedMessages)));
             
             // Limpa o campo de mensagem
             elements.inputs.message.value = '';
+            
+            // Atualiza a tela de mensagens
+            loadChatMessages(state.currentContact.id);
         }
 
         // Carrega as mensagens do chat
@@ -1062,6 +1195,7 @@
             elements.displays.chatMessages.innerHTML = '';
             let hasMessages = false;
             
+            // Verifica mensagens no cache local primeiro
             gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
                 if (!message || state.processedMessages.has(message.id)) return;
                 
@@ -1306,24 +1440,30 @@
             
             const contact = {
                 id: userId,
-                name: userName
+                name: userName,
+                timestamp: Date.now()
             };
             
-            // Adiciona o contato ao usuário atual
-            gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
-            
-            // Adiciona o usuário atual como contato do outro usuário
-            gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put({
-                id: state.currentUser.id,
-                name: state.currentUser.name
+            // Adiciona o contato ao usuário atual no GunDB
+            gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact, ack => {
+                if (!ack.err) {
+                    // Atualiza o cache local
+                    state.contactsCache[userId] = contact;
+                    localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                    alert(`Contato ${userName} adicionado com sucesso!`);
+                    loadContacts();
+                } else {
+                    console.error('Erro ao adicionar contato no GunDB:', ack.err);
+                    alert('Erro ao adicionar contato. Tente novamente.');
+                }
             });
             
-            // Atualiza o cache local
-            state.contactsCache[userId] = contact;
-            localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-            
-            alert(`Contato ${userName} adicionado com sucesso!`);
-            loadContacts();
+            // Adiciona o usuário atual como contato do outro usuário (reciprocidade)
+            gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put({
+                id: state.currentUser.id,
+                name: state.currentUser.name,
+                timestamp: Date.now()
+            });
         }
 
         // ==============================================
