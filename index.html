@@ -145,6 +145,13 @@
             word-wrap: break-word;
         }
         
+        .message-expiry {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
         .message-input {
             display: flex;
             padding: 15px;
@@ -729,6 +736,7 @@
         function init() {
             setupEventListeners();
             checkForExistingUser();
+            startMessageCleanupInterval();
         }
 
         // Verifica se há usuário salvo localmente
@@ -1011,12 +1019,16 @@
             if (!messageText) return;
             
             const messageId = Gun.text.random(16);
+            const now = Date.now();
+            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas a partir de agora
+            
             const message = {
                 id: messageId,
                 sender: state.currentUser.id,
                 receiver: state.currentContact.id,
                 text: messageText,
-                timestamp: Date.now()
+                timestamp: now,
+                expiresAt: expiresAt
             };
             
             // Envia a mensagem para ambos os usuários
@@ -1033,9 +1045,17 @@
             
             elements.displays.chatMessages.innerHTML = '';
             let hasMessages = false;
+            const now = Date.now();
             
             gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
                 if (!message || state.processedMessages.has(id)) return;
+                
+                // Verifica se a mensagem expirou
+                if (message.expiresAt && message.expiresAt < now) {
+                    // Remove a mensagem expirada
+                    gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                    return;
+                }
                 
                 state.processedMessages.add(id);
                 localStorage.setItem('bunnyChatMessages', JSON.stringify(Array.from(state.processedMessages)));
@@ -1052,6 +1072,12 @@
                 messageElement.className = 'message-item';
                 messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
                 messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
+                
+                // Formata a data de expiração
+                const expiryDate = new Date(message.expiresAt);
+                const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const expiryDateStr = expiryDate.toLocaleDateString();
+                
                 messageElement.innerHTML = `
                     <div class="message-header">
                         ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
@@ -1059,6 +1085,7 @@
                         <div class="message-time">${formatTime(message.timestamp)}</div>
                     </div>
                     <div class="message-content">${escapeHtml(message.text)}</div>
+                    ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
                 `;
                 
                 elements.displays.chatMessages.appendChild(messageElement);
@@ -1074,6 +1101,22 @@
                     </div>
                 `;
             }
+        }
+
+        // Inicia o intervalo para limpar mensagens expiradas
+        function startMessageCleanupInterval() {
+            setInterval(() => {
+                if (!state.currentUser) return;
+                
+                const now = Date.now();
+                gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
+                    if (!message || !message.expiresAt) return;
+                    
+                    if (message.expiresAt < now) {
+                        gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                    }
+                });
+            }, 60 * 60 * 1000); // Verifica a cada hora
         }
 
         // Gera o QR Code do usuário
