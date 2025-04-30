@@ -174,16 +174,19 @@
             opacity: 0.7;
         }
         
-        .qr-code {
+        .qr-code-container {
             text-align: center;
             margin: 20px 0;
+            display: flex;
+            justify-content: center;
         }
         
-        .qr-code canvas {
+        .qr-code {
             background-color: white;
             padding: 10px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 100%;
         }
         
         .user-info {
@@ -192,6 +195,89 @@
             border-radius: 10px;
             margin-bottom: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .user-info-item {
+            margin-bottom: 10px;
+        }
+        
+        .user-info-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .user-id-container {
+            display: flex;
+            margin: 15px 0;
+        }
+        
+        .user-id-container input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid var(--primary);
+            border-radius: 20px 0 0 20px;
+            outline: none;
+        }
+        
+        .user-id-container button {
+            padding: 10px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .share-btn {
+            padding: 8px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .qr-scanner {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .qr-scanner video {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            background-color: black;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+        }
+        
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-direction: column;
+            border-radius: 10px;
         }
         
         .btn {
@@ -268,6 +354,24 @@
             color: white;
         }
         
+        .call-video {
+            width: 100%;
+            max-width: 500px;
+            background-color: black;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .local-video {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            border-radius: 10px;
+            border: 2px solid var(--primary);
+            z-index: 1101;
+        }
+        
         @media (max-width: 600px) {
             .btn-group {
                 flex-direction: column;
@@ -279,6 +383,10 @@
                 margin: 5px 0;
             }
             
+            .qr-scanner {
+                max-width: 100%;
+            }
+            
             .floating-buttons {
                 bottom: 15px;
                 right: 15px;
@@ -287,6 +395,12 @@
             .floating-btn {
                 width: 50px;
                 height: 50px;
+            }
+            
+            .local-video {
+                width: 80px;
+                bottom: 10px;
+                right: 10px;
             }
         }
     </style>
@@ -355,8 +469,8 @@
                 </div>
                 
                 <h3 style="text-align: center;">Meu QR Code</h3>
-                <div class="qr-code">
-                    <canvas id="qrCodeCanvas"></canvas>
+                <div class="qr-code-container">
+                    <canvas id="qrCodeCanvas" class="qr-code"></canvas>
                 </div>
                 
                 <div class="user-id-container">
@@ -374,11 +488,13 @@
                 </div>
             </div>
             
-            <div id="scanSection" class="qr-scanner" style="margin-top: 20px; display: none;">
-                <video id="qrVideo"></video>
-                <div class="scan-overlay">
-                    <i class="fas fa-qrcode" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                    <p>Posicione o QR Code na área de leitura</p>
+            <div id="scanSection" style="margin-top: 20px; display: none;">
+                <div class="qr-scanner">
+                    <video id="qrVideo"></video>
+                    <div class="scan-overlay">
+                        <i class="fas fa-qrcode" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>Posicione o QR Code na área de leitura</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -449,7 +565,7 @@
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     
     <script>
-        // Configuração simplificada
+        // Configuração do Gun.js
         const gun = Gun({
             peers: ['https://gun-manhattan.herokuapp.com/gun'],
             localStorage: false,
@@ -616,6 +732,15 @@
             
             if (sectionName === 'scan') startQrScanner();
             else stopQrScanner();
+        }
+
+        // Mostra informações do usuário na seção QR
+        function showUserQRInfo() {
+            if (!state.currentUser) return;
+            
+            elements.displays.userNameDisplay.textContent = state.currentUser.name;
+            elements.displays.userIdDisplayText.textContent = state.currentUser.id;
+            elements.inputs.userIdInput.value = state.currentUser.id;
         }
 
         // Cria um novo usuário
@@ -787,7 +912,7 @@
             }
         }
 
-        // Gera o QR Code do usuário (sem expiração)
+        // Gera o QR Code do usuário
         function generateQrCode() {
             if (!state.currentUser) return;
             
@@ -798,10 +923,21 @@
                 userName: state.currentUser.name
             });
             
-            QRCode.toCanvas(elements.displays.qrCode, qrData, {
+            // Limpa o canvas antes de gerar novo QR Code
+            const canvas = elements.displays.qrCode;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Define um tamanho fixo para o canvas
+            canvas.width = 200;
+            canvas.height = 200;
+            
+            QRCode.toCanvas(canvas, qrData, {
                 width: 200,
                 margin: 2,
                 color: { dark: '#5A2A3E', light: '#FFF2F5' }
+            }, (error) => {
+                if (error) console.error('Erro ao gerar QR Code:', error);
             });
             
             elements.inputs.userIdInput.value = state.currentUser.id;
@@ -810,13 +946,17 @@
         // Inicia o scanner de QR Code
         function startQrScanner() {
             navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
             }).then(stream => {
                 elements.displays.qrVideo.srcObject = stream;
                 elements.displays.qrVideo.play();
                 
                 const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
+                const context = canvas.getContext('2d', { willReadFrequently: true });
                 
                 function scanFrame() {
                     if (!elements.displays.qrVideo.srcObject) return;
@@ -826,12 +966,21 @@
                         canvas.height = elements.displays.qrVideo.videoHeight;
                         context.drawImage(elements.displays.qrVideo, 0, 0, canvas.width, canvas.height);
                         
-                        const code = jsQR(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+                        const code = jsQR(
+                            context.getImageData(0, 0, canvas.width, canvas.height).data, 
+                            canvas.width, 
+                            canvas.height,
+                            { inversionAttempts: 'dontInvert' }
+                        );
                         
                         if (code) {
                             try {
                                 const qrData = JSON.parse(code.data);
                                 if (qrData.app === "BunnyChat" && qrData.userId) {
+                                    if (qrData.userId === state.currentUser.id) {
+                                        alert('Você não pode adicionar a si mesmo!');
+                                        return;
+                                    }
                                     stopQrScanner();
                                     addContact(qrData.userId, qrData.userName || 'Novo Contato');
                                 }
@@ -848,6 +997,7 @@
                 scanFrame();
             }).catch(err => {
                 console.error('Erro ao acessar a câmera:', err);
+                alert('Não foi possível acessar a câmera. Verifique as permissões.');
             });
         }
 
@@ -871,6 +1021,7 @@
                     state.contactsCache[userId] = contact;
                     localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
                     loadContacts();
+                    alert(`Contato ${userName} adicionado com sucesso!`);
                 }
             });
             
@@ -943,6 +1094,7 @@
             } catch (error) {
                 console.error('Erro ao iniciar chamada:', error);
                 endCall();
+                alert('Erro ao iniciar chamada. Verifique suas permissões de câmera e microfone.');
             }
         }
 
