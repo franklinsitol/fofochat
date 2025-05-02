@@ -665,7 +665,7 @@
             currentUser: null,
             currentContact: null,
             contactsCache: {},
-            processedMessages: new Set(),
+            messagesCache: {},
             rtcConnection: null,
             localStream: null,
             remoteStream: null,
@@ -745,14 +745,9 @@
             if (savedUser) {
                 try {
                     state.currentUser = JSON.parse(savedUser);
-                    const cachedContacts = localStorage.getItem('bunnyChatContacts');
-                    if (cachedContacts) state.contactsCache = JSON.parse(cachedContacts);
-                    
-                    const cachedMessages = localStorage.getItem('bunnyChatMessages');
-                    if (cachedMessages) state.processedMessages = new Set(JSON.parse(cachedMessages));
-                    
+                    loadLocalData();
                     showScreen('main');
-                    loadContacts();
+                    syncContacts();
                 } catch (e) {
                     console.error('Erro ao carregar usuário:', e);
                     clearLocalData();
@@ -761,6 +756,15 @@
             } else {
                 showScreen('userSelect');
             }
+        }
+
+        // Carrega dados locais
+        function loadLocalData() {
+            const cachedContacts = localStorage.getItem('bunnyChatContacts');
+            if (cachedContacts) state.contactsCache = JSON.parse(cachedContacts);
+            
+            const cachedMessages = localStorage.getItem('bunnyChatMessages');
+            if (cachedMessages) state.messagesCache = JSON.parse(cachedMessages);
         }
 
         // Configura os event listeners
@@ -815,7 +819,7 @@
             
             if (screenName === 'main') {
                 elements.sections.contacts.style.display = 'block';
-                loadContacts();
+                syncContacts();
             }
         }
 
@@ -837,7 +841,7 @@
             elements.inputs.userIdInput.value = state.currentUser.id;
         }
 
-        // Cria um novo usuário
+        // Cria um novo usuário - VERSÃO CORRIGIDA
         function createUser() {
             const userName = elements.inputs.newUserName.value.trim();
             if (!userName) {
@@ -859,28 +863,42 @@
             // Limpa feedback anterior
             elements.displays.createUserFeedback.style.display = 'none';
             
-            gun.get('users').get(userId).put(user, ack => {
-                // Desativa estado de loading
+            // Criação otimizada do usuário
+            const userRef = gun.get('users').get(userId);
+            
+            userRef.put(user, (ack) => {
                 setButtonLoading(elements.buttons.createUser, false);
                 
                 if (ack.err) {
                     console.error('Erro ao criar usuário:', ack.err);
                     showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
-                } else {
-                    state.currentUser = user;
-                    localStorage.setItem('bunnyChatUser', JSON.stringify(user));
-                    
-                    showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
-                    
-                    // Limpa o formulário
-                    elements.inputs.newUserName.value = '';
-                    
-                    // Mostra a tela principal após 1 segundo
-                    setTimeout(() => {
-                        elements.displays.createUserFeedback.style.display = 'none';
-                        showScreen('main');
-                    }, 1000);
+                    return;
                 }
+                
+                // Atualiza estado local
+                state.currentUser = user;
+                localStorage.setItem('bunnyChatUser', JSON.stringify(user));
+                
+                // Inicializa estruturas vazias
+                state.contactsCache = {};
+                state.messagesCache = {};
+                localStorage.setItem('bunnyChatContacts', JSON.stringify({}));
+                localStorage.setItem('bunnyChatMessages', JSON.stringify({}));
+                
+                showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
+                
+                // Limpa o formulário
+                elements.inputs.newUserName.value = '';
+                
+                // Mostra a tela principal após breve delay
+                setTimeout(() => {
+                    elements.displays.createUserFeedback.style.display = 'none';
+                    showScreen('main');
+                    
+                    // Garante que o QR Code seja gerado
+                    showUserQRInfo();
+                    generateQrCode();
+                }, 800);
             });
         }
 
@@ -941,18 +959,32 @@
             }
         }
 
-        // Carrega os contatos
-        function loadContacts() {
+        // Sincroniza contatos entre localStorage e Gun.js
+        function syncContacts() {
             if (!state.currentUser) return;
             
-            elements.displays.contactsList.innerHTML = '';
+            // Carrega do localStorage primeiro
+            const cachedContacts = localStorage.getItem('bunnyChatContacts');
+            if (cachedContacts) {
+                state.contactsCache = JSON.parse(cachedContacts);
+                renderContacts(state.contactsCache);
+            }
             
+            // Sincroniza com Gun.js
             gun.get('users').get(state.currentUser.id).get('contacts').map().once((contact, id) => {
-                if (!contact) return;
+                if (!contact) {
+                    // Remove contato se não existir no Gun.js
+                    if (state.contactsCache[id]) {
+                        delete state.contactsCache[id];
+                        localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                        renderContacts(state.contactsCache);
+                    }
+                    return;
+                }
                 
+                // Atualiza cache local
                 state.contactsCache[id] = contact;
                 localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-                
                 renderContacts(state.contactsCache);
             });
         }
@@ -1008,72 +1040,86 @@
             elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
             elements.displays.chatContactName.textContent = state.currentContact.name;
             showScreen('chat');
-            loadChatMessages(state.currentContact.id);
+            syncMessages();
         }
 
-        // Envia uma mensagem
-        function sendMessage() {
+        // Sincroniza mensagens entre localStorage e Gun.js
+        function syncMessages() {
             if (!state.currentUser || !state.currentContact) return;
             
-            const messageText = elements.inputs.message.value.trim();
-            if (!messageText) return;
-            
-            const messageId = Gun.text.random(16);
             const now = Date.now();
-            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas a partir de agora
+            const contactId = state.currentContact.id;
+            const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${contactId}`;
             
-            const message = {
-                id: messageId,
-                sender: state.currentUser.id,
-                receiver: state.currentContact.id,
-                text: messageText,
-                timestamp: now,
-                expiresAt: expiresAt
-            };
+            // Carrega mensagens do localStorage
+            const cachedMessages = localStorage.getItem(cacheKey) || '[]';
+            let localMessages = JSON.parse(cachedMessages);
             
-            // Envia a mensagem para ambos os usuários
-            gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
-            gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
+            // Filtra mensagens expiradas
+            localMessages = localMessages.filter(msg => msg.expiresAt > now);
             
-            elements.inputs.message.value = '';
-            loadChatMessages(state.currentContact.id);
-        }
-
-        // Carrega as mensagens do chat
-        function loadChatMessages(contactId) {
-            if (!state.currentUser) return;
+            // Atualiza cache local
+            state.messagesCache[contactId] = localMessages;
+            localStorage.setItem(cacheKey, JSON.stringify(localMessages));
             
-            elements.displays.chatMessages.innerHTML = '';
-            let hasMessages = false;
-            const now = Date.now();
+            // Renderiza mensagens locais
+            renderMessages(localMessages.filter(msg => 
+                (msg.sender === contactId && msg.receiver === state.currentUser.id) || 
+                (msg.sender === state.currentUser.id && msg.receiver === contactId)
+            );
             
+            // Sincroniza com Gun.js
             gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
-                if (!message || state.processedMessages.has(id)) return;
+                if (!message) return;
                 
-                // Verifica se a mensagem expirou
+                // Verifica expiração
                 if (message.expiresAt && message.expiresAt < now) {
-                    // Remove a mensagem expirada
                     gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                     return;
                 }
                 
-                state.processedMessages.add(id);
-                localStorage.setItem('bunnyChatMessages', JSON.stringify(Array.from(state.processedMessages)));
-                
+                // Adiciona ao cache local se for uma mensagem relevante
                 const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
-                                  (message.sender === state.currentUser.id && message.receiver === contactId);
+                                   (message.sender === state.currentUser.id && message.receiver === contactId);
                 
-                if (!isRelevant) return;
+                if (isRelevant) {
+                    // Verifica se a mensagem já existe no cache
+                    const messageExists = localMessages.some(msg => msg.id === id);
+                    if (!messageExists) {
+                        localMessages.push(message);
+                        state.messagesCache[contactId] = localMessages;
+                        localStorage.setItem(cacheKey, JSON.stringify(localMessages));
+                        renderMessages([message]);
+                    }
+                }
+            });
+        }
+
+        // Renderiza mensagens no chat
+        function renderMessages(messages) {
+            if (messages.length === 0 && elements.displays.chatMessages.children.length === 0) {
+                elements.displays.chatMessages.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-comment-dots"></i>
+                        <p>Nenhuma mensagem ainda</p>
+                        <p>Envie uma mensagem para começar a conversa!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            messages.forEach(message => {
+                // Verifica se a mensagem já está renderizada
+                if (document.getElementById(`msg-${message.id}`)) return;
                 
-                hasMessages = true;
                 const isSender = message.sender === state.currentUser.id;
                 
                 const messageElement = document.createElement('div');
+                messageElement.id = `msg-${message.id}`;
                 messageElement.className = 'message-item';
                 messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
                 messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
                 
-                // Formata a data de expiração
                 const expiryDate = new Date(message.expiresAt);
                 const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const expiryDateStr = expiryDate.toLocaleDateString();
@@ -1089,18 +1135,47 @@
                 `;
                 
                 elements.displays.chatMessages.appendChild(messageElement);
-                elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
             });
             
-            if (!hasMessages) {
-                elements.displays.chatMessages.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-comment-dots"></i>
-                        <p>Nenhuma mensagem ainda</p>
-                        <p>Envie uma mensagem para começar a conversa!</p>
-                    </div>
-                `;
-            }
+            elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
+        }
+
+        // Envia uma mensagem
+        function sendMessage() {
+            if (!state.currentUser || !state.currentContact) return;
+            
+            const messageText = elements.inputs.message.value.trim();
+            if (!messageText) return;
+            
+            const messageId = Gun.text.random(16);
+            const now = Date.now();
+            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas
+            
+            const message = {
+                id: messageId,
+                sender: state.currentUser.id,
+                receiver: state.currentContact.id,
+                text: messageText,
+                timestamp: now,
+                expiresAt: expiresAt
+            };
+            
+            // Atualiza cache local
+            const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${state.currentContact.id}`;
+            const cachedMessages = localStorage.getItem(cacheKey) || '[]';
+            const messages = JSON.parse(cachedMessages);
+            messages.push(message);
+            localStorage.setItem(cacheKey, JSON.stringify(messages));
+            state.messagesCache[state.currentContact.id] = messages;
+            
+            // Renderiza imediatamente
+            renderMessages([message]);
+            
+            // Envia para Gun.js
+            gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
+            gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
+            
+            elements.inputs.message.value = '';
         }
 
         // Inicia o intervalo para limpar mensagens expiradas
@@ -1109,12 +1184,22 @@
                 if (!state.currentUser) return;
                 
                 const now = Date.now();
+                
+                // Limpa mensagens expiradas no Gun.js
                 gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
                     if (!message || !message.expiresAt) return;
                     
                     if (message.expiresAt < now) {
                         gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                     }
+                });
+                
+                // Limpa mensagens expiradas no localStorage
+                Object.keys(state.messagesCache).forEach(contactId => {
+                    const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${contactId}`;
+                    const messages = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
+                    state.messagesCache[contactId] = messages;
+                    localStorage.setItem(cacheKey, JSON.stringify(messages));
                 });
             }, 60 * 60 * 1000); // Verifica a cada hora
         }
@@ -1268,7 +1353,7 @@
                 if (!ack.err) {
                     state.contactsCache[userId] = contact;
                     localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-                    loadContacts();
+                    syncContacts();
                     alert(`Contato ${userName} adicionado com sucesso!`);
                 }
             });
@@ -1289,7 +1374,7 @@
                 gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
                 delete state.contactsCache[userId];
                 localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
-                loadContacts();
+                syncContacts();
             }
         }
 
