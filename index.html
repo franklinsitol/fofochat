@@ -867,6 +867,7 @@
             const userRef = gun.get('users').get(userId);
             
             userRef.put(user, (ack) => {
+                // Desativa estado de loading
                 setButtonLoading(elements.buttons.createUser, false);
                 
                 if (ack.err) {
@@ -875,11 +876,11 @@
                     return;
                 }
                 
-                // Atualiza estado local
+                // Se chegou aqui, a criação foi bem-sucedida
                 state.currentUser = user;
                 localStorage.setItem('bunnyChatUser', JSON.stringify(user));
                 
-                // Inicializa estruturas vazias
+                // Inicializa estruturas de dados para o novo usuário
                 state.contactsCache = {};
                 state.messagesCache = {};
                 localStorage.setItem('bunnyChatContacts', JSON.stringify({}));
@@ -890,7 +891,7 @@
                 // Limpa o formulário
                 elements.inputs.newUserName.value = '';
                 
-                // Mostra a tela principal após breve delay
+                // Mostra a tela principal após 1 segundo
                 setTimeout(() => {
                     elements.displays.createUserFeedback.style.display = 'none';
                     showScreen('main');
@@ -1066,7 +1067,7 @@
             renderMessages(localMessages.filter(msg => 
                 (msg.sender === contactId && msg.receiver === state.currentUser.id) || 
                 (msg.sender === state.currentUser.id && msg.receiver === contactId)
-            );
+            ));
             
             // Sincroniza com Gun.js
             gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
