@@ -463,7 +463,7 @@
             color: white;
         }
 
-        /* Novo estilo para o popup de chamada */
+        /* Estilo para o popup de chamada */
         .call-notification {
             position: fixed;
             top: 50%;
@@ -548,6 +548,10 @@
                 width: 80px;
                 bottom: 10px;
                 right: 10px;
+            }
+            
+            .call-notification {
+                width: 90%;
             }
         }
     </style>
@@ -719,7 +723,7 @@
         </div>
     </div>
 
-    <!-- Novo elemento para notificação de chamada -->
+    <!-- Notificação de chamada -->
     <div id="callNotification" class="call-notification">
         <div class="caller-avatar" id="callNotificationAvatar"></div>
         <div id="callNotificationText">Chamada recebida de <span id="callerNameNotification"></span></div>
@@ -767,7 +771,6 @@
             remoteStream: null,
             isCaller: false,
             qrScannerActive: false,
-            currentCallId: null,
             incomingCallOffer: null,
             callTimeout: null
         };
@@ -922,8 +925,14 @@
                 if (!data || !data.offer || state.isCaller || state.rtcConnection) return;
                 
                 // Verifica se a oferta é recente (últimos 45 segundos)
-                const offerAge = Date.now() - data.timestamp;
+                const offerAge = Date.now() - (data.timestamp || 0);
                 if (offerAge > 45000) return; // Ignora ofertas antigas
+                
+                // Valida a estrutura da oferta
+                if (!data.offer.type || !data.offer.sdp) {
+                    console.error('Oferta de chamada inválida recebida:', data);
+                    return;
+                }
                 
                 state.incomingCallOffer = data;
                 showCallNotification(data.from);
@@ -960,8 +969,11 @@
 
         // Aceita uma chamada recebida
         async function acceptIncomingCall() {
-            if (!state.incomingCallOffer) return;
-            
+            if (!state.incomingCallOffer || !state.incomingCallOffer.offer) {
+                console.error('Oferta de chamada inválida ou ausente');
+                return;
+            }
+
             try {
                 hideCallNotification();
                 
@@ -1006,11 +1018,14 @@
                     elements.displays.remoteVideo.srcObject = stream;
                     state.remoteStream = stream;
                 };
-                
+
                 // Configura a oferta remota
-                await state.rtcConnection.setRemoteDescription(
-                    new RTCSessionDescription(state.incomingCallOffer.offer)
-                );
+                const offer = new RTCSessionDescription({
+                    type: state.incomingCallOffer.offer.type,
+                    sdp: state.incomingCallOffer.offer.sdp
+                });
+                
+                await state.rtcConnection.setRemoteDescription(offer);
                 
                 // Cria e envia a resposta
                 const answer = await state.rtcConnection.createAnswer();
@@ -1019,7 +1034,10 @@
                 // Envia a resposta para o chamador
                 gun.get('users').get(callerId).get('callAnswer').put({
                     type: 'answer',
-                    answer: answer
+                    answer: {
+                        type: answer.type,
+                        sdp: answer.sdp
+                    }
                 });
                 
                 // Escuta por candidatos ICE
@@ -1051,6 +1069,7 @@
             });
             
             state.incomingCallOffer = null;
+            hideCallNotification();
         }
 
         // Mostra uma tela específica
@@ -1680,10 +1699,13 @@
                 const offer = await state.rtcConnection.createOffer();
                 await state.rtcConnection.setLocalDescription(offer);
                 
-                // Envia a oferta para o contato
+                // Envia a oferta para o contato (garantindo a estrutura correta)
                 gun.get('users').get(state.currentContact.id).get('callOffer').put({
                     from: state.currentUser.id,
-                    offer: offer,
+                    offer: {
+                        type: offer.type,
+                        sdp: offer.sdp
+                    },
                     timestamp: Date.now()
                 });
                 
@@ -1697,11 +1719,21 @@
                 
                 // Escuta por respostas
                 gun.get('users').get(state.currentUser.id).get('callAnswer').on(async (answer) => {
-                    if (!answer) return;
+                    if (!answer || !answer.answer) return;
                     
                     if (answer.type === 'answer') {
                         clearTimeout(state.callTimeout);
-                        await state.rtcConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                        
+                        // Validação da resposta
+                        if (!answer.answer.type || !answer.answer.sdp) {
+                            throw new Error('Resposta de chamada inválida');
+                        }
+                        
+                        await state.rtcConnection.setRemoteDescription(new RTCSessionDescription({
+                            type: answer.answer.type,
+                            sdp: answer.answer.sdp
+                        }));
+                        
                         elements.displays.callStatus.textContent = "Chamada em andamento";
                     } else if (answer.type === 'reject') {
                         clearTimeout(state.callTimeout);
