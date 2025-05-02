@@ -462,6 +462,62 @@
             background-color: #F44336;
             color: white;
         }
+
+        /* Novo estilo para o popup de chamada */
+        .call-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1200;
+            text-align: center;
+            display: none;
+            max-width: 90%;
+            width: 300px;
+        }
+
+        .call-notification-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .call-notification-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .call-accept {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .call-reject {
+            background-color: var(--error);
+            color: white;
+        }
+
+        .caller-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
         
         @media (max-width: 600px) {
             .btn-group {
@@ -663,6 +719,23 @@
         </div>
     </div>
 
+    <!-- Novo elemento para notificação de chamada -->
+    <div id="callNotification" class="call-notification">
+        <div class="caller-avatar" id="callNotificationAvatar"></div>
+        <div id="callNotificationText">Chamada recebida de <span id="callerNameNotification"></span></div>
+        <audio id="callSound" loop>
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-calling-phone-2751.mp3" type="audio/mpeg">
+        </audio>
+        <div class="call-notification-buttons">
+            <button id="acceptCallBtn" class="call-notification-btn call-accept">
+                <i class="fas fa-phone"></i> Atender
+            </button>
+            <button id="rejectCallBtn" class="call-notification-btn call-reject">
+                <i class="fas fa-phone-slash"></i> Recusar
+            </button>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
@@ -694,7 +767,9 @@
             remoteStream: null,
             isCaller: false,
             qrScannerActive: false,
-            currentCallId: null
+            currentCallId: null,
+            incomingCallOffer: null,
+            callTimeout: null
         };
 
         // Elementos DOM
@@ -722,7 +797,9 @@
                 shareQR: document.getElementById('shareQRBtn'),
                 downloadQR: document.getElementById('downloadQRBtn'),
                 callButton: document.getElementById('callButton'),
-                endCall: document.getElementById('endCallBtn')
+                endCall: document.getElementById('endCallBtn'),
+                acceptCall: document.getElementById('acceptCallBtn'),
+                rejectCall: document.getElementById('rejectCallBtn')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
@@ -747,7 +824,11 @@
                 floatingButtons: document.querySelector('.floating-buttons'),
                 scanOverlay: document.querySelector('.scan-overlay'),
                 createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback')
+                loadUserFeedback: document.getElementById('loadUserFeedback'),
+                callNotification: document.getElementById('callNotification'),
+                callNotificationAvatar: document.getElementById('callNotificationAvatar'),
+                callerNameNotification: document.getElementById('callerNameNotification'),
+                callSound: document.getElementById('callSound')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -761,6 +842,7 @@
             setupEventListeners();
             checkForExistingUser();
             startMessageCleanupInterval();
+            setupIncomingCallListener();
         }
 
         // Verifica se há usuário salvo localmente
@@ -825,11 +907,150 @@
             // Chamadas
             elements.buttons.callButton.addEventListener('click', startCall);
             elements.buttons.endCall.addEventListener('click', endCall);
+            elements.buttons.acceptCall.addEventListener('click', acceptIncomingCall);
+            elements.buttons.rejectCall.addEventListener('click', rejectIncomingCall);
             
             // Utilitários
             elements.buttons.copyUserId.addEventListener('click', copyUserId);
             elements.buttons.shareQR.addEventListener('click', shareQRCode);
             elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
+        }
+
+        // Configura o listener para chamadas recebidas
+        function setupIncomingCallListener() {
+            gun.get('users').get(state.currentUser.id).get('callOffer').on(async (data) => {
+                if (!data || !data.offer || state.isCaller || state.rtcConnection) return;
+                
+                // Verifica se a oferta é recente (últimos 45 segundos)
+                const offerAge = Date.now() - data.timestamp;
+                if (offerAge > 45000) return; // Ignora ofertas antigas
+                
+                state.incomingCallOffer = data;
+                showCallNotification(data.from);
+            });
+        }
+
+        // Mostra notificação de chamada recebida
+        function showCallNotification(callerId) {
+            const caller = state.contactsCache[callerId];
+            
+            // Configura a UI da notificação
+            elements.displays.callNotificationAvatar.textContent = caller?.name?.charAt(0).toUpperCase() || '?';
+            elements.displays.callerNameNotification.textContent = caller?.name || 'Desconhecido';
+            
+            // Mostra a notificação e toca o som
+            elements.displays.callNotification.style.display = 'block';
+            elements.displays.callSound.play().catch(e => console.error('Erro ao reproduzir som:', e));
+            
+            // Timeout automático se não responder
+            setTimeout(() => {
+                if (elements.displays.callNotification.style.display === 'block') {
+                    hideCallNotification();
+                    rejectIncomingCall();
+                }
+            }, 45000); // 45 segundos para responder
+        }
+
+        // Esconde a notificação de chamada
+        function hideCallNotification() {
+            elements.displays.callNotification.style.display = 'none';
+            elements.displays.callSound.pause();
+            elements.displays.callSound.currentTime = 0;
+        }
+
+        // Aceita uma chamada recebida
+        async function acceptIncomingCall() {
+            if (!state.incomingCallOffer) return;
+            
+            try {
+                hideCallNotification();
+                
+                state.isCaller = false;
+                const callerId = state.incomingCallOffer.from;
+                const caller = state.contactsCache[callerId];
+                
+                // Configura a UI da chamada
+                elements.displays.callerName.textContent = caller?.name || 'Desconhecido';
+                elements.displays.callStatus.textContent = "Chamada em andamento";
+                elements.displays.callContainer.style.display = 'flex';
+                
+                // Obtém stream local
+                state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                elements.displays.localVideo.srcObject = state.localStream;
+                
+                // Configura a conexão WebRTC
+                state.rtcConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                });
+                
+                // Adiciona tracks locais
+                state.localStream.getTracks().forEach(track => {
+                    state.rtcConnection.addTrack(track, state.localStream);
+                });
+                
+                // Configura handlers
+                state.rtcConnection.onicecandidate = ({ candidate }) => {
+                    if (candidate) {
+                        gun.get('users').get(callerId).get('iceCandidates').put({
+                            from: state.currentUser.id,
+                            candidate: candidate
+                        });
+                    }
+                };
+                
+                state.rtcConnection.ontrack = ({ streams: [stream] }) => {
+                    elements.displays.remoteVideo.srcObject = stream;
+                    state.remoteStream = stream;
+                };
+                
+                // Configura a oferta remota
+                await state.rtcConnection.setRemoteDescription(
+                    new RTCSessionDescription(state.incomingCallOffer.offer)
+                );
+                
+                // Cria e envia a resposta
+                const answer = await state.rtcConnection.createAnswer();
+                await state.rtcConnection.setLocalDescription(answer);
+                
+                // Envia a resposta para o chamador
+                gun.get('users').get(callerId).get('callAnswer').put({
+                    type: 'answer',
+                    answer: answer
+                });
+                
+                // Escuta por candidatos ICE
+                gun.get('users').get(state.currentUser.id).get('iceCandidates').on(async (data) => {
+                    if (!data || !data.candidate || data.from !== callerId) return;
+                    try {
+                        await state.rtcConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    } catch (e) {
+                        console.error('Erro ao adicionar ICE candidate:', e);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Erro ao aceitar chamada:', error);
+                endCall();
+                alert('Erro ao aceitar chamada: ' + error.message);
+            } finally {
+                state.incomingCallOffer = null;
+            }
+        }
+
+        // Rejeita uma chamada recebida
+        function rejectIncomingCall() {
+            if (!state.incomingCallOffer) return;
+            
+            const callerId = state.incomingCallOffer.from;
+            gun.get('users').get(callerId).get('callAnswer').put({
+                type: 'reject'
+            });
+            
+            state.incomingCallOffer = null;
         }
 
         // Mostra uma tela específica
@@ -1408,7 +1629,7 @@
             }
         }
 
-        // Inicia uma chamada - VERSÃO SIMPLIFICADA E FUNCIONAL
+        // Inicia uma chamada
         async function startCall() {
             if (!state.currentUser || !state.currentContact) return;
             
@@ -1416,7 +1637,7 @@
                 // Configuração básica da chamada
                 state.isCaller = true;
                 elements.displays.callerName.textContent = state.currentContact.name;
-                elements.displays.callStatus.textContent = "Iniciando chamada...";
+                elements.displays.callStatus.textContent = "Chamando...";
                 elements.displays.callContainer.style.display = 'flex';
                 
                 // Obter stream de mídia local
@@ -1452,81 +1673,58 @@
                 state.rtcConnection.ontrack = ({ streams: [stream] }) => {
                     elements.displays.remoteVideo.srcObject = stream;
                     state.remoteStream = stream;
-                    elements.displays.callStatus.textContent = "Chamada conectada";
+                    elements.displays.callStatus.textContent = "Chamada em andamento";
                 };
                 
                 // Se for o chamador, cria uma oferta
-                if (state.isCaller) {
-                    const offer = await state.rtcConnection.createOffer();
-                    await state.rtcConnection.setLocalDescription(offer);
-                    
-                    // Envia a oferta para o contato
-                    gun.get('users').get(state.currentContact.id).get('callOffer').put({
-                        from: state.currentUser.id,
-                        offer: offer
-                    });
-                    
-                    // Escuta por respostas
-                    gun.get('users').get(state.currentUser.id).get('callAnswer').on(async (answer) => {
-                        if (!answer) return;
-                        
-                        if (answer.type === 'answer') {
-                            await state.rtcConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                            elements.displays.callStatus.textContent = "Chamada em andamento";
-                        } else if (answer.type === 'reject') {
-                            endCall();
-                            alert(`${state.currentContact.name} recusou a chamada.`);
-                        }
-                    });
-                }
+                const offer = await state.rtcConnection.createOffer();
+                await state.rtcConnection.setLocalDescription(offer);
                 
-                // Escuta por ofertas de chamada (para o receptor)
-                gun.get('users').get(state.currentUser.id).get('callOffer').on(async (data) => {
-                    if (!data || !data.offer || state.isCaller) return;
-                    
-                    // Configura o stream local (para o receptor)
-                    if (!state.localStream) {
-                        state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                        elements.displays.localVideo.srcObject = state.localStream;
-                        state.localStream.getTracks().forEach(track => {
-                            state.rtcConnection.addTrack(track, state.localStream);
-                        });
-                    }
-                    
-                    // Configura a oferta remota
-                    await state.rtcConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                    
-                    // Cria e envia a resposta
-                    const answer = await state.rtcConnection.createAnswer();
-                    await state.rtcConnection.setLocalDescription(answer);
-                    
-                    // Envia a resposta para o chamador
-                    gun.get('users').get(data.from).get('callAnswer').put(answer);
-                    
-                    elements.displays.callerName.textContent = state.contactsCache[data.from]?.name || "Chamada recebida";
-                    elements.displays.callStatus.textContent = "Chamada em andamento";
-                    elements.displays.callContainer.style.display = 'flex';
+                // Envia a oferta para o contato
+                gun.get('users').get(state.currentContact.id).get('callOffer').put({
+                    from: state.currentUser.id,
+                    offer: offer,
+                    timestamp: Date.now()
                 });
                 
-                // Escuta por candidatos ICE
-                gun.get('users').get(state.currentUser.id).get('iceCandidates').on(async (data) => {
-                    if (!data || !data.candidate) return;
-                    try {
-                        await state.rtcConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    } catch (e) {
-                        console.error('Erro ao adicionar ICE candidate:', e);
+                // Configura timeout para chamada não atendida
+                state.callTimeout = setTimeout(() => {
+                    if (!state.remoteStream) {
+                        endCall();
+                        alert("Chamada não atendida");
+                    }
+                }, 45000); // 45 segundos para atender
+                
+                // Escuta por respostas
+                gun.get('users').get(state.currentUser.id).get('callAnswer').on(async (answer) => {
+                    if (!answer) return;
+                    
+                    if (answer.type === 'answer') {
+                        clearTimeout(state.callTimeout);
+                        await state.rtcConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                        elements.displays.callStatus.textContent = "Chamada em andamento";
+                    } else if (answer.type === 'reject') {
+                        clearTimeout(state.callTimeout);
+                        endCall();
+                        alert(`${state.currentContact.name} recusou a chamada.`);
                     }
                 });
                 
             } catch (error) {
-                console.error('Erro na chamada:', error);
+                console.error('Erro ao iniciar chamada:', error);
                 endCall();
                 alert('Erro ao iniciar chamada: ' + error.message);
             }
         }
 
-        // Encerra a chamada - VERSÃO SIMPLIFICADA
+        // Encerra a chamada
         function endCall() {
+            // Limpa o timeout da chamada
+            if (state.callTimeout) {
+                clearTimeout(state.callTimeout);
+                state.callTimeout = null;
+            }
+            
             // Limpa todos os recursos da chamada
             if (state.rtcConnection) {
                 state.rtcConnection.onicecandidate = null;
@@ -1538,16 +1736,20 @@
                 state.localStream.getTracks().forEach(track => track.stop());
             }
             
+            if (state.remoteStream) {
+                state.remoteStream.getTracks().forEach(track => track.stop());
+            }
+            
             // Limpa os elementos de vídeo
             elements.displays.remoteVideo.srcObject = null;
             elements.displays.localVideo.srcObject = null;
             elements.displays.callContainer.style.display = 'none';
             
             // Reseta o estado da chamada
+            state.isCaller = false;
             state.rtcConnection = null;
             state.localStream = null;
             state.remoteStream = null;
-            state.isCaller = false;
             
             // Limpa os dados da chamada no GunDB
             if (state.currentUser && state.currentContact) {
