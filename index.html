@@ -960,86 +960,70 @@
 
         // Aceita uma chamada recebida
         async function acceptIncomingCall() {
-            if (!state.incomingCallOffer) return;
-            
-            try {
-                hideCallNotification();
-                
-                state.isCaller = false;
-                const callerId = state.incomingCallOffer.from;
-                const caller = state.contactsCache[callerId];
-                
-                // Configura a UI da chamada
-                elements.displays.callerName.textContent = caller?.name || 'Desconhecido';
-                elements.displays.callStatus.textContent = "Chamada em andamento";
-                elements.displays.callContainer.style.display = 'flex';
-                
-                // Obtém stream local
-                state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                elements.displays.localVideo.srcObject = state.localStream;
-                
-                // Configura a conexão WebRTC
-                state.rtcConnection = new RTCPeerConnection({
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
+    if (!state.incomingCallOffer) return;
+
+    const offer = state.incomingCallOffer.offer;
+    if (!offer || !offer.type || !offer.sdp) {
+        console.error('Oferta de chamada inválida:', offer);
+        endCall();
+        return;
+    }
+
+    try {
+        hideCallNotification();
+        
+        state.isCaller = false;
+        const callerId = state.incomingCallOffer.from;
+        const caller = state.contactsCache[callerId];
+        
+        // Configura a UI da chamada
+        elements.displays.callerName.textContent = caller?.name || 'Desconhecido';
+        elements.displays.callStatus.textContent = "Chamada em andamento";
+        elements.displays.callContainer.style.display = 'flex';
+        
+        // Obtém stream local
+        state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        elements.displays.localVideo.srcObject = state.localStream;
+        
+        // Configura a conexão WebRTC
+        state.rtcConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        });
+        
+        // Adiciona tracks locais
+        state.localStream.getTracks().forEach(track => {
+            state.rtcConnection.addTrack(track, state.localStream);
+        });
+        
+        // Configura handlers
+        state.rtcConnection.onicecandidate = ({ candidate }) => {
+            if (candidate) {
+                gun.get('users').get(callerId).get('iceCandidates').put({
+                    from: state.currentUser.id,
+                    candidate: candidate
                 });
-                
-                // Adiciona tracks locais
-                state.localStream.getTracks().forEach(track => {
-                    state.rtcConnection.addTrack(track, state.localStream);
-                });
-                
-                // Configura handlers
-                state.rtcConnection.onicecandidate = ({ candidate }) => {
-                    if (candidate) {
-                        gun.get('users').get(callerId).get('iceCandidates').put({
-                            from: state.currentUser.id,
-                            candidate: candidate
-                        });
-                    }
-                };
-                
-                state.rtcConnection.ontrack = ({ streams: [stream] }) => {
-                    elements.displays.remoteVideo.srcObject = stream;
-                    state.remoteStream = stream;
-                };
-                
-                // Configura a oferta remota
-                await state.rtcConnection.setRemoteDescription(
-                    new RTCSessionDescription(state.incomingCallOffer.offer)
-                );
-                
-                // Cria e envia a resposta
-                const answer = await state.rtcConnection.createAnswer();
-                await state.rtcConnection.setLocalDescription(answer);
-                
-                // Envia a resposta para o chamador
-                gun.get('users').get(callerId).get('callAnswer').put({
-                    type: 'answer',
-                    answer: answer
-                });
-                
-                // Escuta por candidatos ICE
-                gun.get('users').get(state.currentUser.id).get('iceCandidates').on(async (data) => {
-                    if (!data || !data.candidate || data.from !== callerId) return;
-                    try {
-                        await state.rtcConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    } catch (e) {
-                        console.error('Erro ao adicionar ICE candidate:', e);
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Erro ao aceitar chamada:', error);
-                endCall();
-                alert('Erro ao aceitar chamada: ' + error.message);
-            } finally {
-                state.incomingCallOffer = null;
             }
-        }
+        };
+
+        state.rtcConnection.ontrack = (event) => {
+            if (!state.remoteStream) {
+                state.remoteStream = new MediaStream();
+                elements.displays.remoteVideo.srcObject = state.remoteStream;
+            }
+            state.remoteStream.addTrack(event.track);
+        };
+
+        await state.rtcConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    } catch (error) {
+        console.error('Erro ao aceitar chamada: Failed to set remote description', error);
+        endCall();
+        return;
+    }
+}
 
         // Rejeita uma chamada recebida
         function rejectIncomingCall() {
