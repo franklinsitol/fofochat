@@ -665,7 +665,7 @@
                 'https://gun-us.herokuapp.com/gun',
                 'https://gun-eu.herokuapp.com/gun'
             ],
-            localStorage: false, // Desativamos o localStorage do Gun para usar IndexedDB
+            localStorage: false,
             radisk: false,
             retry: 3
         });
@@ -740,7 +740,7 @@
         // Inicialização do IndexedDB
         function initIndexedDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open('BunnyChatDB', 2);
+                const request = indexedDB.open('BunnyChatDB', 3);
                 
                 request.onerror = (event) => {
                     console.error('Erro ao abrir o IndexedDB:', event.target.error);
@@ -755,23 +755,19 @@
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
                     
-                    // Cria object store para usuários
                     if (!db.objectStoreNames.contains('users')) {
                         db.createObjectStore('users', { keyPath: 'id' });
                     }
                     
-                    // Cria object store para contatos
                     if (!db.objectStoreNames.contains('contacts')) {
                         db.createObjectStore('contacts', { keyPath: 'id' });
                     }
                     
-                    // Cria object store para mensagens
                     if (!db.objectStoreNames.contains('messages')) {
                         const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
                         messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
                     }
                     
-                    // Cria object store para arquivos
                     if (!db.objectStoreNames.contains('files')) {
                         db.createObjectStore('files', { keyPath: 'id' });
                     }
@@ -781,7 +777,6 @@
 
         // Funções para operações no IndexedDB
         const db = {
-            // Adiciona ou atualiza um item
             put: (storeName, data) => {
                 return new Promise((resolve, reject) => {
                     const transaction = state.db.transaction([storeName], 'readwrite');
@@ -793,7 +788,6 @@
                 });
             },
             
-            // Obtém um item por chave
             get: (storeName, key) => {
                 return new Promise((resolve, reject) => {
                     const transaction = state.db.transaction([storeName], 'readonly');
@@ -805,7 +799,6 @@
                 });
             },
             
-            // Obtém todos os itens
             getAll: (storeName) => {
                 return new Promise((resolve, reject) => {
                     const transaction = state.db.transaction([storeName], 'readonly');
@@ -817,14 +810,12 @@
                 });
             },
             
-            // Obtém mensagens por conversa
             getMessages: (sender, receiver) => {
                 return new Promise((resolve, reject) => {
                     const transaction = state.db.transaction(['messages'], 'readonly');
                     const store = transaction.objectStore('messages');
                     const index = store.index('conversation');
                     
-                    // Busca em ambas as direções (sender->receiver e receiver->sender)
                     const range = IDBKeyRange.bound(
                         [sender, receiver],
                         [sender, receiver]
@@ -835,7 +826,6 @@
                     request.onsuccess = () => {
                         const messages1 = request.result;
                         
-                        // Segunda busca na direção oposta
                         const range2 = IDBKeyRange.bound(
                             [receiver, sender],
                             [receiver, sender]
@@ -857,7 +847,6 @@
                 });
             },
             
-            // Remove um item
             delete: (storeName, key) => {
                 return new Promise((resolve, reject) => {
                     const transaction = state.db.transaction([storeName], 'readwrite');
@@ -869,7 +858,6 @@
                 });
             },
             
-            // Armazena um arquivo no IndexedDB
             storeFile: (file) => {
                 return new Promise((resolve, reject) => {
                     const fileId = Gun.text.random(16);
@@ -895,7 +883,6 @@
                 });
             },
             
-            // Recupera um arquivo do IndexedDB
             getFile: (fileId) => {
                 return db.get('files', fileId);
             }
@@ -941,7 +928,6 @@
                     return acc;
                 }, {});
                 
-                // Carrega mensagens do IndexedDB
                 if (state.currentUser && state.currentContact) {
                     await syncMessages();
                 }
@@ -996,16 +982,13 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            // Limite de tamanho do arquivo (50MB)
-            const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+            const MAX_FILE_SIZE = 50 * 1024 * 1024;
             if (file.size > MAX_FILE_SIZE) {
                 alert('O arquivo é muito grande. O tamanho máximo permitido é 50MB.');
                 return;
             }
             
             state.currentFile = file;
-            
-            // Mostra o nome do arquivo no input de mensagem
             elements.inputs.message.placeholder = `Arquivo: ${file.name} (${formatFileSize(file.size)})`;
             elements.inputs.message.focus();
         }
@@ -1026,7 +1009,6 @@
             Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
             elements.screens[screenName].classList.add('active');
             
-            // Atualiza botões flutuantes
             elements.displays.floatingButtons.style.display = 
                 (screenName === 'main' || screenName === 'chat') ? 'flex' : 'none';
             
@@ -1062,7 +1044,6 @@
                 return;
             }
             
-            // Ativa estado de loading
             setButtonLoading(elements.buttons.createUser, true);
             
             const userId = Gun.text.random(16);
@@ -1073,34 +1054,22 @@
                 lastSeen: Date.now()
             };
             
-            // Limpa feedback anterior
             elements.displays.createUserFeedback.style.display = 'none';
             
             try {
-                // Armazena o usuário no IndexedDB
                 await db.put('users', user);
-                
-                // Armazena no GunDB também (para compatibilidade com outros usuários)
                 gun.get('users').get(userId).put(user);
                 
-                // Atualiza o estado
                 state.currentUser = user;
-                
-                // Limpa caches locais
                 state.contactsCache = {};
                 state.messagesCache = {};
                 
                 showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
-                
-                // Limpa o formulário
                 elements.inputs.newUserName.value = '';
                 
-                // Mostra a tela principal após 1 segundo
                 setTimeout(() => {
                     elements.displays.createUserFeedback.style.display = 'none';
                     showScreen('main');
-                    
-                    // Garante que o QR Code seja gerado
                     showUserQRInfo();
                     generateQrCode();
                 }, 800);
@@ -1108,7 +1077,6 @@
                 console.error('Erro ao criar usuário:', error);
                 showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
             } finally {
-                // Desativa estado de loading
                 setButtonLoading(elements.buttons.createUser, false);
             }
         }
@@ -1121,40 +1089,29 @@
                 return;
             }
             
-            // Ativa estado de loading
             setButtonLoading(elements.buttons.loadUser, true);
-            
-            // Limpa feedback anterior
             elements.displays.loadUserFeedback.style.display = 'none';
             
             try {
-                // Tenta carregar do IndexedDB primeiro
                 let user = await db.get('users', userId);
                 
-                // Se não encontrou no IndexedDB, tenta no GunDB
                 if (!user) {
                     user = await new Promise((resolve) => {
                         gun.get('users').get(userId).once(resolve, { wait: 2000 });
                     });
                     
                     if (user) {
-                        // Armazena no IndexedDB para acesso futuro
                         await db.put('users', user);
                     }
                 }
                 
                 if (user && user.name) {
                     state.currentUser = user;
-                    
-                    // Carrega contatos e mensagens
                     await loadLocalData();
                     
                     showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
-                    
-                    // Limpa o formulário
                     elements.inputs.existingUserId.value = '';
                     
-                    // Mostra a tela principal após 1 segundo
                     setTimeout(() => {
                         elements.displays.loadUserFeedback.style.display = 'none';
                         showScreen('main');
@@ -1166,7 +1123,6 @@
                 console.error('Erro ao carregar usuário:', error);
                 showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
             } finally {
-                // Desativa estado de loading
                 setButtonLoading(elements.buttons.loadUser, false);
             }
         }
@@ -1195,7 +1151,6 @@
             if (!state.currentUser) return;
             
             try {
-                // Carrega contatos do IndexedDB
                 const contacts = await db.getAll('contacts');
                 state.contactsCache = contacts.reduce((acc, contact) => {
                     acc[contact.id] = contact;
@@ -1204,10 +1159,8 @@
                 
                 renderContacts(Object.values(state.contactsCache));
                 
-                // Sincroniza com Gun.js
                 gun.get('users').get(state.currentUser.id).get('contacts').map().once(async (contact, id) => {
                     if (!contact) {
-                        // Remove contato se não existir no Gun.js
                         if (state.contactsCache[id]) {
                             delete state.contactsCache[id];
                             await db.delete('contacts', id);
@@ -1216,7 +1169,6 @@
                         return;
                     }
                     
-                    // Atualiza cache local
                     state.contactsCache[id] = contact;
                     await db.put('contacts', contact);
                     renderContacts(Object.values(state.contactsCache));
@@ -1269,46 +1221,33 @@
                 const now = Date.now();
                 const contactId = state.currentContact.id;
                 
-                // Carrega mensagens do IndexedDB
                 const localMessages = await db.getMessages(state.currentUser.id, contactId);
-                
-                // Filtra mensagens expiradas
                 const validMessages = localMessages.filter(msg => msg.expiresAt > now);
                 
-                // Atualiza cache local
                 state.messagesCache[contactId] = validMessages;
-                
-                // Renderiza mensagens locais
                 renderMessages(validMessages);
                 
-                // Sincroniza com Gun.js
                 gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
                     if (!message) return;
                     
-                    // Verifica expiração
                     if (message.expiresAt && message.expiresAt < now) {
                         gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                         return;
                     }
                     
-                    // Verifica se é uma mensagem relevante
                     const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
                                        (message.sender === state.currentUser.id && message.receiver === contactId);
                     
                     if (isRelevant) {
-                        // Verifica se a mensagem já existe no cache
                         const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
                         if (!messageExists) {
-                            // Adiciona ao IndexedDB
                             await db.put('messages', message);
                             
-                            // Atualiza cache local
                             if (!state.messagesCache[contactId]) {
                                 state.messagesCache[contactId] = [];
                             }
                             state.messagesCache[contactId].push(message);
                             
-                            // Renderiza a nova mensagem
                             renderMessages([message]);
                         }
                     }
@@ -1331,13 +1270,11 @@
                 return;
             }
             
-            // Remove o estado vazio se houver mensagens
             if (messages.length > 0 && elements.displays.chatMessages.querySelector('.empty-state')) {
                 elements.displays.chatMessages.innerHTML = '';
             }
             
             messages.forEach(async (message) => {
-                // Verifica se a mensagem já está renderizada
                 if (document.getElementById(`msg-${message.id}`)) return;
                 
                 const isSender = message.sender === state.currentUser.id;
@@ -1354,7 +1291,6 @@
                 
                 let fileHtml = '';
                 if (message.file) {
-                    // Se for uma referência a um arquivo (ID), carrega do IndexedDB
                     if (typeof message.file === 'string') {
                         try {
                             const fileData = await db.getFile(message.file);
@@ -1378,7 +1314,6 @@
                             fileHtml = '<div class="message-file">Arquivo não disponível</div>';
                         }
                     } else {
-                        // Se for um arquivo pequeno (embutido diretamente na mensagem)
                         const fileIcon = getFileIcon(message.file.type);
                         fileHtml = `
                             <a href="data:${message.file.type};base64,${message.file.data}" download="${message.file.name}" class="message-file">
@@ -1451,13 +1386,12 @@
             
             if (!messageText && !hasFile) return;
             
-            // Mostra barra de progresso
             elements.displays.uploadProgress.style.display = 'block';
             elements.displays.progressBar.style.width = '0%';
             
             const messageId = Gun.text.random(16);
             const now = Date.now();
-            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas
+            const expiresAt = now + (24 * 60 * 60 * 1000);
             
             const message = {
                 id: messageId,
@@ -1473,13 +1407,11 @@
             
             if (hasFile) {
                 try {
-                    // Atualiza progresso
                     const progressHandler = (progress) => {
                         const percent = Math.round((progress.loaded / progress.total) * 100);
                         elements.displays.progressBar.style.width = `${percent}%`;
                     };
                     
-                    // Se o arquivo for pequeno (<1MB), envia diretamente na mensagem
                     if (state.currentFile.size < 1024 * 1024) {
                         const fileData = await readFileAsDataURL(state.currentFile, progressHandler);
                         
@@ -1487,25 +1419,21 @@
                             name: state.currentFile.name,
                             type: state.currentFile.type,
                             size: state.currentFile.size,
-                            data: fileData.split(',')[1] // Remove o prefixo data:...
+                            data: fileData.split(',')[1]
                         };
                     } else {
-                        // Para arquivos grandes, armazena no IndexedDB e envia apenas a referência
                         const fileId = await db.storeFile(state.currentFile);
-                        message.file = fileId; // Armazena apenas o ID do arquivo
+                        message.file = fileId;
                     }
                     
-                    // Completa o envio da mensagem
                     await completeMessageSend(message, messageId);
                 } catch (error) {
                     console.error('Erro ao enviar arquivo:', error);
                     alert('Erro ao enviar arquivo. Tente novamente.');
                 } finally {
-                    // Esconde barra de progresso
                     elements.displays.uploadProgress.style.display = 'none';
                 }
             } else {
-                // Envia mensagem sem arquivo
                 await completeMessageSend(message, messageId);
                 elements.displays.uploadProgress.style.display = 'none';
             }
@@ -1534,23 +1462,18 @@
         // Completa o envio da mensagem (com ou sem arquivo)
         async function completeMessageSend(message, messageId) {
             try {
-                // Armazena no IndexedDB
                 await db.put('messages', message);
                 
-                // Atualiza cache local
                 if (!state.messagesCache[state.currentContact.id]) {
                     state.messagesCache[state.currentContact.id] = [];
                 }
                 state.messagesCache[state.currentContact.id].push(message);
                 
-                // Renderiza imediatamente
                 renderMessages([message]);
                 
-                // Envia para Gun.js
                 gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
                 gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
                 
-                // Limpa os campos
                 elements.inputs.message.value = '';
                 elements.inputs.message.placeholder = 'Digite sua mensagem...';
                 state.currentFile = null;
@@ -1569,20 +1492,17 @@
                 const now = Date.now();
                 
                 try {
-                    // Limpa mensagens expiradas no IndexedDB
                     const allMessages = await db.getAll('messages');
                     const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
                     
                     for (const msg of expiredMessages) {
                         await db.delete('messages', msg.id);
                         
-                        // Se a mensagem tinha um arquivo associado, remove o arquivo também
                         if (typeof msg.file === 'string') {
                             await db.delete('files', msg.file);
                         }
                     }
                     
-                    // Limpa mensagens expiradas no Gun.js
                     gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
                         if (!message || !message.expiresAt) return;
                         
@@ -1591,14 +1511,13 @@
                         }
                     });
                     
-                    // Limpa cache local
                     Object.keys(state.messagesCache).forEach(contactId => {
                         state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
                     });
                 } catch (error) {
                     console.error('Erro ao limpar mensagens expiradas:', error);
                 }
-            }, 60 * 60 * 1000); // Verifica a cada hora
+            }, 60 * 60 * 1000);
         }
 
         // Gera o QR Code do usuário
@@ -1612,12 +1531,10 @@
                 userName: state.currentUser.name
             });
             
-            // Limpa o canvas antes de gerar novo QR Code
             const canvas = elements.displays.qrCode;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Define um tamanho fixo para o canvas
             canvas.width = 200;
             canvas.height = 200;
             
@@ -1637,12 +1554,10 @@
             if (state.qrScannerActive) return;
             state.qrScannerActive = true;
             
-            // Primeiro, verifique se já há um stream ativo e pare-o
             if (elements.displays.qrVideo.srcObject) {
                 elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
             }
 
-            // Esconde o overlay de escaneamento inicialmente
             if (elements.displays.scanOverlay) {
                 elements.displays.scanOverlay.style.display = 'none';
             }
@@ -1659,12 +1574,10 @@
                 
                 elements.displays.qrVideo.play()
                     .then(() => {
-                        // Mostra o overlay após o vídeo começar
                         if (elements.displays.scanOverlay) {
                             elements.displays.scanOverlay.style.display = 'flex';
                         }
 
-                        // Configura o canvas para análise
                         const canvasElement = document.createElement('canvas');
                         const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
                         canvasElement.width = elements.displays.qrVideo.videoWidth;
@@ -1694,7 +1607,7 @@
                                                 }
                                                 stopQrScanner();
                                                 addContact(qrData.userId, qrData.userName || 'Novo Contato');
-                                                return; // Para o loop após encontrar um QR válido
+                                                return;
                                             }
                                         } catch (e) {
                                             console.log('QR Code inválido:', e);
@@ -1726,7 +1639,6 @@
             if (!state.qrScannerActive) return;
             state.qrScannerActive = false;
             
-            // Mostra o overlay novamente
             if (elements.displays.scanOverlay) {
                 elements.displays.scanOverlay.style.display = 'flex';
             }
@@ -1739,31 +1651,55 @@
             }
         }
 
-        // Adiciona um novo contato
+        // Adiciona um novo contato (versão melhorada)
         async function addContact(userId, userName) {
             if (!state.currentUser || !userId) return;
             
+            // Verifica se o contato já existe
+            if (state.contactsCache[userId]) {
+                alert('Este contato já está na sua lista!');
+                return;
+            }
+
             const contact = { id: userId, name: userName, timestamp: Date.now() };
+            const myContact = { 
+                id: state.currentUser.id, 
+                name: state.currentUser.name, 
+                timestamp: Date.now() 
+            };
             
             try {
-                // Adiciona o contato ao IndexedDB
+                // Adiciona o contato ao IndexedDB local
                 await db.put('contacts', contact);
                 
-                // Adiciona ao cache local
+                // Atualiza o cache local
                 state.contactsCache[userId] = contact;
                 
                 // Renderiza a lista de contatos
                 renderContacts(Object.values(state.contactsCache));
                 
-                // Adiciona o contato ao usuário atual no GunDB
+                // 1. Adiciona o contato ao usuário atual no GunDB
                 gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
                 
-                // Adiciona reciprocidade
-                gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put({
-                    id: state.currentUser.id,
-                    name: state.currentUser.name,
-                    timestamp: Date.now()
+                // 2. Adiciona o usuário atual como contato do outro usuário
+                // Primeiro verificamos se o outro usuário existe
+                const otherUserExists = await new Promise(resolve => {
+                    gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
                 });
+
+                if (otherUserExists) {
+                    // Adiciona reciprocidade - isso garante que o outro usuário também terá o contato
+                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
+                    
+                    // Atualiza o cache local do outro usuário (se ele estiver online)
+                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
+                        if (updated) {
+                            console.log('Contato atualizado para o outro usuário');
+                        }
+                    });
+                } else {
+                    console.log('O outro usuário não foi encontrado no banco de dados');
+                }
                 
                 alert(`Contato ${userName} adicionado com sucesso!`);
             } catch (error) {
@@ -1778,16 +1714,9 @@
             
             if (confirm(`Tem certeza que deseja remover este contato?`)) {
                 try {
-                    // Remove do IndexedDB
                     await db.delete('contacts', userId);
-                    
-                    // Remove do cache local
                     delete state.contactsCache[userId];
-                    
-                    // Renderiza a lista de contatos
                     renderContacts(Object.values(state.contactsCache));
-                    
-                    // Remove do GunDB
                     gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
                 } catch (error) {
                     console.error('Erro ao remover contato:', error);
@@ -1833,7 +1762,6 @@
         }
 
         function clearLocalData() {
-            // Limpa todos os dados do IndexedDB
             const stores = ['users', 'contacts', 'messages', 'files'];
             const requests = stores.map(storeName => {
                 return new Promise((resolve) => {
@@ -1842,7 +1770,7 @@
                     const request = store.clear();
                     
                     request.onsuccess = () => resolve();
-                    request.onerror = () => resolve(); // Ignora erros
+                    request.onerror = () => resolve();
                 });
             });
             
