@@ -145,6 +145,35 @@
             word-wrap: break-word;
         }
         
+        .message-file {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--dark);
+        }
+        
+        .message-file-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .message-file-info {
+            flex: 1;
+        }
+        
+        .message-file-name {
+            font-weight: bold;
+        }
+        
+        .message-file-size {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
         .message-expiry {
             font-size: 0.7rem;
             opacity: 0.6;
@@ -157,6 +186,12 @@
             padding: 15px;
             background-color: white;
             border-top: 1px solid #eee;
+        }
+        
+        .message-input-container {
+            display: flex;
+            flex: 1;
+            align-items: center;
         }
         
         .message-input input {
@@ -172,8 +207,20 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            border-radius: 0 20px 20px 0;
             cursor: pointer;
+        }
+        
+        .message-input button.send-btn {
+            border-radius: 0 20px 20px 0;
+        }
+        
+        .message-input button.file-btn {
+            border-radius: 20px 0 0 20px;
+            margin-right: -1px;
+        }
+        
+        .file-input {
+            display: none;
         }
         
         .empty-state {
@@ -683,8 +730,14 @@
             </div>
             
             <div class="message-input">
-                <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-                <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+                <div class="message-input-container">
+                    <input type="file" id="fileInput" class="file-input">
+                    <button id="fileButton" class="file-btn" title="Anexar arquivo">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
+                    <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -769,7 +822,8 @@
             qrScannerActive: false,
             currentCallId: null,
             incomingCallOffer: null,
-            callTimeout: null
+            callTimeout: null,
+            currentFile: null
         };
 
         // Elementos DOM
@@ -799,13 +853,15 @@
                 callButton: document.getElementById('callButton'),
                 endCall: document.getElementById('endCallBtn'),
                 acceptCall: document.getElementById('acceptCallBtn'),
-                rejectCall: document.getElementById('rejectCallBtn')
+                rejectCall: document.getElementById('rejectCallBtn'),
+                fileButton: document.getElementById('fileButton')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
                 existingUserId: document.getElementById('existingUserId'),
                 message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput')
+                userIdInput: document.getElementById('userIdInput'),
+                fileInput: document.getElementById('fileInput')
             },
             displays: {
                 contactsList: document.getElementById('contactsList'),
@@ -904,6 +960,10 @@
                 if (e.key === 'Enter') sendMessage();
             });
             
+            // Arquivos
+            elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
+            elements.inputs.fileInput.addEventListener('change', handleFileSelect);
+            
             // Chamadas
             elements.buttons.callButton.addEventListener('click', startCall);
             elements.buttons.endCall.addEventListener('click', endCall);
@@ -914,6 +974,36 @@
             elements.buttons.copyUserId.addEventListener('click', copyUserId);
             elements.buttons.shareQR.addEventListener('click', shareQRCode);
             elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
+        }
+
+        // Manipula a seleção de arquivo
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Limite de tamanho do arquivo (10MB)
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+            if (file.size > MAX_FILE_SIZE) {
+                alert('O arquivo é muito grande. O tamanho máximo permitido é 10MB.');
+                return;
+            }
+            
+            state.currentFile = file;
+            
+            // Mostra o nome do arquivo no input de mensagem
+            elements.inputs.message.placeholder = `Arquivo: ${file.name} (${formatFileSize(file.size)})`;
+            elements.inputs.message.focus();
+        }
+
+        // Formata o tamanho do arquivo para exibição
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
         // Configura o listener para chamadas recebidas
@@ -1386,13 +1476,28 @@
                 const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const expiryDateStr = expiryDate.toLocaleDateString();
                 
+                let fileHtml = '';
+                if (message.file) {
+                    const fileIcon = getFileIcon(message.file.type);
+                    fileHtml = `
+                        <a href="${message.file.url}" target="_blank" class="message-file">
+                            <div class="message-file-icon">${fileIcon}</div>
+                            <div class="message-file-info">
+                                <div class="message-file-name">${message.file.name}</div>
+                                <div class="message-file-size">${formatFileSize(message.file.size)}</div>
+                            </div>
+                        </a>
+                    `;
+                }
+                
                 messageElement.innerHTML = `
                     <div class="message-header">
                         ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
                         <div class="message-sender">${isSender ? 'Você' : state.currentContact.name}</div>
                         <div class="message-time">${formatTime(message.timestamp)}</div>
                     </div>
-                    <div class="message-content">${escapeHtml(message.text)}</div>
+                    ${message.text ? `<div class="message-content">${escapeHtml(message.text)}</div>` : ''}
+                    ${fileHtml}
                     ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
                 `;
                 
@@ -1402,12 +1507,48 @@
             elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
         }
 
+        // Retorna o ícone apropriado para o tipo de arquivo
+        function getFileIcon(fileType) {
+            if (!fileType) return '<i class="fas fa-file"></i>';
+            
+            const type = fileType.split('/')[0];
+            const extension = fileType.split('/')[1];
+            
+            const icons = {
+                image: 'fa-file-image',
+                audio: 'fa-file-audio',
+                video: 'fa-file-video',
+                application: {
+                    pdf: 'fa-file-pdf',
+                    msword: 'fa-file-word',
+                    'vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word',
+                    'vnd.ms-excel': 'fa-file-excel',
+                    'vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel',
+                    'vnd.ms-powerpoint': 'fa-file-powerpoint',
+                    'vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint',
+                    'zip': 'fa-file-archive',
+                    'x-rar-compressed': 'fa-file-archive',
+                    'x-7z-compressed': 'fa-file-archive'
+                },
+                text: 'fa-file-alt'
+            };
+            
+            if (type === 'application') {
+                const appIcon = icons.application[extension];
+                return `<i class="fas ${appIcon || 'fa-file'}"></i>`;
+            }
+            
+            return `<i class="fas ${icons[type] || 'fa-file'}"></i>`;
+        }
+
         // Envia uma mensagem
         function sendMessage() {
             if (!state.currentUser || !state.currentContact) return;
             
             const messageText = elements.inputs.message.value.trim();
-            if (!messageText) return;
+            const hasFile = state.currentFile !== null;
+            
+            if (!messageText && !hasFile) return;
             
             const messageId = Gun.text.random(16);
             const now = Date.now();
@@ -1417,12 +1558,44 @@
                 id: messageId,
                 sender: state.currentUser.id,
                 receiver: state.currentContact.id,
-                text: messageText,
                 timestamp: now,
                 expiresAt: expiresAt
             };
             
-            // Atualiza cache local
+            if (messageText) {
+                message.text = messageText;
+            }
+            
+            if (hasFile) {
+                // Converte o arquivo para base64
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const fileData = event.target.result;
+                    
+                    // Adiciona informações do arquivo à mensagem
+                    message.file = {
+                        name: state.currentFile.name,
+                        type: state.currentFile.type,
+                        size: state.currentFile.size,
+                        data: fileData.split(',')[1] // Remove o prefixo data:...
+                    };
+                    
+                    // Completa o envio da mensagem
+                    completeMessageSend(message, messageId);
+                };
+                reader.onerror = function(error) {
+                    console.error('Erro ao ler arquivo:', error);
+                    alert('Erro ao enviar arquivo. Tente novamente.');
+                };
+                reader.readAsDataURL(state.currentFile);
+            } else {
+                // Envia mensagem sem arquivo
+                completeMessageSend(message, messageId);
+            }
+        }
+
+        // Completa o envio da mensagem (com ou sem arquivo)
+        function completeMessageSend(message, messageId) {
             const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${state.currentContact.id}`;
             const cachedMessages = localStorage.getItem(cacheKey) || '[]';
             const messages = JSON.parse(cachedMessages);
@@ -1437,7 +1610,11 @@
             gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
             gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
             
+            // Limpa os campos
             elements.inputs.message.value = '';
+            elements.inputs.message.placeholder = 'Digite sua mensagem...';
+            state.currentFile = null;
+            elements.inputs.fileInput.value = '';
         }
 
         // Inicia o intervalo para limpar mensagens expiradas
