@@ -453,74 +453,6 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
-        /* Container do p2pvideo.chat */
-        #p2pvideo-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1100;
-            display: none;
-            border: none;
-        }
-
-        /* Estilo para o popup de chamada */
-        .call-notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 1200;
-            text-align: center;
-            display: none;
-            max-width: 90%;
-            width: 300px;
-        }
-
-        .call-notification-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .call-notification-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .call-accept {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .call-reject {
-            background-color: var(--error);
-            color: white;
-        }
-
-        .caller-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: var(--secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--dark);
-        }
         
         @media (max-width: 600px) {
             .btn-group {
@@ -664,11 +596,6 @@
                 <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
                 <div class="avatar" id="chatAvatar"></div>
                 <div id="chatContactName"></div>
-                <div style="margin-left: auto;">
-                    <button id="callButton" class="contact-action-btn" title="Ligar">
-                        <i class="fas fa-phone"></i>
-                    </button>
-                </div>
             </div>
             
             <div class="chat-messages" id="chatMessages">
@@ -705,26 +632,6 @@
         </button>
     </div>
 
-    <!-- Container para o p2pvideo.chat -->
-    <iframe id="p2pvideo-container" allow="camera; microphone; fullscreen"></iframe>
-
-    <!-- Elemento para notificação de chamada -->
-    <div id="callNotification" class="call-notification">
-        <div class="caller-avatar" id="callNotificationAvatar"></div>
-        <div id="callNotificationText">Chamada recebida de <span id="callerNameNotification"></span></div>
-        <audio id="callSound" loop>
-            <source src="https://assets.mixkit.co/sfx/preview/mixkit-calling-phone-2751.mp3" type="audio/mpeg">
-        </audio>
-        <div class="call-notification-buttons">
-            <button id="acceptCallBtn" class="call-notification-btn call-accept">
-                <i class="fas fa-phone"></i> Atender
-            </button>
-            <button id="rejectCallBtn" class="call-notification-btn call-reject">
-                <i class="fas fa-phone-slash"></i> Recusar
-            </button>
-        </div>
-    </div>
-
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
@@ -750,11 +657,7 @@
             currentContact: null,
             contactsCache: {},
             messagesCache: {},
-            isCaller: false,
             qrScannerActive: false,
-            currentCallId: null,
-            incomingCallOffer: null,
-            callTimeout: null,
             currentFile: null
         };
 
@@ -782,9 +685,6 @@
                 copyUserId: document.getElementById('copyUserIdBtn'),
                 shareQR: document.getElementById('shareQRBtn'),
                 downloadQR: document.getElementById('downloadQRBtn'),
-                callButton: document.getElementById('callButton'),
-                acceptCall: document.getElementById('acceptCallBtn'),
-                rejectCall: document.getElementById('rejectCallBtn'),
                 fileButton: document.getElementById('fileButton')
             },
             inputs: {
@@ -806,12 +706,7 @@
                 floatingButtons: document.querySelector('.floating-buttons'),
                 scanOverlay: document.querySelector('.scan-overlay'),
                 createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback'),
-                callNotification: document.getElementById('callNotification'),
-                callNotificationAvatar: document.getElementById('callNotificationAvatar'),
-                callerNameNotification: document.getElementById('callerNameNotification'),
-                callSound: document.getElementById('callSound'),
-                p2pVideoContainer: document.getElementById('p2pvideo-container')
+                loadUserFeedback: document.getElementById('loadUserFeedback')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -825,7 +720,6 @@
             setupEventListeners();
             checkForExistingUser();
             startMessageCleanupInterval();
-            setupIncomingCallListener();
         }
 
         // Verifica se há usuário salvo localmente
@@ -891,11 +785,6 @@
             elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
             elements.inputs.fileInput.addEventListener('change', handleFileSelect);
             
-            // Chamadas
-            elements.buttons.callButton.addEventListener('click', startCall);
-            elements.buttons.acceptCall.addEventListener('click', acceptIncomingCall);
-            elements.buttons.rejectCall.addEventListener('click', rejectIncomingCall);
-            
             // Utilitários
             elements.buttons.copyUserId.addEventListener('click', copyUserId);
             elements.buttons.shareQR.addEventListener('click', shareQRCode);
@@ -930,177 +819,6 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // Configura o listener para chamadas recebidas
-        function setupIncomingCallListener() {
-            gun.get('users').get(state.currentUser.id).get('callOffer').on(async (data) => {
-                if (!data || !data.roomName || state.isCaller) return;
-                
-                // Verifica se a oferta é recente (últimos 45 segundos)
-                const offerAge = Date.now() - data.timestamp;
-                if (offerAge > 45000) return; // Ignora ofertas antigas
-                
-                state.incomingCallOffer = data;
-                showCallNotification(data.from);
-            });
-        }
-
-        // Mostra notificação de chamada recebida
-        function showCallNotification(callerId) {
-            const caller = state.contactsCache[callerId];
-            
-            // Configura a UI da notificação
-            elements.displays.callNotificationAvatar.textContent = caller?.name?.charAt(0).toUpperCase() || '?';
-            elements.displays.callerNameNotification.textContent = caller?.name || 'Desconhecido';
-            
-            // Mostra a notificação e toca o som
-            elements.displays.callNotification.style.display = 'block';
-            elements.displays.callSound.play().catch(e => console.error('Erro ao reproduzir som:', e));
-            
-            // Timeout automático se não responder
-            setTimeout(() => {
-                if (elements.displays.callNotification.style.display === 'block') {
-                    hideCallNotification();
-                    rejectIncomingCall();
-                }
-            }, 45000); // 45 segundos para responder
-        }
-
-        // Esconde a notificação de chamada
-        function hideCallNotification() {
-            elements.displays.callNotification.style.display = 'none';
-            elements.displays.callSound.pause();
-            elements.displays.callSound.currentTime = 0;
-        }
-
-        // Aceita uma chamada recebida (usando p2pvideo.chat)
-        async function acceptIncomingCall() {
-            if (!state.incomingCallOffer) return;
-            
-            try {
-                hideCallNotification();
-                
-                const callerId = state.incomingCallOffer.from;
-                const caller = state.contactsCache[callerId];
-                const roomName = state.incomingCallOffer.roomName;
-                
-                // Envia a confirmação para o chamador
-                gun.get('users').get(callerId).get('callAnswer').put({
-                    type: 'answer',
-                    roomName: roomName
-                });
-                
-                // Inicia a chamada no p2pvideo.chat
-                startP2PVideoMeeting(roomName, caller.name);
-                
-            } catch (error) {
-                console.error('Erro ao aceitar chamada:', error);
-                alert('Erro ao aceitar chamada: ' + error.message);
-            } finally {
-                state.incomingCallOffer = null;
-            }
-        }
-
-        // Rejeita uma chamada recebida
-        function rejectIncomingCall() {
-            if (!state.incomingCallOffer) return;
-            
-            const callerId = state.incomingCallOffer.from;
-            gun.get('users').get(callerId).get('callAnswer').put({
-                type: 'reject'
-            });
-            
-            state.incomingCallOffer = null;
-        }
-
-        // Inicia uma chamada (usando p2pvideo.chat)
-        async function startCall() {
-            if (!state.currentUser || !state.currentContact) return;
-            
-            try {
-                state.isCaller = true;
-                const roomName = generateP2PVideoRoomName(state.currentUser.id, state.currentContact.id);
-                
-                // Envia a oferta para o contato
-                gun.get('users').get(state.currentContact.id).get('callOffer').put({
-                    from: state.currentUser.id,
-                    roomName: roomName,
-                    timestamp: Date.now()
-                });
-                
-                // Configura timeout para chamada não atendida
-                state.callTimeout = setTimeout(() => {
-                    if (!elements.displays.p2pVideoContainer.style.display === 'block') {
-                        endCall();
-                        alert("Chamada não atendida");
-                    }
-                }, 45000); // 45 segundos para responder
-                
-                // Escuta por respostas
-                gun.get('users').get(state.currentUser.id).get('callAnswer').on((answer) => {
-                    if (!answer) return;
-                    
-                    if (answer.type === 'answer') {
-                        clearTimeout(state.callTimeout);
-                        startP2PVideoMeeting(roomName, state.currentContact.name);
-                    } else if (answer.type === 'reject') {
-                        clearTimeout(state.callTimeout);
-                        endCall();
-                        alert(`${state.currentContact.name} recusou a chamada.`);
-                    }
-                });
-                
-            } catch (error) {
-                console.error('Erro ao iniciar chamada:', error);
-                endCall();
-                alert('Erro ao iniciar chamada: ' + error.message);
-            }
-        }
-
-        // Gera um nome de sala único baseado nos IDs dos usuários
-        function generateP2PVideoRoomName(userId1, userId2) {
-            // Ordena os IDs para garantir que a sala seja a mesma independente de quem iniciou
-            const sortedIds = [userId1, userId2].sort();
-            return `bunnychat-${sortedIds[0]}-${sortedIds[1]}-${Date.now()}`;
-        }
-
-        // Inicia uma chamada no p2pvideo.chat
-        function startP2PVideoMeeting(roomName, participantName) {
-            const p2pVideoContainer = elements.displays.p2pVideoContainer;
-            p2pVideoContainer.src = `https://p2pvideo.chat/#${roomName}`;
-            p2pVideoContainer.style.display = 'block';
-            
-            // Monitora quando o iframe é fechado
-            const checkIframeClosed = setInterval(() => {
-                if (p2pVideoContainer.style.display !== 'block') {
-                    clearInterval(checkIframeClosed);
-                    endCall();
-                }
-            }, 1000);
-        }
-
-        // Encerra a chamada
-        function endCall() {
-            // Limpa o timeout da chamada
-            if (state.callTimeout) {
-                clearTimeout(state.callTimeout);
-                state.callTimeout = null;
-            }
-            
-            // Esconde o container do p2pvideo.chat
-            const p2pVideoContainer = elements.displays.p2pVideoContainer;
-            p2pVideoContainer.style.display = 'none';
-            p2pVideoContainer.src = '';
-            
-            // Reseta o estado da chamada
-            state.isCaller = false;
-            
-            // Limpa os dados da chamada no GunDB
-            if (state.currentUser && state.currentContact) {
-                gun.get('users').get(state.currentUser.id).get('callAnswer').put(null);
-                gun.get('users').get(state.currentContact.id).get('callOffer').put(null);
-            }
         }
 
         // Mostra uma tela específica
@@ -1299,30 +1017,11 @@
                             <div style="font-weight: bold;">${contact.name}</div>
                             <div style="font-size: 0.8rem; opacity: 0.7;">${id}</div>
                         </div>
-                        <div class="contact-actions">
-                            <button class="contact-action-btn" title="Ligar" data-id="${id}">
-                                <i class="fas fa-phone"></i>
-                            </button>
-                            <button class="contact-action-btn" title="Remover contato" data-id="${id}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
                     `;
                     
-                    contactElement.querySelector('.avatar, div:nth-child(2)').addEventListener('click', () => {
+                    contactElement.addEventListener('click', () => {
                         state.currentContact = { id, ...contact };
                         showChatScreen();
-                    });
-                    
-                    contactElement.querySelector('.contact-action-btn:nth-child(1)').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        state.currentContact = { id, ...contact };
-                        startCall();
-                    });
-                    
-                    contactElement.querySelector('.contact-action-btn:nth-child(2)').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        removeContact(id);
                     });
                     
                     elements.displays.contactsList.appendChild(contactElement);
