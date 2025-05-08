@@ -678,7 +678,8 @@
             messagesCache: {},
             qrScannerActive: false,
             currentFile: null,
-            db: null
+            db: null,
+            activeFileTransfers: {}
         };
 
         // Elementos DOM
@@ -767,10 +768,6 @@
                         const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
                         messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
                     }
-                    
-                    if (!db.objectStoreNames.contains('files')) {
-                        db.createObjectStore('files', { keyPath: 'id' });
-                    }
                 };
             });
         }
@@ -856,35 +853,6 @@
                     request.onsuccess = () => resolve();
                     request.onerror = (event) => reject(event.target.error);
                 });
-            },
-            
-            storeFile: (file) => {
-                return new Promise((resolve, reject) => {
-                    const fileId = Gun.text.random(16);
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(event) {
-                        const fileData = {
-                            id: fileId,
-                            name: file.name,
-                            type: file.type,
-                            size: file.size,
-                            data: event.target.result,
-                            timestamp: Date.now()
-                        };
-                        
-                        db.put('files', fileData)
-                            .then(() => resolve(fileId))
-                            .catch(reject);
-                    };
-                    
-                    reader.onerror = (event) => reject(event.target.error);
-                    reader.readAsArrayBuffer(file);
-                });
-            },
-            
-            getFile: (fileId) => {
-                return db.get('files', fileId);
             }
         };
 
@@ -1232,6 +1200,11 @@
                     
                     if (message.expiresAt && message.expiresAt < now) {
                         gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                        
+                        // Remove arquivo associado se existir
+                        if (message.file && message.file.id) {
+                            gun.get('files').get(message.file.id).put(null);
+                        }
                         return;
                     }
                     
@@ -1291,39 +1264,93 @@
                 
                 let fileHtml = '';
                 if (message.file) {
-                    if (typeof message.file === 'string') {
-                        try {
-                            const fileData = await db.getFile(message.file);
-                            if (fileData) {
-                                const fileBlob = new Blob([fileData.data], { type: fileData.type });
-                                const fileUrl = URL.createObjectURL(fileBlob);
-                                
-                                const fileIcon = getFileIcon(fileData.type);
-                                fileHtml = `
-                                    <a href="${fileUrl}" download="${fileData.name}" class="message-file">
-                                        <div class="message-file-icon">${fileIcon}</div>
-                                        <div class="message-file-info">
-                                            <div class="message-file-name">${fileData.name}</div>
-                                            <div class="message-file-size">${formatFileSize(fileData.size)}</div>
-                                        </div>
-                                    </a>
-                                `;
+                    try {
+                        const fileMetadata = message.file;
+                        
+                        // Verifica se é um arquivo enviado via GunDB
+                        if (fileMetadata.id) {
+                            // Registra a transferência em andamento
+                            if (!state.activeFileTransfers[fileMetadata.id]) {
+                                state.activeFileTransfers[fileMetadata.id] = {
+                                    chunks: [],
+                                    totalChunks: 0,
+                                    receivedBytes: 0
+                                };
                             }
-                        } catch (error) {
-                            console.error('Erro ao carregar arquivo:', error);
-                            fileHtml = '<div class="message-file">Arquivo não disponível</div>';
-                        }
-                    } else {
-                        const fileIcon = getFileIcon(message.file.type);
-                        fileHtml = `
-                            <a href="data:${message.file.type};base64,${message.file.data}" download="${message.file.name}" class="message-file">
-                                <div class="message-file-icon">${fileIcon}</div>
-                                <div class="message-file-info">
-                                    <div class="message-file-name">${message.file.name}</div>
-                                    <div class="message-file-size">${formatFileSize(message.file.size)}</div>
+                            
+                            const transfer = state.activeFileTransfers[fileMetadata.id];
+                            const fileRef = gun.get('files').get(fileMetadata.id);
+                            
+                            // Monitora os chunks do arquivo
+                            fileRef.map().once(async (chunk, key) => {
+                                if (key === 'complete') return;
+                                
+                                if (chunk && !transfer.chunks[key]) {
+                                    transfer.chunks[key] = chunk;
+                                    transfer.receivedBytes += chunk.byteLength || chunk.size || 0;
+                                    
+                                    // Verifica se todos os chunks foram recebidos
+                                    const chunkKeys = Object.keys(transfer.chunks)
+                                        .filter(k => k.startsWith('chunk_'))
+                                        .map(k => parseInt(k.replace('chunk_', '')))
+                                        .sort((a, b) => a - b);
+                                    
+                                    const isComplete = chunkKeys.length > 0 && 
+                                        chunkKeys.every((val, i) => i === 0 || val === chunkKeys[i-1] + 1);
+                                    
+                                    if (isComplete) {
+                                        // Combina todos os chunks
+                                        const totalSize = transfer.receivedBytes;
+                                        const combined = new Uint8Array(totalSize);
+                                        let offset = 0;
+                                        
+                                        chunkKeys.forEach(chunkNum => {
+                                            const chunkKey = `chunk_${chunkNum}`;
+                                            const chunkData = transfer.chunks[chunkKey];
+                                            combined.set(new Uint8Array(chunkData), offset);
+                                            offset += chunkData.byteLength || chunkData.size || 0;
+                                        });
+                                        
+                                        // Cria o blob e URL
+                                        const blob = new Blob([combined], { type: fileMetadata.type });
+                                        const fileUrl = URL.createObjectURL(blob);
+                                        
+                                        const fileIcon = getFileIcon(fileMetadata.type);
+                                        fileHtml = `
+                                            <a href="${fileUrl}" download="${fileMetadata.name}" class="message-file">
+                                                <div class="message-file-icon">${fileIcon}</div>
+                                                <div class="message-file-info">
+                                                    <div class="message-file-name">${fileMetadata.name}</div>
+                                                    <div class="message-file-size">${formatFileSize(fileMetadata.size)}</div>
+                                                </div>
+                                            </a>
+                                        `;
+                                        
+                                        // Atualiza a mensagem com o arquivo pronto
+                                        const fileContainer = document.querySelector(`#msg-${message.id} .message-file-container`);
+                                        if (fileContainer) {
+                                            fileContainer.innerHTML = fileHtml;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Mostra placeholder enquanto o arquivo é carregado
+                            fileHtml = `
+                                <div class="message-file-container">
+                                    <div class="message-file">
+                                        <div class="message-file-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                                        <div class="message-file-info">
+                                            <div class="message-file-name">${fileMetadata.name}</div>
+                                            <div class="message-file-size">${formatFileSize(fileMetadata.size)} (transferindo...)</div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </a>
-                        `;
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao carregar arquivo:', error);
+                        fileHtml = '<div class="message-file">Arquivo não disponível</div>';
                     }
                 }
                 
@@ -1391,7 +1418,7 @@
             
             const messageId = Gun.text.random(16);
             const now = Date.now();
-            const expiresAt = now + (24 * 60 * 60 * 1000);
+            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas
             
             const message = {
                 id: messageId,
@@ -1407,56 +1434,53 @@
             
             if (hasFile) {
                 try {
-                    const progressHandler = (progress) => {
-                        const percent = Math.round((progress.loaded / progress.total) * 100);
-                        elements.displays.progressBar.style.width = `${percent}%`;
+                    const fileId = Gun.text.random(16);
+                    const fileRef = gun.get('files').get(fileId);
+                    
+                    // Armazena metadados do arquivo
+                    const fileMetadata = {
+                        id: fileId,
+                        name: state.currentFile.name,
+                        type: state.currentFile.type,
+                        size: state.currentFile.size,
+                        expiresAt: expiresAt
                     };
                     
-                    if (state.currentFile.size < 1024 * 1024) {
-                        const fileData = await readFileAsDataURL(state.currentFile, progressHandler);
-                        
-                        message.file = {
-                            name: state.currentFile.name,
-                            type: state.currentFile.type,
-                            size: state.currentFile.size,
-                            data: fileData.split(',')[1]
-                        };
-                    } else {
-                        const fileId = await db.storeFile(state.currentFile);
-                        message.file = fileId;
-                    }
+                    message.file = fileMetadata;
                     
-                    await completeMessageSend(message, messageId);
+                    // Envia os chunks do arquivo
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        const chunkSize = 100000; // 100KB por chunk
+                        const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
+                        
+                        for (let i = 0; i < totalChunks; i++) {
+                            const chunk = arrayBuffer.slice(i * chunkSize, (i + 1) * chunkSize);
+                            fileRef.get(`chunk_${i}`).put(chunk);
+                            
+                            // Atualiza progresso
+                            const percent = Math.round(((i + 1) / totalChunks) * 100);
+                            elements.displays.progressBar.style.width = `${percent}%`;
+                        }
+                        
+                        // Marca como completo
+                        fileRef.get('complete').put(true);
+                        
+                        // Completa o envio da mensagem
+                        completeMessageSend(message, messageId);
+                    };
+                    reader.readAsArrayBuffer(state.currentFile);
+                    
                 } catch (error) {
                     console.error('Erro ao enviar arquivo:', error);
                     alert('Erro ao enviar arquivo. Tente novamente.');
-                } finally {
                     elements.displays.uploadProgress.style.display = 'none';
                 }
             } else {
                 await completeMessageSend(message, messageId);
                 elements.displays.uploadProgress.style.display = 'none';
             }
-        }
-
-        // Lê um arquivo como DataURL com progresso
-        function readFileAsDataURL(file, progressHandler) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                
-                reader.onload = (event) => resolve(event.target.result);
-                reader.onerror = (event) => reject(event.target.error);
-                reader.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        progressHandler({
-                            loaded: event.loaded,
-                            total: event.total
-                        });
-                    }
-                };
-                
-                reader.readAsDataURL(file);
-            });
         }
 
         // Completa o envio da mensagem (com ou sem arquivo)
@@ -1471,9 +1495,11 @@
                 
                 renderMessages([message]);
                 
+                // Envia para ambos os usuários no GunDB
                 gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
                 gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
                 
+                // Limpa os campos
                 elements.inputs.message.value = '';
                 elements.inputs.message.placeholder = 'Digite sua mensagem...';
                 state.currentFile = null;
@@ -1492,32 +1518,41 @@
                 const now = Date.now();
                 
                 try {
+                    // Limpa mensagens expiradas do IndexedDB
                     const allMessages = await db.getAll('messages');
                     const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
                     
                     for (const msg of expiredMessages) {
                         await db.delete('messages', msg.id);
                         
-                        if (typeof msg.file === 'string') {
-                            await db.delete('files', msg.file);
+                        // Remove arquivo associado se existir
+                        if (msg.file && msg.file.id) {
+                            gun.get('files').get(msg.file.id).put(null);
                         }
                     }
                     
+                    // Limpa mensagens expiradas do GunDB
                     gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
                         if (!message || !message.expiresAt) return;
                         
                         if (message.expiresAt < now) {
                             gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                            
+                            // Remove arquivo associado
+                            if (message.file && message.file.id) {
+                                gun.get('files').get(message.file.id).put(null);
+                            }
                         }
                     });
                     
+                    // Limpa cache local
                     Object.keys(state.messagesCache).forEach(contactId => {
                         state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
                     });
                 } catch (error) {
                     console.error('Erro ao limpar mensagens expiradas:', error);
                 }
-            }, 60 * 60 * 1000);
+            }, 60 * 60 * 1000); // Verifica a cada hora
         }
 
         // Gera o QR Code do usuário
@@ -1651,7 +1686,7 @@
             }
         }
 
-        // Adiciona um novo contato (versão melhorada)
+        // Adiciona um novo contato
         async function addContact(userId, userName) {
             if (!state.currentUser || !userId) return;
             
@@ -1672,7 +1707,7 @@
                 // Adiciona o contato ao IndexedDB local
                 await db.put('contacts', contact);
                 
-                // Atualiza o cache local
+                // Adiciona ao cache local
                 state.contactsCache[userId] = contact;
                 
                 // Renderiza a lista de contatos
@@ -1762,7 +1797,7 @@
         }
 
         function clearLocalData() {
-            const stores = ['users', 'contacts', 'messages', 'files'];
+            const stores = ['users', 'contacts', 'messages'];
             const requests = stores.map(storeName => {
                 return new Promise((resolve) => {
                     const transaction = state.db.transaction([storeName], 'readwrite');
