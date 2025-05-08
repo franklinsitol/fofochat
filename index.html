@@ -405,10 +405,27 @@
             border-radius: 10px;
             cursor: pointer;
             transition: transform 0.2s;
+            position: relative;
         }
         
         .contact-item:hover {
             transform: translateY(-2px);
+        }
+        
+        .delete-contact-btn {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            margin-left: 10px;
+        }
+        
+        .delete-contact-btn:hover {
+            opacity: 1;
         }
         
         .feedback-message {
@@ -1160,15 +1177,30 @@
                             <div style="font-weight: bold;">${contact.name}</div>
                             <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
                         </div>
+                        <button class="delete-contact-btn" title="Excluir contato" data-contact-id="${contact.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     `;
                     
-                    contactElement.addEventListener('click', () => {
-                        state.currentContact = contact;
-                        showChatScreen();
+                    contactElement.addEventListener('click', (e) => {
+                        // Impede que o clique no botão de exclusão abra o chat
+                        if (!e.target.closest('.delete-contact-btn')) {
+                            state.currentContact = contact;
+                            showChatScreen();
+                        }
                     });
                     
                     elements.displays.contactsList.appendChild(contactElement);
                 });
+            
+            // Adiciona event listeners para os botões de exclusão
+            document.querySelectorAll('.delete-contact-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Impede que o evento de clique no contato seja acionado
+                    const contactId = btn.getAttribute('data-contact-id');
+                    removeContact(contactId);
+                });
+            });
         }
 
         // Mostra a tela de chat
@@ -1747,12 +1779,36 @@
         async function removeContact(userId) {
             if (!state.currentUser || !userId) return;
             
-            if (confirm(`Tem certeza que deseja remover este contato?`)) {
+            // Verifica se o usuário está tentando se remover
+            if (userId === state.currentUser.id) {
+                alert('Você não pode se remover da sua lista de contatos!');
+                return;
+            }
+            
+            const contact = state.contactsCache[userId];
+            if (!contact) return;
+            
+            if (confirm(`Tem certeza que deseja remover ${contact.name} dos seus contatos?\nIsso não afetará as mensagens existentes.`)) {
                 try {
+                    // Remove do IndexedDB
                     await db.delete('contacts', userId);
+                    
+                    // Remove do cache local
                     delete state.contactsCache[userId];
-                    renderContacts(Object.values(state.contactsCache));
+                    
+                    // Remove do GunDB
                     gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
+                    
+                    // Atualiza a lista de contatos
+                    renderContacts(Object.values(state.contactsCache));
+                    
+                    // Se o contato removido era o contato atual no chat, volta para a tela principal
+                    if (state.currentContact && state.currentContact.id === userId) {
+                        state.currentContact = null;
+                        showScreen('main');
+                    }
+                    
+                    console.log(`Contato ${contact.name} removido com sucesso`);
                 } catch (error) {
                     console.error('Erro ao remover contato:', error);
                     alert('Erro ao remover contato. Tente novamente.');
