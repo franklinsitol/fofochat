@@ -219,7 +219,16 @@
             margin-right: -1px;
         }
         
+        .message-input button.audio-btn {
+            border-radius: 20px 0 0 20px;
+            margin-right: -1px;
+        }
+        
         .file-input {
+            display: none;
+        }
+        
+        .audio-input {
             display: none;
         }
         
@@ -487,6 +496,120 @@
             transition: width 0.3s;
         }
         
+        /* Estilos para o gravador de áudio */
+        .audio-recorder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            background-color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1001;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .audio-recorder.show {
+            transform: translateY(0);
+        }
+        
+        .audio-recorder-timer {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        
+        .audio-recorder-controls {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .audio-recorder-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .audio-recorder-btn.record {
+            background-color: var(--error);
+            color: white;
+        }
+        
+        .audio-recorder-btn.stop {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .audio-recorder-btn.cancel {
+            background-color: #ccc;
+            color: var(--dark);
+        }
+        
+        .audio-recorder-visualizer {
+            width: 100%;
+            height: 50px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .audio-recorder-visualizer canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .audio-player {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .audio-player audio {
+            width: 100%;
+        }
+        
+        .audio-player-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .audio-player-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            background-color: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .overlay.show {
+            display: block;
+        }
+        
         @media (max-width: 600px) {
             .btn-group {
                 flex-direction: column;
@@ -510,6 +633,10 @@
             .floating-btn {
                 width: 50px;
                 height: 50px;
+            }
+            
+            .audio-recorder {
+                bottom: 60px;
             }
         }
     </style>
@@ -645,6 +772,9 @@
                     <button id="fileButton" class="file-btn" title="Anexar arquivo">
                         <i class="fas fa-paperclip"></i>
                     </button>
+                    <button id="audioButton" class="audio-btn" title="Gravar áudio">
+                        <i class="fas fa-microphone"></i>
+                    </button>
                     <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
                     <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
                 </div>
@@ -666,6 +796,33 @@
         <button id="scanQRBtn" class="floating-btn" title="Escanear QR">
             <i class="fas fa-camera"></i>
         </button>
+    </div>
+
+    <!-- Gravador de áudio -->
+    <div class="overlay" id="audioOverlay"></div>
+    <div class="audio-recorder" id="audioRecorder">
+        <div class="audio-recorder-visualizer">
+            <canvas id="audioVisualizer"></canvas>
+        </div>
+        <div class="audio-recorder-timer" id="audioTimer">00:00</div>
+        <div class="audio-recorder-controls">
+            <button class="audio-recorder-btn record" id="recordBtn">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="audio-recorder-btn stop" id="stopBtn" disabled>
+                <i class="fas fa-stop"></i>
+            </button>
+            <button class="audio-recorder-btn cancel" id="cancelBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="audio-player" id="audioPlayer" style="display: none;">
+            <audio controls id="audioPreview"></audio>
+            <div class="audio-player-controls">
+                <button class="audio-player-btn" id="sendAudioBtn">Enviar</button>
+                <button class="audio-player-btn" id="cancelAudioBtn">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -695,6 +852,11 @@
             messagesCache: {},
             qrScannerActive: false,
             currentFile: null,
+            currentAudio: null,
+            audioChunks: [],
+            mediaRecorder: null,
+            audioContext: null,
+            analyser: null,
             db: null,
             activeFileTransfers: {}
         };
@@ -723,7 +885,13 @@
                 copyUserId: document.getElementById('copyUserIdBtn'),
                 shareQR: document.getElementById('shareQRBtn'),
                 downloadQR: document.getElementById('downloadQRBtn'),
-                fileButton: document.getElementById('fileButton')
+                fileButton: document.getElementById('fileButton'),
+                audioButton: document.getElementById('audioButton'),
+                recordBtn: document.getElementById('recordBtn'),
+                stopBtn: document.getElementById('stopBtn'),
+                cancelBtn: document.getElementById('cancelBtn'),
+                sendAudioBtn: document.getElementById('sendAudioBtn'),
+                cancelAudioBtn: document.getElementById('cancelAudioBtn')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
@@ -746,7 +914,13 @@
                 createUserFeedback: document.getElementById('createUserFeedback'),
                 loadUserFeedback: document.getElementById('loadUserFeedback'),
                 uploadProgress: document.getElementById('uploadProgress'),
-                progressBar: document.getElementById('progressBar')
+                progressBar: document.getElementById('progressBar'),
+                audioRecorder: document.getElementById('audioRecorder'),
+                audioOverlay: document.getElementById('audioOverlay'),
+                audioVisualizer: document.getElementById('audioVisualizer'),
+                audioTimer: document.getElementById('audioTimer'),
+                audioPlayer: document.getElementById('audioPlayer'),
+                audioPreview: document.getElementById('audioPreview')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -758,7 +932,7 @@
         // Inicialização do IndexedDB
         function initIndexedDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open('BunnyChatDB', 3);
+                const request = indexedDB.open('BunnyChatDB', 4); // Incrementado para versão 4
                 
                 request.onerror = (event) => {
                     console.error('Erro ao abrir o IndexedDB:', event.target.error);
@@ -784,6 +958,10 @@
                     if (!db.objectStoreNames.contains('messages')) {
                         const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
                         messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('audioClips')) {
+                        db.createObjectStore('audioClips', { keyPath: 'id' });
                     }
                 };
             });
@@ -870,6 +1048,29 @@
                     request.onsuccess = () => resolve();
                     request.onerror = (event) => reject(event.target.error);
                 });
+            },
+            
+            // Adicionado para armazenar clips de áudio localmente
+            putAudio: (audioData) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction(['audioClips'], 'readwrite');
+                    const store = transaction.objectStore('audioClips');
+                    const request = store.put(audioData);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+            
+            getAudio: (audioId) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction(['audioClips'], 'readonly');
+                    const store = transaction.objectStore('audioClips');
+                    const request = store.get(audioId);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject(event.target.error);
+                });
             }
         };
 
@@ -880,6 +1081,7 @@
                 setupEventListeners();
                 await checkForExistingUser();
                 startMessageCleanupInterval();
+                initAudioRecorder();
             } catch (error) {
                 console.error('Erro na inicialização:', error);
                 alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
@@ -956,10 +1158,268 @@
             elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
             elements.inputs.fileInput.addEventListener('change', handleFileSelect);
             
+            // Áudio
+            elements.buttons.audioButton.addEventListener('click', showAudioRecorder);
+            elements.buttons.recordBtn.addEventListener('click', startRecording);
+            elements.buttons.stopBtn.addEventListener('click', stopRecording);
+            elements.buttons.cancelBtn.addEventListener('click', cancelRecording);
+            elements.buttons.sendAudioBtn.addEventListener('click', sendAudioMessage);
+            elements.buttons.cancelAudioBtn.addEventListener('click', cancelAudioMessage);
+            
             // Utilitários
             elements.buttons.copyUserId.addEventListener('click', copyUserId);
             elements.buttons.shareQR.addEventListener('click', shareQRCode);
             elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
+        }
+
+        // Inicializa o gravador de áudio
+        function initAudioRecorder() {
+            // Configura o canvas para o visualizador de áudio
+            const canvas = elements.displays.audioVisualizer;
+            const canvasCtx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Configura o contexto de áudio
+            state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            state.analyser = state.audioContext.createAnalyser();
+            state.analyser.fftSize = 256;
+            
+            // Inicializa o array de dados de frequência
+            const bufferLength = state.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            // Função para desenhar o visualizador
+            function drawVisualizer() {
+                if (!state.mediaRecorder || state.mediaRecorder.state === 'inactive') return;
+                
+                requestAnimationFrame(drawVisualizer);
+                state.analyser.getByteFrequencyData(dataArray);
+                
+                canvasCtx.fillStyle = 'rgb(255, 255, 255)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i] / 2;
+                    
+                    canvasCtx.fillStyle = `rgb(${barHeight + 100}, 50, 150)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    
+                    x += barWidth + 1;
+                }
+            }
+            
+            // Configura o temporizador
+            let seconds = 0;
+            let timerInterval;
+            
+            function updateTimer() {
+                seconds++;
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                elements.displays.audioTimer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Configura os event listeners dos botões
+            elements.buttons.recordBtn.addEventListener('click', () => {
+                seconds = 0;
+                timerInterval = setInterval(updateTimer, 1000);
+                drawVisualizer();
+            });
+            
+            elements.buttons.stopBtn.addEventListener('click', () => {
+                clearInterval(timerInterval);
+            });
+            
+            elements.buttons.cancelBtn.addEventListener('click', () => {
+                clearInterval(timerInterval);
+                seconds = 0;
+                elements.displays.audioTimer.textContent = '00:00';
+            });
+        }
+
+        // Mostra o gravador de áudio
+        function showAudioRecorder() {
+            elements.displays.audioRecorder.classList.add('show');
+            elements.displays.audioOverlay.classList.add('show');
+            elements.displays.audioPlayer.style.display = 'none';
+            elements.buttons.stopBtn.disabled = true;
+        }
+
+        // Esconde o gravador de áudio
+        function hideAudioRecorder() {
+            elements.displays.audioRecorder.classList.remove('show');
+            elements.displays.audioOverlay.classList.remove('show');
+        }
+
+        // Inicia a gravação de áudio
+        async function startRecording() {
+            try {
+                state.audioChunks = [];
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Configura o stream de áudio para o visualizador
+                const source = state.audioContext.createMediaStreamSource(stream);
+                source.connect(state.analyser);
+                
+                state.mediaRecorder = new MediaRecorder(stream);
+                
+                state.mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        state.audioChunks.push(e.data);
+                    }
+                };
+                
+                state.mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(state.audioChunks, { type: 'audio/wav' });
+                    state.currentAudio = audioBlob;
+                    
+                    // Prepara o player de áudio
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    elements.displays.audioPreview.src = audioUrl;
+                    elements.displays.audioPlayer.style.display = 'block';
+                    
+                    // Para o stream de mídia
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                state.mediaRecorder.start(100); // Coleta dados a cada 100ms
+                elements.buttons.recordBtn.disabled = true;
+                elements.buttons.stopBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('Erro ao acessar o microfone:', error);
+                alert('Não foi possível acessar o microfone. Verifique as permissões.');
+                hideAudioRecorder();
+            }
+        }
+
+        // Para a gravação de áudio
+        function stopRecording() {
+            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                state.mediaRecorder.stop();
+                elements.buttons.recordBtn.disabled = false;
+                elements.buttons.stopBtn.disabled = true;
+            }
+        }
+
+        // Cancela a gravação de áudio
+        function cancelRecording() {
+            if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+                state.mediaRecorder.stop();
+            }
+            state.currentAudio = null;
+            hideAudioRecorder();
+        }
+
+        // Envia a mensagem de áudio
+        async function sendAudioMessage() {
+            if (!state.currentAudio || !state.currentUser || !state.currentContact) {
+                hideAudioRecorder();
+                return;
+            }
+            
+            const messageId = Gun.text.random(16);
+            const now = Date.now();
+            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas
+            
+            const message = {
+                id: messageId,
+                sender: state.currentUser.id,
+                receiver: state.currentContact.id,
+                timestamp: now,
+                expiresAt: expiresAt,
+                audio: {
+                    id: Gun.text.random(16),
+                    size: state.currentAudio.size,
+                    type: 'audio/wav',
+                    expiresAt: expiresAt
+                }
+            };
+            
+            try {
+                // Armazena o áudio localmente
+                const audioData = {
+                    id: message.audio.id,
+                    audio: state.currentAudio,
+                    timestamp: now,
+                    expiresAt: expiresAt
+                };
+                
+                await db.putAudio(audioData);
+                
+                // Envia os chunks do áudio via GunDB
+                const audioReader = new FileReader();
+                audioReader.onload = async function(e) {
+                    const arrayBuffer = e.target.result;
+                    const chunkSize = 100000; // 100KB por chunk
+                    const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
+                    
+                    const audioRef = gun.get('audio').get(message.audio.id);
+                    
+                    for (let i = 0; i < totalChunks; i++) {
+                        const chunk = arrayBuffer.slice(i * chunkSize, (i + 1) * chunkSize);
+                        audioRef.get(`chunk_${i}`).put(chunk);
+                        
+                        // Atualiza progresso
+                        const percent = Math.round(((i + 1) / totalChunks) * 100);
+                        elements.displays.progressBar.style.width = `${percent}%`;
+                    }
+                    
+                    // Marca como completo
+                    audioRef.get('complete').put(true);
+                    
+                    // Completa o envio da mensagem
+                    await completeAudioMessageSend(message, messageId);
+                };
+                audioReader.readAsArrayBuffer(state.currentAudio);
+                
+                // Mostra barra de progresso
+                elements.displays.uploadProgress.style.display = 'block';
+                elements.displays.progressBar.style.width = '0%';
+                
+            } catch (error) {
+                console.error('Erro ao enviar mensagem de áudio:', error);
+                alert('Erro ao enviar mensagem de áudio. Tente novamente.');
+            } finally {
+                hideAudioRecorder();
+            }
+        }
+
+        // Completa o envio da mensagem de áudio
+        async function completeAudioMessageSend(message, messageId) {
+            try {
+                await db.put('messages', message);
+                
+                if (!state.messagesCache[state.currentContact.id]) {
+                    state.messagesCache[state.currentContact.id] = [];
+                }
+                state.messagesCache[state.currentContact.id].push(message);
+                
+                renderMessages([message]);
+                
+                // Envia para ambos os usuários no GunDB
+                gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
+                gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
+                
+                // Limpa o áudio atual
+                state.currentAudio = null;
+                elements.displays.uploadProgress.style.display = 'none';
+                
+            } catch (error) {
+                console.error('Erro ao completar envio de áudio:', error);
+                alert('Erro ao enviar mensagem de áudio. Tente novamente.');
+            }
+        }
+
+        // Cancela o envio de áudio
+        function cancelAudioMessage() {
+            state.currentAudio = null;
+            hideAudioRecorder();
         }
 
         // Manipula a seleção de arquivo
@@ -1237,6 +1697,11 @@
                         if (message.file && message.file.id) {
                             gun.get('files').get(message.file.id).put(null);
                         }
+                        
+                        // Remove áudio associado se existir
+                        if (message.audio && message.audio.id) {
+                            gun.get('audio').get(message.audio.id).put(null);
+                        }
                         return;
                     }
                     
@@ -1386,6 +1851,114 @@
                     }
                 }
                 
+                let audioHtml = '';
+                if (message.audio) {
+                    try {
+                        const audioMetadata = message.audio;
+                        
+                        // Verifica se é um áudio enviado via GunDB
+                        if (audioMetadata.id) {
+                            // Registra a transferência em andamento
+                            if (!state.activeFileTransfers[audioMetadata.id]) {
+                                state.activeFileTransfers[audioMetadata.id] = {
+                                    chunks: [],
+                                    totalChunks: 0,
+                                    receivedBytes: 0
+                                };
+                            }
+                            
+                            const transfer = state.activeFileTransfers[audioMetadata.id];
+                            const audioRef = gun.get('audio').get(audioMetadata.id);
+                            
+                            // Monitora os chunks do áudio
+                            audioRef.map().once(async (chunk, key) => {
+                                if (key === 'complete') return;
+                                
+                                if (chunk && !transfer.chunks[key]) {
+                                    transfer.chunks[key] = chunk;
+                                    transfer.receivedBytes += chunk.byteLength || chunk.size || 0;
+                                    
+                                    // Verifica se todos os chunks foram recebidos
+                                    const chunkKeys = Object.keys(transfer.chunks)
+                                        .filter(k => k.startsWith('chunk_'))
+                                        .map(k => parseInt(k.replace('chunk_', '')))
+                                        .sort((a, b) => a - b);
+                                    
+                                    const isComplete = chunkKeys.length > 0 && 
+                                        chunkKeys.every((val, i) => i === 0 || val === chunkKeys[i-1] + 1);
+                                    
+                                    if (isComplete) {
+                                        // Combina todos os chunks
+                                        const totalSize = transfer.receivedBytes;
+                                        const combined = new Uint8Array(totalSize);
+                                        let offset = 0;
+                                        
+                                        chunkKeys.forEach(chunkNum => {
+                                            const chunkKey = `chunk_${chunkNum}`;
+                                            const chunkData = transfer.chunks[chunkKey];
+                                            combined.set(new Uint8Array(chunkData), offset);
+                                            offset += chunkData.byteLength || chunkData.size || 0;
+                                        });
+                                        
+                                        // Cria o blob e URL
+                                        const blob = new Blob([combined], { type: audioMetadata.type });
+                                        const audioUrl = URL.createObjectURL(blob);
+                                        
+                                        audioHtml = `
+                                            <div class="message-file">
+                                                <div class="message-file-icon"><i class="fas fa-microphone"></i></div>
+                                                <div class="message-file-info">
+                                                    <div class="message-file-name">Clip de áudio</div>
+                                                    <div class="message-file-size">${formatFileSize(audioMetadata.size)}</div>
+                                                    <audio controls src="${audioUrl}" style="width: 100%; margin-top: 5px;"></audio>
+                                                </div>
+                                            </div>
+                                        `;
+                                        
+                                        // Atualiza a mensagem com o áudio pronto
+                                        const audioContainer = document.querySelector(`#msg-${message.id} .message-audio-container`);
+                                        if (audioContainer) {
+                                            audioContainer.innerHTML = audioHtml;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Mostra placeholder enquanto o áudio é carregado
+                            audioHtml = `
+                                <div class="message-audio-container">
+                                    <div class="message-file">
+                                        <div class="message-file-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                                        <div class="message-file-info">
+                                            <div class="message-file-name">Clip de áudio</div>
+                                            <div class="message-file-size">${formatFileSize(audioMetadata.size)} (transferindo...)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Áudio armazenado localmente
+                            const audioData = await db.getAudio(audioMetadata.id);
+                            if (audioData && audioData.audio) {
+                                const audioUrl = URL.createObjectURL(audioData.audio);
+                                audioHtml = `
+                                    <div class="message-file">
+                                        <div class="message-file-icon"><i class="fas fa-microphone"></i></div>
+                                        <div class="message-file-info">
+                                            <div class="message-file-name">Clip de áudio</div>
+                                            <div class="message-file-size">${formatFileSize(audioMetadata.size)}</div>
+                                            <audio controls src="${audioUrl}" style="width: 100%; margin-top: 5px;"></audio>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Erro ao carregar áudio:', error);
+                        audioHtml = '<div class="message-file">Clip de áudio não disponível</div>';
+                    }
+                }
+                
                 messageElement.innerHTML = `
                     <div class="message-header">
                         ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
@@ -1394,6 +1967,7 @@
                     </div>
                     ${message.text ? `<div class="message-content">${escapeHtml(message.text)}</div>` : ''}
                     ${fileHtml}
+                    ${audioHtml}
                     ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
                 `;
                 
@@ -1561,6 +2135,11 @@
                         if (msg.file && msg.file.id) {
                             gun.get('files').get(msg.file.id).put(null);
                         }
+                        
+                        // Remove áudio associado se existir
+                        if (msg.audio && msg.audio.id) {
+                            gun.get('audio').get(msg.audio.id).put(null);
+                        }
                     }
                     
                     // Limpa mensagens expiradas do GunDB
@@ -1573,6 +2152,11 @@
                             // Remove arquivo associado
                             if (message.file && message.file.id) {
                                 gun.get('files').get(message.file.id).put(null);
+                            }
+                            
+                            // Remove áudio associado
+                            if (message.audio && message.audio.id) {
+                                gun.get('audio').get(message.audio.id).put(null);
                             }
                         }
                     });
@@ -1853,7 +2437,7 @@
         }
 
         function clearLocalData() {
-            const stores = ['users', 'contacts', 'messages'];
+            const stores = ['users', 'contacts', 'messages', 'audioClips'];
             const requests = stores.map(storeName => {
                 return new Promise((resolve) => {
                     const transaction = state.db.transaction([storeName], 'readwrite');
