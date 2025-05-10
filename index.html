@@ -145,35 +145,6 @@
             word-wrap: break-word;
         }
         
-        .message-file {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: var(--light);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: var(--dark);
-        }
-        
-        .message-file-icon {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-        
-        .message-file-info {
-            flex: 1;
-        }
-        
-        .message-file-name {
-            font-weight: bold;
-        }
-        
-        .message-file-size {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-        
         .message-expiry {
             font-size: 0.7rem;
             opacity: 0.6;
@@ -186,12 +157,6 @@
             padding: 15px;
             background-color: white;
             border-top: 1px solid #eee;
-        }
-        
-        .message-input-container {
-            display: flex;
-            flex: 1;
-            align-items: center;
         }
         
         .message-input input {
@@ -207,20 +172,8 @@
             background-color: var(--primary);
             color: white;
             border: none;
-            cursor: pointer;
-        }
-        
-        .message-input button.send-btn {
             border-radius: 0 20px 20px 0;
-        }
-        
-        .message-input button.file-btn {
-            border-radius: 20px 0 0 20px;
-            margin-right: -1px;
-        }
-        
-        .file-input {
-            display: none;
+            cursor: pointer;
         }
         
         .empty-state {
@@ -454,20 +407,37 @@
             transition: all 0.3s;
         }
         
-        .progress-container {
-            width: 100%;
-            background-color: #f1f1f1;
-            border-radius: 10px;
-            margin-top: 10px;
+        .call-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1100;
             display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
         
-        .progress-bar {
-            height: 10px;
-            background-color: var(--primary);
+        .call-video {
+            width: 100%;
+            max-width: 500px;
+            background-color: black;
             border-radius: 10px;
-            width: 0%;
-            transition: width 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .local-video {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            border-radius: 10px;
+            border: 2px solid var(--primary);
+            z-index: 1101;
         }
         
         @media (max-width: 600px) {
@@ -493,6 +463,12 @@
             .floating-btn {
                 width: 50px;
                 height: 50px;
+            }
+            
+            .local-video {
+                width: 80px;
+                bottom: 10px;
+                right: 10px;
             }
         }
     </style>
@@ -612,6 +588,11 @@
                 <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
                 <div class="avatar" id="chatAvatar"></div>
                 <div id="chatContactName"></div>
+                <div style="margin-left: auto;">
+                    <button id="callButton" class="contact-action-btn" title="Ligar">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="chat-messages" id="chatMessages">
@@ -623,17 +604,8 @@
             </div>
             
             <div class="message-input">
-                <div class="message-input-container">
-                    <input type="file" id="fileInput" class="file-input">
-                    <button id="fileButton" class="file-btn" title="Anexar arquivo">
-                        <i class="fas fa-paperclip"></i>
-                    </button>
-                    <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-                    <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
-                </div>
-                <div class="progress-container" id="uploadProgress">
-                    <div class="progress-bar" id="progressBar"></div>
-                </div>
+                <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
+                <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
@@ -651,11 +623,29 @@
         </button>
     </div>
 
+    <!-- Container de chamada -->
+    <div id="callContainer" class="call-container">
+        <div class="call-info">
+            <div id="callerName" class="caller-name"></div>
+            <div id="callStatus" class="call-status">Conectando...</div>
+        </div>
+        
+        <video id="remoteVideo" class="call-video" autoplay playsinline></video>
+        <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+        
+        <div class="call-controls">
+            <button id="endCallBtn" class="call-btn call-end" title="Encerrar chamada">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     
     <script>
         // Configuração do Gun.js
@@ -665,8 +655,8 @@
                 'https://gun-us.herokuapp.com/gun',
                 'https://gun-eu.herokuapp.com/gun'
             ],
-            localStorage: false,
-            radisk: false,
+            localStorage: true,
+            radisk: true,
             retry: 3
         });
 
@@ -676,10 +666,11 @@
             currentContact: null,
             contactsCache: {},
             messagesCache: {},
-            qrScannerActive: false,
-            currentFile: null,
-            db: null,
-            activeFileTransfers: {}
+            rtcConnection: null,
+            localStream: null,
+            remoteStream: null,
+            isCaller: false,
+            qrScannerActive: false
         };
 
         // Elementos DOM
@@ -706,14 +697,14 @@
                 copyUserId: document.getElementById('copyUserIdBtn'),
                 shareQR: document.getElementById('shareQRBtn'),
                 downloadQR: document.getElementById('downloadQRBtn'),
-                fileButton: document.getElementById('fileButton')
+                callButton: document.getElementById('callButton'),
+                endCall: document.getElementById('endCallBtn')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
                 existingUserId: document.getElementById('existingUserId'),
                 message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput'),
-                fileInput: document.getElementById('fileInput')
+                userIdInput: document.getElementById('userIdInput')
             },
             displays: {
                 contactsList: document.getElementById('contactsList'),
@@ -724,12 +715,15 @@
                 qrVideo: document.getElementById('qrVideo'),
                 userNameDisplay: document.getElementById('userNameDisplay'),
                 userIdDisplayText: document.getElementById('userIdDisplayText'),
+                remoteVideo: document.getElementById('remoteVideo'),
+                localVideo: document.getElementById('localVideo'),
+                callContainer: document.getElementById('callContainer'),
+                callerName: document.getElementById('callerName'),
+                callStatus: document.getElementById('callStatus'),
                 floatingButtons: document.querySelector('.floating-buttons'),
                 scanOverlay: document.querySelector('.scan-overlay'),
                 createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback'),
-                uploadProgress: document.getElementById('uploadProgress'),
-                progressBar: document.getElementById('progressBar')
+                loadUserFeedback: document.getElementById('loadUserFeedback')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -738,170 +732,39 @@
             }
         };
 
-        // Inicialização do IndexedDB
-        function initIndexedDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('BunnyChatDB', 3);
-                
-                request.onerror = (event) => {
-                    console.error('Erro ao abrir o IndexedDB:', event.target.error);
-                    reject(event.target.error);
-                };
-                
-                request.onsuccess = (event) => {
-                    state.db = event.target.result;
-                    resolve(state.db);
-                };
-                
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    
-                    if (!db.objectStoreNames.contains('users')) {
-                        db.createObjectStore('users', { keyPath: 'id' });
-                    }
-                    
-                    if (!db.objectStoreNames.contains('contacts')) {
-                        db.createObjectStore('contacts', { keyPath: 'id' });
-                    }
-                    
-                    if (!db.objectStoreNames.contains('messages')) {
-                        const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
-                        messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
-                    }
-                };
-            });
-        }
-
-        // Funções para operações no IndexedDB
-        const db = {
-            put: (storeName, data) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.put(data);
-                    
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = (event) => reject(event.target.error);
-                });
-            },
-            
-            get: (storeName, key) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.get(key);
-                    
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = (event) => reject(event.target.error);
-                });
-            },
-            
-            getAll: (storeName) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.getAll();
-                    
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = (event) => reject(event.target.error);
-                });
-            },
-            
-            getMessages: (sender, receiver) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = state.db.transaction(['messages'], 'readonly');
-                    const store = transaction.objectStore('messages');
-                    const index = store.index('conversation');
-                    
-                    const range = IDBKeyRange.bound(
-                        [sender, receiver],
-                        [sender, receiver]
-                    );
-                    
-                    const request = index.getAll(range);
-                    
-                    request.onsuccess = () => {
-                        const messages1 = request.result;
-                        
-                        const range2 = IDBKeyRange.bound(
-                            [receiver, sender],
-                            [receiver, sender]
-                        );
-                        
-                        const request2 = index.getAll(range2);
-                        
-                        request2.onsuccess = () => {
-                            const messages2 = request2.result;
-                            const allMessages = [...messages1, ...messages2]
-                                .sort((a, b) => a.timestamp - b.timestamp);
-                            resolve(allMessages);
-                        };
-                        
-                        request2.onerror = (event) => reject(event.target.error);
-                    };
-                    
-                    request.onerror = (event) => reject(event.target.error);
-                });
-            },
-            
-            delete: (storeName, key) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.delete(key);
-                    
-                    request.onsuccess = () => resolve();
-                    request.onerror = (event) => reject(event.target.error);
-                });
-            }
-        };
-
         // Inicialização
-        async function init() {
-            try {
-                await initIndexedDB();
-                setupEventListeners();
-                await checkForExistingUser();
-                startMessageCleanupInterval();
-            } catch (error) {
-                console.error('Erro na inicialização:', error);
-                alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
-            }
+        function init() {
+            setupEventListeners();
+            checkForExistingUser();
+            startMessageCleanupInterval();
         }
 
         // Verifica se há usuário salvo localmente
-        async function checkForExistingUser() {
-            try {
-                const users = await db.getAll('users');
-                if (users.length > 0) {
-                    state.currentUser = users[0];
-                    await loadLocalData();
+        function checkForExistingUser() {
+            const savedUser = localStorage.getItem('bunnyChatUser');
+            if (savedUser) {
+                try {
+                    state.currentUser = JSON.parse(savedUser);
+                    loadLocalData();
                     showScreen('main');
-                    await syncContacts();
-                } else {
+                    syncContacts();
+                } catch (e) {
+                    console.error('Erro ao carregar usuário:', e);
+                    clearLocalData();
                     showScreen('userSelect');
                 }
-            } catch (error) {
-                console.error('Erro ao carregar usuário:', error);
+            } else {
                 showScreen('userSelect');
             }
         }
 
         // Carrega dados locais
-        async function loadLocalData() {
-            try {
-                const contacts = await db.getAll('contacts');
-                state.contactsCache = contacts.reduce((acc, contact) => {
-                    acc[contact.id] = contact;
-                    return acc;
-                }, {});
-                
-                if (state.currentUser && state.currentContact) {
-                    await syncMessages();
-                }
-            } catch (error) {
-                console.error('Erro ao carregar dados locais:', error);
-            }
+        function loadLocalData() {
+            const cachedContacts = localStorage.getItem('bunnyChatContacts');
+            if (cachedContacts) state.contactsCache = JSON.parse(cachedContacts);
+            
+            const cachedMessages = localStorage.getItem('bunnyChatMessages');
+            if (cachedMessages) state.messagesCache = JSON.parse(cachedMessages);
         }
 
         // Configura os event listeners
@@ -935,9 +798,9 @@
                 if (e.key === 'Enter') sendMessage();
             });
             
-            // Arquivos
-            elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
-            elements.inputs.fileInput.addEventListener('change', handleFileSelect);
+            // Chamadas
+            elements.buttons.callButton.addEventListener('click', startCall);
+            elements.buttons.endCall.addEventListener('click', endCall);
             
             // Utilitários
             elements.buttons.copyUserId.addEventListener('click', copyUserId);
@@ -945,38 +808,12 @@
             elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
         }
 
-        // Manipula a seleção de arquivo
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const MAX_FILE_SIZE = 50 * 1024 * 1024;
-            if (file.size > MAX_FILE_SIZE) {
-                alert('O arquivo é muito grande. O tamanho máximo permitido é 50MB.');
-                return;
-            }
-            
-            state.currentFile = file;
-            elements.inputs.message.placeholder = `Arquivo: ${file.name} (${formatFileSize(file.size)})`;
-            elements.inputs.message.focus();
-        }
-
-        // Formata o tamanho do arquivo para exibição
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
         // Mostra uma tela específica
         function showScreen(screenName) {
             Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
             elements.screens[screenName].classList.add('active');
             
+            // Atualiza botões flutuantes
             elements.displays.floatingButtons.style.display = 
                 (screenName === 'main' || screenName === 'chat') ? 'flex' : 'none';
             
@@ -1004,14 +841,15 @@
             elements.inputs.userIdInput.value = state.currentUser.id;
         }
 
-        // Cria um novo usuário
-        async function createUser() {
+        // Cria um novo usuário - VERSÃO CORRIGIDA
+        function createUser() {
             const userName = elements.inputs.newUserName.value.trim();
             if (!userName) {
                 showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
                 return;
             }
             
+            // Ativa estado de loading
             setButtonLoading(elements.buttons.createUser, true);
             
             const userId = Gun.text.random(16);
@@ -1022,64 +860,76 @@
                 lastSeen: Date.now()
             };
             
+            // Limpa feedback anterior
             elements.displays.createUserFeedback.style.display = 'none';
             
-            try {
-                await db.put('users', user);
-                gun.get('users').get(userId).put(user);
+            // Criação otimizada do usuário
+            const userRef = gun.get('users').get(userId);
+            
+            userRef.put(user, (ack) => {
+                setButtonLoading(elements.buttons.createUser, false);
                 
+                if (ack.err) {
+                    console.error('Erro ao criar usuário:', ack.err);
+                    showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
+                    return;
+                }
+                
+                // Atualiza estado local
                 state.currentUser = user;
+                localStorage.setItem('bunnyChatUser', JSON.stringify(user));
+                
+                // Inicializa estruturas vazias
                 state.contactsCache = {};
                 state.messagesCache = {};
+                localStorage.setItem('bunnyChatContacts', JSON.stringify({}));
+                localStorage.setItem('bunnyChatMessages', JSON.stringify({}));
                 
                 showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
+                
+                // Limpa o formulário
                 elements.inputs.newUserName.value = '';
                 
+                // Mostra a tela principal após breve delay
                 setTimeout(() => {
                     elements.displays.createUserFeedback.style.display = 'none';
                     showScreen('main');
+                    
+                    // Garante que o QR Code seja gerado
                     showUserQRInfo();
                     generateQrCode();
                 }, 800);
-            } catch (error) {
-                console.error('Erro ao criar usuário:', error);
-                showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
-            } finally {
-                setButtonLoading(elements.buttons.createUser, false);
-            }
+            });
         }
 
         // Carrega um usuário existente
-        async function loadUser() {
+        function loadUser() {
             const userId = elements.inputs.existingUserId.value.trim();
             if (!userId) {
                 showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
                 return;
             }
             
+            // Ativa estado de loading
             setButtonLoading(elements.buttons.loadUser, true);
+            
+            // Limpa feedback anterior
             elements.displays.loadUserFeedback.style.display = 'none';
             
-            try {
-                let user = await db.get('users', userId);
-                
-                if (!user) {
-                    user = await new Promise((resolve) => {
-                        gun.get('users').get(userId).once(resolve, { wait: 2000 });
-                    });
-                    
-                    if (user) {
-                        await db.put('users', user);
-                    }
-                }
+            gun.get('users').get(userId).once(user => {
+                // Desativa estado de loading
+                setButtonLoading(elements.buttons.loadUser, false);
                 
                 if (user && user.name) {
                     state.currentUser = user;
-                    await loadLocalData();
+                    localStorage.setItem('bunnyChatUser', JSON.stringify(user));
                     
                     showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
+                    
+                    // Limpa o formulário
                     elements.inputs.existingUserId.value = '';
                     
+                    // Mostra a tela principal após 1 segundo
                     setTimeout(() => {
                         elements.displays.loadUserFeedback.style.display = 'none';
                         showScreen('main');
@@ -1087,12 +937,7 @@
                 } else {
                     showFeedback('Usuário não encontrado', 'error', 'loadUser');
                 }
-            } catch (error) {
-                console.error('Erro ao carregar usuário:', error);
-                showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
-            } finally {
-                setButtonLoading(elements.buttons.loadUser, false);
-            }
+            }, { wait: 2000 }); // Timeout de 2 segundos
         }
 
         // Mostra mensagem de feedback
@@ -1114,57 +959,74 @@
             }
         }
 
-        // Sincroniza contatos entre IndexedDB e Gun.js
-        async function syncContacts() {
+        // Sincroniza contatos entre localStorage e Gun.js
+        function syncContacts() {
             if (!state.currentUser) return;
             
-            try {
-                const contacts = await db.getAll('contacts');
-                state.contactsCache = contacts.reduce((acc, contact) => {
-                    acc[contact.id] = contact;
-                    return acc;
-                }, {});
-                
-                renderContacts(Object.values(state.contactsCache));
-                
-                gun.get('users').get(state.currentUser.id).get('contacts').map().once(async (contact, id) => {
-                    if (!contact) {
-                        if (state.contactsCache[id]) {
-                            delete state.contactsCache[id];
-                            await db.delete('contacts', id);
-                            renderContacts(Object.values(state.contactsCache));
-                        }
-                        return;
-                    }
-                    
-                    state.contactsCache[id] = contact;
-                    await db.put('contacts', contact);
-                    renderContacts(Object.values(state.contactsCache));
-                });
-            } catch (error) {
-                console.error('Erro ao sincronizar contatos:', error);
+            // Carrega do localStorage primeiro
+            const cachedContacts = localStorage.getItem('bunnyChatContacts');
+            if (cachedContacts) {
+                state.contactsCache = JSON.parse(cachedContacts);
+                renderContacts(state.contactsCache);
             }
+            
+            // Sincroniza com Gun.js
+            gun.get('users').get(state.currentUser.id).get('contacts').map().once((contact, id) => {
+                if (!contact) {
+                    // Remove contato se não existir no Gun.js
+                    if (state.contactsCache[id]) {
+                        delete state.contactsCache[id];
+                        localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                        renderContacts(state.contactsCache);
+                    }
+                    return;
+                }
+                
+                // Atualiza cache local
+                state.contactsCache[id] = contact;
+                localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                renderContacts(state.contactsCache);
+            });
         }
 
         // Renderiza a lista de contatos
         function renderContacts(contacts) {
             elements.displays.contactsList.innerHTML = '';
             
-            contacts.sort((a, b) => a.name.localeCompare(b.name))
-                .forEach((contact) => {
+            Object.entries(contacts).sort((a, b) => a[1].name.localeCompare(b[1].name))
+                .forEach(([id, contact]) => {
                     const contactElement = document.createElement('div');
                     contactElement.className = 'contact-item';
                     contactElement.innerHTML = `
                         <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
                         <div style="flex: 1;">
                             <div style="font-weight: bold;">${contact.name}</div>
-                            <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">${id}</div>
+                        </div>
+                        <div class="contact-actions">
+                            <button class="contact-action-btn" title="Ligar" data-id="${id}">
+                                <i class="fas fa-phone"></i>
+                            </button>
+                            <button class="contact-action-btn" title="Remover contato" data-id="${id}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>
                     `;
                     
-                    contactElement.addEventListener('click', () => {
-                        state.currentContact = contact;
+                    contactElement.querySelector('.avatar, div:nth-child(2)').addEventListener('click', () => {
+                        state.currentContact = { id, ...contact };
                         showChatScreen();
+                    });
+                    
+                    contactElement.querySelector('.contact-action-btn:nth-child(1)').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        state.currentContact = { id, ...contact };
+                        startCall();
+                    });
+                    
+                    contactElement.querySelector('.contact-action-btn:nth-child(2)').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        removeContact(id);
                     });
                     
                     elements.displays.contactsList.appendChild(contactElement);
@@ -1181,53 +1043,56 @@
             syncMessages();
         }
 
-        // Sincroniza mensagens entre IndexedDB e Gun.js
-        async function syncMessages() {
+        // Sincroniza mensagens entre localStorage e Gun.js
+        function syncMessages() {
             if (!state.currentUser || !state.currentContact) return;
             
-            try {
-                const now = Date.now();
-                const contactId = state.currentContact.id;
+            const now = Date.now();
+            const contactId = state.currentContact.id;
+            const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${contactId}`;
+            
+            // Carrega mensagens do localStorage
+            const cachedMessages = localStorage.getItem(cacheKey) || '[]';
+            let localMessages = JSON.parse(cachedMessages);
+            
+            // Filtra mensagens expiradas
+            localMessages = localMessages.filter(msg => msg.expiresAt > now);
+            
+            // Atualiza cache local
+            state.messagesCache[contactId] = localMessages;
+            localStorage.setItem(cacheKey, JSON.stringify(localMessages));
+            
+            // Renderiza mensagens locais
+            renderMessages(localMessages.filter(msg => 
+                (msg.sender === contactId && msg.receiver === state.currentUser.id) || 
+                (msg.sender === state.currentUser.id && msg.receiver === contactId)
+            );
+            
+            // Sincroniza com Gun.js
+            gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
+                if (!message) return;
                 
-                const localMessages = await db.getMessages(state.currentUser.id, contactId);
-                const validMessages = localMessages.filter(msg => msg.expiresAt > now);
+                // Verifica expiração
+                if (message.expiresAt && message.expiresAt < now) {
+                    gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                    return;
+                }
                 
-                state.messagesCache[contactId] = validMessages;
-                renderMessages(validMessages);
+                // Adiciona ao cache local se for uma mensagem relevante
+                const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
+                                   (message.sender === state.currentUser.id && message.receiver === contactId);
                 
-                gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
-                    if (!message) return;
-                    
-                    if (message.expiresAt && message.expiresAt < now) {
-                        gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                        
-                        // Remove arquivo associado se existir
-                        if (message.file && message.file.id) {
-                            gun.get('files').get(message.file.id).put(null);
-                        }
-                        return;
+                if (isRelevant) {
+                    // Verifica se a mensagem já existe no cache
+                    const messageExists = localMessages.some(msg => msg.id === id);
+                    if (!messageExists) {
+                        localMessages.push(message);
+                        state.messagesCache[contactId] = localMessages;
+                        localStorage.setItem(cacheKey, JSON.stringify(localMessages));
+                        renderMessages([message]);
                     }
-                    
-                    const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
-                                       (message.sender === state.currentUser.id && message.receiver === contactId);
-                    
-                    if (isRelevant) {
-                        const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
-                        if (!messageExists) {
-                            await db.put('messages', message);
-                            
-                            if (!state.messagesCache[contactId]) {
-                                state.messagesCache[contactId] = [];
-                            }
-                            state.messagesCache[contactId].push(message);
-                            
-                            renderMessages([message]);
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('Erro ao sincronizar mensagens:', error);
-            }
+                }
+            });
         }
 
         // Renderiza mensagens no chat
@@ -1243,11 +1108,8 @@
                 return;
             }
             
-            if (messages.length > 0 && elements.displays.chatMessages.querySelector('.empty-state')) {
-                elements.displays.chatMessages.innerHTML = '';
-            }
-            
-            messages.forEach(async (message) => {
+            messages.forEach(message => {
+                // Verifica se a mensagem já está renderizada
                 if (document.getElementById(`msg-${message.id}`)) return;
                 
                 const isSender = message.sender === state.currentUser.id;
@@ -1262,159 +1124,28 @@
                 const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 const expiryDateStr = expiryDate.toLocaleDateString();
                 
-                let fileHtml = '';
-                if (message.file) {
-                    try {
-                        const fileMetadata = message.file;
-                        
-                        // Verifica se é um arquivo enviado via GunDB
-                        if (fileMetadata.id) {
-                            // Registra a transferência em andamento
-                            if (!state.activeFileTransfers[fileMetadata.id]) {
-                                state.activeFileTransfers[fileMetadata.id] = {
-                                    chunks: [],
-                                    totalChunks: 0,
-                                    receivedBytes: 0
-                                };
-                            }
-                            
-                            const transfer = state.activeFileTransfers[fileMetadata.id];
-                            const fileRef = gun.get('files').get(fileMetadata.id);
-                            
-                            // Monitora os chunks do arquivo
-                            fileRef.map().once(async (chunk, key) => {
-                                if (key === 'complete') return;
-                                
-                                if (chunk && !transfer.chunks[key]) {
-                                    transfer.chunks[key] = chunk;
-                                    transfer.receivedBytes += chunk.byteLength || chunk.size || 0;
-                                    
-                                    // Verifica se todos os chunks foram recebidos
-                                    const chunkKeys = Object.keys(transfer.chunks)
-                                        .filter(k => k.startsWith('chunk_'))
-                                        .map(k => parseInt(k.replace('chunk_', '')))
-                                        .sort((a, b) => a - b);
-                                    
-                                    const isComplete = chunkKeys.length > 0 && 
-                                        chunkKeys.every((val, i) => i === 0 || val === chunkKeys[i-1] + 1);
-                                    
-                                    if (isComplete) {
-                                        // Combina todos os chunks
-                                        const totalSize = transfer.receivedBytes;
-                                        const combined = new Uint8Array(totalSize);
-                                        let offset = 0;
-                                        
-                                        chunkKeys.forEach(chunkNum => {
-                                            const chunkKey = `chunk_${chunkNum}`;
-                                            const chunkData = transfer.chunks[chunkKey];
-                                            combined.set(new Uint8Array(chunkData), offset);
-                                            offset += chunkData.byteLength || chunkData.size || 0;
-                                        });
-                                        
-                                        // Cria o blob e URL
-                                        const blob = new Blob([combined], { type: fileMetadata.type });
-                                        const fileUrl = URL.createObjectURL(blob);
-                                        
-                                        const fileIcon = getFileIcon(fileMetadata.type);
-                                        fileHtml = `
-                                            <a href="${fileUrl}" download="${fileMetadata.name}" class="message-file">
-                                                <div class="message-file-icon">${fileIcon}</div>
-                                                <div class="message-file-info">
-                                                    <div class="message-file-name">${fileMetadata.name}</div>
-                                                    <div class="message-file-size">${formatFileSize(fileMetadata.size)}</div>
-                                                </div>
-                                            </a>
-                                        `;
-                                        
-                                        // Atualiza a mensagem com o arquivo pronto
-                                        const fileContainer = document.querySelector(`#msg-${message.id} .message-file-container`);
-                                        if (fileContainer) {
-                                            fileContainer.innerHTML = fileHtml;
-                                        }
-                                    }
-                                }
-                            });
-                            
-                            // Mostra placeholder enquanto o arquivo é carregado
-                            fileHtml = `
-                                <div class="message-file-container">
-                                    <div class="message-file">
-                                        <div class="message-file-icon"><i class="fas fa-spinner fa-spin"></i></div>
-                                        <div class="message-file-info">
-                                            <div class="message-file-name">${fileMetadata.name}</div>
-                                            <div class="message-file-size">${formatFileSize(fileMetadata.size)} (transferindo...)</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    } catch (error) {
-                        console.error('Erro ao carregar arquivo:', error);
-                        fileHtml = '<div class="message-file">Arquivo não disponível</div>';
-                    }
-                }
-                
                 messageElement.innerHTML = `
                     <div class="message-header">
                         ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
                         <div class="message-sender">${isSender ? 'Você' : state.currentContact.name}</div>
                         <div class="message-time">${formatTime(message.timestamp)}</div>
                     </div>
-                    ${message.text ? `<div class="message-content">${escapeHtml(message.text)}</div>` : ''}
-                    ${fileHtml}
+                    <div class="message-content">${escapeHtml(message.text)}</div>
                     ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
                 `;
                 
                 elements.displays.chatMessages.appendChild(messageElement);
-                elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
             });
-        }
-
-        // Retorna o ícone apropriado para o tipo de arquivo
-        function getFileIcon(fileType) {
-            if (!fileType) return '<i class="fas fa-file"></i>';
             
-            const type = fileType.split('/')[0];
-            const extension = fileType.split('/')[1];
-            
-            const icons = {
-                image: 'fa-file-image',
-                audio: 'fa-file-audio',
-                video: 'fa-file-video',
-                application: {
-                    pdf: 'fa-file-pdf',
-                    msword: 'fa-file-word',
-                    'vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word',
-                    'vnd.ms-excel': 'fa-file-excel',
-                    'vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel',
-                    'vnd.ms-powerpoint': 'fa-file-powerpoint',
-                    'vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint',
-                    'zip': 'fa-file-archive',
-                    'x-rar-compressed': 'fa-file-archive',
-                    'x-7z-compressed': 'fa-file-archive'
-                },
-                text: 'fa-file-alt'
-            };
-            
-            if (type === 'application') {
-                const appIcon = icons.application[extension];
-                return `<i class="fas ${appIcon || 'fa-file'}"></i>`;
-            }
-            
-            return `<i class="fas ${icons[type] || 'fa-file'}"></i>`;
+            elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
         }
 
         // Envia uma mensagem
-        async function sendMessage() {
+        function sendMessage() {
             if (!state.currentUser || !state.currentContact) return;
             
             const messageText = elements.inputs.message.value.trim();
-            const hasFile = state.currentFile !== null;
-            
-            if (!messageText && !hasFile) return;
-            
-            elements.displays.uploadProgress.style.display = 'block';
-            elements.displays.progressBar.style.width = '0%';
+            if (!messageText) return;
             
             const messageId = Gun.text.random(16);
             const now = Date.now();
@@ -1424,134 +1155,52 @@
                 id: messageId,
                 sender: state.currentUser.id,
                 receiver: state.currentContact.id,
+                text: messageText,
                 timestamp: now,
                 expiresAt: expiresAt
             };
             
-            if (messageText) {
-                message.text = messageText;
-            }
+            // Atualiza cache local
+            const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${state.currentContact.id}`;
+            const cachedMessages = localStorage.getItem(cacheKey) || '[]';
+            const messages = JSON.parse(cachedMessages);
+            messages.push(message);
+            localStorage.setItem(cacheKey, JSON.stringify(messages));
+            state.messagesCache[state.currentContact.id] = messages;
             
-            if (hasFile) {
-                try {
-                    const fileId = Gun.text.random(16);
-                    const fileRef = gun.get('files').get(fileId);
-                    
-                    // Armazena metadados do arquivo
-                    const fileMetadata = {
-                        id: fileId,
-                        name: state.currentFile.name,
-                        type: state.currentFile.type,
-                        size: state.currentFile.size,
-                        expiresAt: expiresAt
-                    };
-                    
-                    message.file = fileMetadata;
-                    
-                    // Envia os chunks do arquivo
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const arrayBuffer = e.target.result;
-                        const chunkSize = 100000; // 100KB por chunk
-                        const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
-                        
-                        for (let i = 0; i < totalChunks; i++) {
-                            const chunk = arrayBuffer.slice(i * chunkSize, (i + 1) * chunkSize);
-                            fileRef.get(`chunk_${i}`).put(chunk);
-                            
-                            // Atualiza progresso
-                            const percent = Math.round(((i + 1) / totalChunks) * 100);
-                            elements.displays.progressBar.style.width = `${percent}%`;
-                        }
-                        
-                        // Marca como completo
-                        fileRef.get('complete').put(true);
-                        
-                        // Completa o envio da mensagem
-                        completeMessageSend(message, messageId);
-                    };
-                    reader.readAsArrayBuffer(state.currentFile);
-                    
-                } catch (error) {
-                    console.error('Erro ao enviar arquivo:', error);
-                    alert('Erro ao enviar arquivo. Tente novamente.');
-                    elements.displays.uploadProgress.style.display = 'none';
-                }
-            } else {
-                await completeMessageSend(message, messageId);
-                elements.displays.uploadProgress.style.display = 'none';
-            }
-        }
-
-        // Completa o envio da mensagem (com ou sem arquivo)
-        async function completeMessageSend(message, messageId) {
-            try {
-                await db.put('messages', message);
-                
-                if (!state.messagesCache[state.currentContact.id]) {
-                    state.messagesCache[state.currentContact.id] = [];
-                }
-                state.messagesCache[state.currentContact.id].push(message);
-                
-                renderMessages([message]);
-                
-                // Envia para ambos os usuários no GunDB
-                gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
-                gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
-                
-                // Limpa os campos
-                elements.inputs.message.value = '';
-                elements.inputs.message.placeholder = 'Digite sua mensagem...';
-                state.currentFile = null;
-                elements.inputs.fileInput.value = '';
-            } catch (error) {
-                console.error('Erro ao enviar mensagem:', error);
-                alert('Erro ao enviar mensagem. Tente novamente.');
-            }
+            // Renderiza imediatamente
+            renderMessages([message]);
+            
+            // Envia para Gun.js
+            gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
+            gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
+            
+            elements.inputs.message.value = '';
         }
 
         // Inicia o intervalo para limpar mensagens expiradas
         function startMessageCleanupInterval() {
-            setInterval(async () => {
+            setInterval(() => {
                 if (!state.currentUser) return;
                 
                 const now = Date.now();
                 
-                try {
-                    // Limpa mensagens expiradas do IndexedDB
-                    const allMessages = await db.getAll('messages');
-                    const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
+                // Limpa mensagens expiradas no Gun.js
+                gun.get('users').get(state.currentUser.id).get('messages').map().once((message, id) => {
+                    if (!message || !message.expiresAt) return;
                     
-                    for (const msg of expiredMessages) {
-                        await db.delete('messages', msg.id);
-                        
-                        // Remove arquivo associado se existir
-                        if (msg.file && msg.file.id) {
-                            gun.get('files').get(msg.file.id).put(null);
-                        }
+                    if (message.expiresAt < now) {
+                        gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                     }
-                    
-                    // Limpa mensagens expiradas do GunDB
-                    gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
-                        if (!message || !message.expiresAt) return;
-                        
-                        if (message.expiresAt < now) {
-                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            
-                            // Remove arquivo associado
-                            if (message.file && message.file.id) {
-                                gun.get('files').get(message.file.id).put(null);
-                            }
-                        }
-                    });
-                    
-                    // Limpa cache local
-                    Object.keys(state.messagesCache).forEach(contactId => {
-                        state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
-                    });
-                } catch (error) {
-                    console.error('Erro ao limpar mensagens expiradas:', error);
-                }
+                });
+                
+                // Limpa mensagens expiradas no localStorage
+                Object.keys(state.messagesCache).forEach(contactId => {
+                    const cacheKey = `bunnyChatMessages_${state.currentUser.id}_${contactId}`;
+                    const messages = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
+                    state.messagesCache[contactId] = messages;
+                    localStorage.setItem(cacheKey, JSON.stringify(messages));
+                });
             }, 60 * 60 * 1000); // Verifica a cada hora
         }
 
@@ -1566,10 +1215,12 @@
                 userName: state.currentUser.name
             });
             
+            // Limpa o canvas antes de gerar novo QR Code
             const canvas = elements.displays.qrCode;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // Define um tamanho fixo para o canvas
             canvas.width = 200;
             canvas.height = 200;
             
@@ -1589,10 +1240,12 @@
             if (state.qrScannerActive) return;
             state.qrScannerActive = true;
             
+            // Primeiro, verifique se já há um stream ativo e pare-o
             if (elements.displays.qrVideo.srcObject) {
                 elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
             }
 
+            // Esconde o overlay de escaneamento inicialmente
             if (elements.displays.scanOverlay) {
                 elements.displays.scanOverlay.style.display = 'none';
             }
@@ -1609,10 +1262,12 @@
                 
                 elements.displays.qrVideo.play()
                     .then(() => {
+                        // Mostra o overlay após o vídeo começar
                         if (elements.displays.scanOverlay) {
                             elements.displays.scanOverlay.style.display = 'flex';
                         }
 
+                        // Configura o canvas para análise
                         const canvasElement = document.createElement('canvas');
                         const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
                         canvasElement.width = elements.displays.qrVideo.videoWidth;
@@ -1642,7 +1297,7 @@
                                                 }
                                                 stopQrScanner();
                                                 addContact(qrData.userId, qrData.userName || 'Novo Contato');
-                                                return;
+                                                return; // Para o loop após encontrar um QR válido
                                             }
                                         } catch (e) {
                                             console.log('QR Code inválido:', e);
@@ -1674,6 +1329,7 @@
             if (!state.qrScannerActive) return;
             state.qrScannerActive = false;
             
+            // Mostra o overlay novamente
             if (elements.displays.scanOverlay) {
                 elements.displays.scanOverlay.style.display = 'flex';
             }
@@ -1687,77 +1343,120 @@
         }
 
         // Adiciona um novo contato
-        async function addContact(userId, userName) {
+        function addContact(userId, userName) {
             if (!state.currentUser || !userId) return;
             
-            // Verifica se o contato já existe
-            if (state.contactsCache[userId]) {
-                alert('Este contato já está na sua lista!');
-                return;
-            }
-
             const contact = { id: userId, name: userName, timestamp: Date.now() };
-            const myContact = { 
-                id: state.currentUser.id, 
-                name: state.currentUser.name, 
-                timestamp: Date.now() 
-            };
             
-            try {
-                // Adiciona o contato ao IndexedDB local
-                await db.put('contacts', contact);
-                
-                // Adiciona ao cache local
-                state.contactsCache[userId] = contact;
-                
-                // Renderiza a lista de contatos
-                renderContacts(Object.values(state.contactsCache));
-                
-                // 1. Adiciona o contato ao usuário atual no GunDB
-                gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
-                
-                // 2. Adiciona o usuário atual como contato do outro usuário
-                // Primeiro verificamos se o outro usuário existe
-                const otherUserExists = await new Promise(resolve => {
-                    gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
-                });
-
-                if (otherUserExists) {
-                    // Adiciona reciprocidade - isso garante que o outro usuário também terá o contato
-                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
-                    
-                    // Atualiza o cache local do outro usuário (se ele estiver online)
-                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
-                        if (updated) {
-                            console.log('Contato atualizado para o outro usuário');
-                        }
-                    });
-                } else {
-                    console.log('O outro usuário não foi encontrado no banco de dados');
+            // Adiciona o contato ao usuário atual
+            gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact, ack => {
+                if (!ack.err) {
+                    state.contactsCache[userId] = contact;
+                    localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                    syncContacts();
+                    alert(`Contato ${userName} adicionado com sucesso!`);
                 }
-                
-                alert(`Contato ${userName} adicionado com sucesso!`);
-            } catch (error) {
-                console.error('Erro ao adicionar contato:', error);
-                alert('Erro ao adicionar contato. Tente novamente.');
-            }
+            });
+            
+            // Adiciona reciprocidade
+            gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put({
+                id: state.currentUser.id,
+                name: state.currentUser.name,
+                timestamp: Date.now()
+            });
         }
 
         // Remove um contato
-        async function removeContact(userId) {
+        function removeContact(userId) {
             if (!state.currentUser || !userId) return;
             
             if (confirm(`Tem certeza que deseja remover este contato?`)) {
-                try {
-                    await db.delete('contacts', userId);
-                    delete state.contactsCache[userId];
-                    renderContacts(Object.values(state.contactsCache));
-                    gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
-                } catch (error) {
-                    console.error('Erro ao remover contato:', error);
-                    alert('Erro ao remover contato. Tente novamente.');
-                }
+                gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
+                delete state.contactsCache[userId];
+                localStorage.setItem('bunnyChatContacts', JSON.stringify(state.contactsCache));
+                syncContacts();
             }
+        }
+
+        // Inicia uma chamada
+        async function startCall() {
+            if (!state.currentUser || !state.currentContact) return;
+            
+            state.isCaller = true;
+            elements.displays.callerName.textContent = state.currentContact.name;
+            elements.displays.callStatus.textContent = "Chamando...";
+            elements.displays.callContainer.style.display = 'flex';
+            
+            try {
+                state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                elements.displays.localVideo.srcObject = state.localStream;
+                
+                state.rtcConnection = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                state.localStream.getTracks().forEach(track => {
+                    state.rtcConnection.addTrack(track, state.localStream);
+                });
+                
+                state.rtcConnection.onicecandidate = e => {
+                    if (e.candidate) {
+                        gun.get('users').get(state.currentContact.id).get('iceCandidates').put({
+                            from: state.currentUser.id,
+                            candidate: e.candidate
+                        });
+                    }
+                };
+                
+                state.rtcConnection.ontrack = e => {
+                    elements.displays.remoteVideo.srcObject = e.streams[0];
+                    state.remoteStream = e.streams[0];
+                    elements.displays.callStatus.textContent = "Chamada em andamento";
+                };
+                
+                const offer = await state.rtcConnection.createOffer();
+                await state.rtcConnection.setLocalDescription(offer);
+                
+                const callId = Gun.text.random(16);
+                gun.get('users').get(state.currentContact.id).get('calls').get(callId).put({
+                    type: 'offer',
+                    from: state.currentUser.id,
+                    offer: offer
+                });
+                
+                // Monitora resposta
+                gun.get('users').get(state.currentUser.id).get('calls').get(callId).on(data => {
+                    if (!data || !data.answer) return;
+                    
+                    if (data.answer.type === 'answer') {
+                        state.rtcConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    } else if (data.answer.type === 'reject') {
+                        endCall();
+                        alert(`${state.currentContact.name} recusou a chamada.`);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Erro ao iniciar chamada:', error);
+                endCall();
+                alert('Erro ao iniciar chamada. Verifique suas permissões de câmera e microfone.');
+            }
+        }
+
+        // Encerra a chamada
+        function endCall() {
+            if (state.rtcConnection) state.rtcConnection.close();
+            if (state.localStream) state.localStream.getTracks().forEach(track => track.stop());
+            if (state.remoteStream) state.remoteStream.getTracks().forEach(track => track.stop());
+            
+            elements.displays.callContainer.style.display = 'none';
+            elements.displays.remoteVideo.srcObject = null;
+            elements.displays.localVideo.srcObject = null;
+            
+            state.isCaller = false;
+            state.rtcConnection = null;
+            state.localStream = null;
+            state.remoteStream = null;
         }
 
         // Utilitários
@@ -1797,23 +1496,9 @@
         }
 
         function clearLocalData() {
-            const stores = ['users', 'contacts', 'messages'];
-            const requests = stores.map(storeName => {
-                return new Promise((resolve) => {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.clear();
-                    
-                    request.onsuccess = () => resolve();
-                    request.onerror = () => resolve();
-                });
-            });
-            
-            Promise.all(requests).then(() => {
-                state.currentUser = null;
-                state.contactsCache = {};
-                state.messagesCache = {};
-            });
+            localStorage.removeItem('bunnyChatUser');
+            localStorage.removeItem('bunnyChatContacts');
+            localStorage.removeItem('bunnyChatMessages');
         }
 
         // Inicializa o aplicativo
