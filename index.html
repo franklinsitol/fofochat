@@ -32,17 +32,16 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
         
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 0;
+            padding: 20px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            width: 100%;
+            position: relative;
         }
         
         header {
@@ -63,28 +62,23 @@
             display: none;
             flex: 1;
             flex-direction: column;
-            height: 100%;
-            width: 100%;
-            position: relative;
         }
         
         .screen.active {
             display: flex;
         }
         
-        /* Layout principal */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        
-        /* Layout do chat */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
+        #chatScreen.active {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--light);
+            z-index: 1000;
+            padding: 0;
+            margin: 0;
+            max-width: 100%;
         }
         
         .chat-header {
@@ -93,85 +87,17 @@
             padding: 15px;
             background-color: var(--primary);
             color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
         
-        .chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            background-color: white;
-        }
-        
-        .message-input-area {
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #eee;
-            position: sticky;
-            bottom: 0;
-        }
-        
-        .message-input-wrapper {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .message-input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 2px solid var(--primary);
-            border-radius: 20px;
-            outline: none;
-        }
-        
-        .send-button {
-            padding: 10px 15px;
-            background-color: var(--primary);
-            color: white;
+        .back-button {
+            background: none;
             border: none;
-            border-radius: 20px;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 10px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         
-        /* Estilos para mensagens */
-        .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 15px;
-            max-width: 80%;
-            position: relative;
-        }
-        
-        .message.received {
-            background-color: white;
-            align-self: flex-start;
-            border: 1px solid #eee;
-        }
-        
-        .message.sent {
-            background-color: var(--secondary);
-            align-self: flex-end;
-        }
-        
-        .message-sender {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .message-time {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            text-align: right;
-            margin-top: 5px;
-        }
-        
-        /* Avatar */
         .avatar {
             width: 40px;
             height: 40px;
@@ -185,56 +111,296 @@
             color: var(--dark);
         }
         
-        /* Botões flutuantes */
-        .floating-buttons {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            background-color: white;
+            overflow-y: auto;
         }
         
-        .floating-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+        .message-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .message-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .message-content {
+            word-wrap: break-word;
+        }
+        
+        .message-file {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: var(--light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--dark);
+        }
+        
+        .message-file-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .message-file-info {
+            flex: 1;
+        }
+        
+        .message-file-name {
+            font-weight: bold;
+        }
+        
+        .message-file-size {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .message-expiry {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        .message-input {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
+        }
+        
+        .message-input-container {
+            display: flex;
+            flex: 1;
+            align-items: center;
+        }
+        
+        .message-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid var(--primary);
+            border-radius: 20px 0 0 20px;
+            outline: none;
+        }
+        
+        .message-input button {
+            padding: 10px 15px;
             background-color: var(--primary);
             color: white;
             border: none;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
         }
         
-        /* QR Code */
-        .qr-section {
+        .message-input button.send-btn {
+            border-radius: 0 20px 20px 0;
+        }
+        
+        .message-input button.file-btn {
+            border-radius: 20px 0 0 20px;
+            margin-right: -1px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .empty-state {
             text-align: center;
-            padding: 20px;
+            padding: 40px 20px;
+            color: var(--dark);
+            opacity: 0.7;
         }
         
         .qr-code-container {
+            text-align: center;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .qr-code {
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 100%;
+        }
+        
+        .user-info {
             background-color: white;
             padding: 15px;
             border-radius: 10px;
-            display: inline-block;
-            margin: 15px 0;
+            margin-bottom: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
-        /* Contatos */
-        .contact-list {
+        .user-info-item {
+            margin-bottom: 10px;
+        }
+        
+        .user-info-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .user-id-container {
+            display: flex;
+            margin: 15px 0;
+        }
+        
+        .user-id-container input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid var(--primary);
+            border-radius: 20px 0 0 20px;
+            outline: none;
+        }
+        
+        .user-id-container button {
+            padding: 10px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             margin-top: 15px;
+        }
+        
+        .share-btn {
+            padding: 8px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .qr-scanner {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .qr-scanner video {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: cover;
+            border-radius: 10px;
+            background-color: black;
+        }
+        
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-direction: column;
+            border-radius: 10px;
+        }
+        
+        .scan-frame {
+            width: 70%;
+            height: 70%;
+            border: 4px solid var(--primary);
+            border-radius: 10px;
+            position: absolute;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .btn-loading .btn-text {
+            visibility: hidden;
+            opacity: 0;
+        }
+        
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            border: 4px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: btn-loading-spinner 1s linear infinite;
+        }
+        
+        @keyframes btn-loading-spinner {
+            from { transform: rotate(0turn); }
+            to { transform: rotate(1turn); }
+        }
+        
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .contact-item {
             display: flex;
             align-items: center;
             padding: 10px;
-            margin-bottom: 10px;
+            margin: 5px 0;
             background-color: white;
             border-radius: 10px;
             cursor: pointer;
@@ -245,96 +411,78 @@
             transform: translateY(-2px);
         }
         
-        /* Scanner QR */
-        .scanner-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        
-        .scanner-video {
-            width: 100%;
-            border-radius: 10px;
-            background-color: #000;
-        }
-        
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-        }
-        
-        .scanner-frame {
-            width: 70%;
-            height: 70%;
-            border: 4px solid var(--primary);
-            border-radius: 10px;
-            position: relative;
-        }
-        
-        /* Formulários */
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 2px solid var(--primary);
-            border-radius: 10px;
-            margin-top: 5px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-        
-        /* Feedback */
-        .feedback {
+        .feedback-message {
             padding: 10px;
             margin: 10px 0;
             border-radius: 5px;
             text-align: center;
+            font-weight: bold;
         }
         
-        .feedback.success {
+        .feedback-success {
             background-color: rgba(76, 175, 80, 0.2);
             color: var(--success);
         }
         
-        .feedback.error {
+        .feedback-error {
             background-color: rgba(244, 67, 54, 0.2);
             color: var(--error);
         }
         
-        /* Estado vazio */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--dark);
-            opacity: 0.7;
+        .floating-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
         }
         
-        /* Responsivo */
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
         @media (max-width: 600px) {
-            .container {
-                padding: 0;
+            .btn-group {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .qr-scanner {
+                max-width: 100%;
             }
             
             .floating-buttons {
@@ -342,8 +490,9 @@
                 right: 15px;
             }
             
-            .message {
-                max-width: 90%;
+            .floating-btn {
+                width: 50px;
+                height: 50px;
             }
         }
     </style>
@@ -356,115 +505,102 @@
     <div class="container">
         <!-- Tela de seleção de usuário -->
         <div id="userSelectScreen" class="screen active">
-            <div class="main-content">
-                <div class="btn-group" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                    <button id="newUserBtn" class="btn">
-                        <span class="btn-text">Novo Usuário</span>
-                    </button>
-                    <button id="existingUserBtn" class="btn">
-                        <span class="btn-text">Usuário Existente</span>
-                    </button>
-                </div>
+            <div class="btn-group">
+                <button id="newUserBtn" class="btn">
+                    <span class="btn-text">Novo Usuário</span>
+                </button>
+                <button id="existingUserBtn" class="btn">
+                    <span class="btn-text">Usuário Existente</span>
+                </button>
             </div>
         </div>
         
         <!-- Tela de novo usuário -->
         <div id="newUserScreen" class="screen">
-            <div class="main-content">
-                <h2 style="text-align: center; margin-bottom: 20px;">Criar Novo Usuário</h2>
-                
-                <div class="form-group">
-                    <label for="newUserName">Seu Nome:</label>
-                    <input type="text" id="newUserName" class="form-input" placeholder="Digite seu nome">
-                </div>
-                
-                <button id="createUserBtn" class="btn">
-                    <span class="btn-text">Criar Usuário</span>
-                </button>
-                
-                <div id="createUserFeedback" class="feedback" style="display: none;"></div>
-                
-                <button id="backToSelectFromNew" class="btn" style="margin-top: 10px;">
-                    <span class="btn-text">Voltar</span>
-                </button>
+            <div style="text-align: center; margin: 20px 0;">
+                <h2>Criar Novo Usuário</h2>
             </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="newUserName">Seu Nome:</label>
+                <input type="text" id="newUserName" placeholder="Digite seu nome" style="width: 100%; padding: 10px; margin-top: 5px; border: 2px solid var(--primary); border-radius: 10px;">
+            </div>
+            
+            <button id="createUserBtn" class="btn" style="width: 100%;">
+                <span class="btn-text">Criar Usuário</span>
+            </button>
+            <div id="createUserFeedback" class="feedback-message" style="display: none;"></div>
+            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;">
+                <span class="btn-text">Voltar</span>
+            </button>
         </div>
         
         <!-- Tela de usuário existente -->
         <div id="existingUserScreen" class="screen">
-            <div class="main-content">
-                <h2 style="text-align: center; margin-bottom: 20px;">Usar Usuário Existente</h2>
-                
-                <div class="form-group">
-                    <label for="existingUserId">ID do Usuário:</label>
-                    <input type="text" id="existingUserId" class="form-input" placeholder="Digite seu ID de usuário">
-                </div>
-                
-                <button id="loadUserBtn" class="btn">
-                    <span class="btn-text">Carregar Usuário</span>
-                </button>
-                
-                <div id="loadUserFeedback" class="feedback" style="display: none;"></div>
-                
-                <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px;">
-                    <span class="btn-text">Voltar</span>
-                </button>
+            <div style="text-align: center; margin: 20px 0;">
+                <h2>Usar Usuário Existente</h2>
             </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="existingUserId">ID do Usuário:</label>
+                <input type="text" id="existingUserId" placeholder="Digite seu ID de usuário" style="width: 100%; padding: 10px; margin-top: 5px; border: 2px solid var(--primary); border-radius: 10px;">
+            </div>
+            
+            <button id="loadUserBtn" class="btn" style="width: 100%;">
+                <span class="btn-text">Carregar Usuário</span>
+            </button>
+            <div id="loadUserFeedback" class="feedback-message" style="display: none;"></div>
+            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;">
+                <span class="btn-text">Voltar</span>
+            </button>
         </div>
         
-        <!-- Tela principal -->
+        <!-- Tela principal do chat -->
         <div id="mainScreen" class="screen">
-            <div class="main-content">
-                <div id="contactsSection">
-                    <h3>Seus Contatos</h3>
-                    <div id="contactsList" class="contact-list"></div>
-                </div>
-                
-                <div id="qrSection" style="display: none;">
-                    <div class="user-info" style="background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                        <div class="user-info-item" style="margin-bottom: 10px;">
-                            <span style="font-weight: bold;">Seu Nome:</span>
-                            <span id="userNameDisplay"></span>
-                        </div>
-                        <div class="user-info-item">
-                            <span style="font-weight: bold;">Seu ID:</span>
-                            <span id="userIdDisplayText"></span>
-                        </div>
+            <div id="contactsSection" style="margin-top: 20px; display: block;">
+                <h3>Seus Contatos</h3>
+                <div id="contactsList" style="margin-top: 10px;"></div>
+            </div>
+            
+            <div id="qrSection" style="margin-top: 20px; display: none;">
+                <div class="user-info">
+                    <div class="user-info-item">
+                        <span class="user-info-label">Seu Nome:</span>
+                        <span id="userNameDisplay"></span>
                     </div>
-                    
-                    <h3 style="text-align: center;">Meu QR Code</h3>
-                    
-                    <div class="qr-section">
-                        <div class="qr-code-container">
-                            <canvas id="qrCodeCanvas"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; margin: 15px 0;">
-                        <input type="text" id="userIdInput" class="form-input" style="border-radius: 20px 0 0 20px; margin: 0;" readonly>
-                        <button id="copyUserIdBtn" style="padding: 10px 15px; background-color: var(--primary); color: white; border: none; border-radius: 0 20px 20px 0;">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
-                        <button id="shareQRBtn" class="btn" style="width: auto; padding: 8px 15px;">
-                            <i class="fas fa-share-alt"></i> Compartilhar
-                        </button>
-                        <button id="downloadQRBtn" class="btn" style="width: auto; padding: 8px 15px;">
-                            <i class="fas fa-download"></i> Baixar QR
-                        </button>
+                    <div class="user-info-item">
+                        <span class="user-info-label">Seu ID:</span>
+                        <span id="userIdDisplayText"></span>
                     </div>
                 </div>
                 
-                <div id="scanSection" style="display: none;">
-                    <div class="scanner-container">
-                        <video id="qrVideo" class="scanner-video" playsinline></video>
-                        <div class="scanner-overlay">
-                            <div class="scanner-frame"></div>
-                            <i class="fas fa-qrcode" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                            <p>Posicione o QR Code na área de leitura</p>
-                        </div>
+                <h3 style="text-align: center;">Meu QR Code</h3>
+                <div class="qr-code-container">
+                    <canvas id="qrCodeCanvas" class="qr-code"></canvas>
+                </div>
+                
+                <div class="user-id-container">
+                    <input type="text" id="userIdInput" readonly>
+                    <button id="copyUserIdBtn" title="Copiar ID"><i class="fas fa-copy"></i></button>
+                </div>
+                
+                <div class="share-buttons">
+                    <button id="shareQRBtn" class="share-btn">
+                        <i class="fas fa-share-alt"></i> Compartilhar
+                    </button>
+                    <button id="downloadQRBtn" class="share-btn">
+                        <i class="fas fa-download"></i> Baixar QR
+                    </button>
+                </div>
+            </div>
+            
+            <div id="scanSection" style="margin-top: 20px; display: none;">
+                <div class="qr-scanner">
+                    <video id="qrVideo" playsinline></video>
+                    <div class="scan-overlay">
+                        <div class="scan-frame"></div>
+                        <i class="fas fa-qrcode" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>Posicione o QR Code na área de leitura</p>
                     </div>
                 </div>
             </div>
@@ -472,40 +608,38 @@
         
         <!-- Tela de chat -->
         <div id="chatScreen" class="screen">
-            <div class="chat-container">
-                <div class="chat-header">
-                    <button id="backToMainBtn" style="background: none; border: none; color: white; font-size: 1.2rem; margin-right: 10px; cursor: pointer;">
-                        <i class="fas fa-arrow-left"></i>
+            <div class="chat-header">
+                <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
+                <div class="avatar" id="chatAvatar"></div>
+                <div id="chatContactName"></div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="empty-state">
+                    <i class="fas fa-comment-dots"></i>
+                    <p>Nenhuma mensagem ainda</p>
+                    <p>Envie uma mensagem para começar a conversa!</p>
+                </div>
+            </div>
+            
+            <div class="message-input">
+                <div class="message-input-container">
+                    <input type="file" id="fileInput" class="file-input">
+                    <button id="fileButton" class="file-btn" title="Anexar arquivo">
+                        <i class="fas fa-paperclip"></i>
                     </button>
-                    <div class="avatar" id="chatAvatar"></div>
-                    <div id="chatContactName"></div>
+                    <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
+                    <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                
-                <div class="chat-messages" id="chatMessages">
-                    <div class="empty-state">
-                        <i class="fas fa-comment-dots"></i>
-                        <p>Nenhuma mensagem ainda</p>
-                        <p>Envie uma mensagem para começar a conversa!</p>
-                    </div>
-                </div>
-                
-                <div class="message-input-area">
-                    <div class="message-input-wrapper">
-                        <input type="text" id="messageInput" class="message-input" placeholder="Digite sua mensagem...">
-                        <button id="sendMessageBtn" class="send-button">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    <div id="uploadProgress" style="width: 100%; background-color: #f1f1f1; border-radius: 10px; margin-top: 10px; display: none;">
-                        <div id="progressBar" style="height: 10px; background-color: var(--primary); border-radius: 10px; width: 0%;"></div>
-                    </div>
+                <div class="progress-container" id="uploadProgress">
+                    <div class="progress-bar" id="progressBar"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Botões flutuantes -->
-    <div class="floating-buttons" style="display: none;">
+    <div class="floating-buttons">
         <button id="showContactsBtn" class="floating-btn" title="Contatos">
             <i class="fas fa-address-book"></i>
         </button>
@@ -544,6 +678,7 @@
             messagesCache: {},
             qrScannerActive: false,
             currentFile: null,
+            db: null,
             activeFileTransfers: {}
         };
 
@@ -570,13 +705,15 @@
                 sendMessage: document.getElementById('sendMessageBtn'),
                 copyUserId: document.getElementById('copyUserIdBtn'),
                 shareQR: document.getElementById('shareQRBtn'),
-                downloadQR: document.getElementById('downloadQRBtn')
+                downloadQR: document.getElementById('downloadQRBtn'),
+                fileButton: document.getElementById('fileButton')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
                 existingUserId: document.getElementById('existingUserId'),
                 message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput')
+                userIdInput: document.getElementById('userIdInput'),
+                fileInput: document.getElementById('fileInput')
             },
             displays: {
                 contactsList: document.getElementById('contactsList'),
@@ -588,10 +725,11 @@
                 userNameDisplay: document.getElementById('userNameDisplay'),
                 userIdDisplayText: document.getElementById('userIdDisplayText'),
                 floatingButtons: document.querySelector('.floating-buttons'),
-                uploadProgress: document.getElementById('uploadProgress'),
-                progressBar: document.getElementById('progressBar'),
+                scanOverlay: document.querySelector('.scan-overlay'),
                 createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback')
+                loadUserFeedback: document.getElementById('loadUserFeedback'),
+                uploadProgress: document.getElementById('uploadProgress'),
+                progressBar: document.getElementById('progressBar')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -600,15 +738,255 @@
             }
         };
 
-        // Funções principais
+        // Inicialização do IndexedDB
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('BunnyChatDB', 3);
+                
+                request.onerror = (event) => {
+                    console.error('Erro ao abrir o IndexedDB:', event.target.error);
+                    reject(event.target.error);
+                };
+                
+                request.onsuccess = (event) => {
+                    state.db = event.target.result;
+                    resolve(state.db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    
+                    if (!db.objectStoreNames.contains('users')) {
+                        db.createObjectStore('users', { keyPath: 'id' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('contacts')) {
+                        db.createObjectStore('contacts', { keyPath: 'id' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('messages')) {
+                        const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
+                        messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
+                    }
+                };
+            });
+        }
+
+        // Funções para operações no IndexedDB
+        const db = {
+            put: (storeName, data) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.put(data);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+            
+            get: (storeName, key) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.get(key);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+            
+            getAll: (storeName) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction([storeName], 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+            
+            getMessages: (sender, receiver) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction(['messages'], 'readonly');
+                    const store = transaction.objectStore('messages');
+                    const index = store.index('conversation');
+                    
+                    const range = IDBKeyRange.bound(
+                        [sender, receiver],
+                        [sender, receiver]
+                    );
+                    
+                    const request = index.getAll(range);
+                    
+                    request.onsuccess = () => {
+                        const messages1 = request.result;
+                        
+                        const range2 = IDBKeyRange.bound(
+                            [receiver, sender],
+                            [receiver, sender]
+                        );
+                        
+                        const request2 = index.getAll(range2);
+                        
+                        request2.onsuccess = () => {
+                            const messages2 = request2.result;
+                            const allMessages = [...messages1, ...messages2]
+                                .sort((a, b) => a.timestamp - b.timestamp);
+                            resolve(allMessages);
+                        };
+                        
+                        request2.onerror = (event) => reject(event.target.error);
+                    };
+                    
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+            
+            delete: (storeName, key) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = state.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.delete(key);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            }
+        };
+
+        // Inicialização
+        async function init() {
+            try {
+                await initIndexedDB();
+                setupEventListeners();
+                await checkForExistingUser();
+                startMessageCleanupInterval();
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+                alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
+            }
+        }
+
+        // Verifica se há usuário salvo localmente
+        async function checkForExistingUser() {
+            try {
+                const users = await db.getAll('users');
+                if (users.length > 0) {
+                    state.currentUser = users[0];
+                    await loadLocalData();
+                    showScreen('main');
+                    await syncContacts();
+                } else {
+                    showScreen('userSelect');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuário:', error);
+                showScreen('userSelect');
+            }
+        }
+
+        // Carrega dados locais
+        async function loadLocalData() {
+            try {
+                const contacts = await db.getAll('contacts');
+                state.contactsCache = contacts.reduce((acc, contact) => {
+                    acc[contact.id] = contact;
+                    return acc;
+                }, {});
+                
+                if (state.currentUser && state.currentContact) {
+                    await syncMessages();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados locais:', error);
+            }
+        }
+
+        // Configura os event listeners
+        function setupEventListeners() {
+            // Navegação
+            elements.buttons.newUser.addEventListener('click', () => showScreen('newUser'));
+            elements.buttons.existingUser.addEventListener('click', () => showScreen('existingUser'));
+            elements.buttons.backToSelectFromNew.addEventListener('click', () => showScreen('userSelect'));
+            elements.buttons.backToSelectFromExisting.addEventListener('click', () => showScreen('userSelect'));
+            elements.buttons.backToMain.addEventListener('click', () => {
+                stopQrScanner();
+                showScreen('main');
+            });
+            
+            // Usuário
+            elements.buttons.createUser.addEventListener('click', createUser);
+            elements.buttons.loadUser.addEventListener('click', loadUser);
+            
+            // Ações principais
+            elements.buttons.showContacts.addEventListener('click', () => toggleSection('contacts'));
+            elements.buttons.showQR.addEventListener('click', () => {
+                toggleSection('qr');
+                showUserQRInfo();
+                generateQrCode();
+            });
+            elements.buttons.scanQR.addEventListener('click', () => toggleSection('scan'));
+            
+            // Chat
+            elements.buttons.sendMessage.addEventListener('click', sendMessage);
+            elements.inputs.message.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            
+            // Arquivos
+            elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
+            elements.inputs.fileInput.addEventListener('change', handleFileSelect);
+            
+            // Utilitários
+            elements.buttons.copyUserId.addEventListener('click', copyUserId);
+            elements.buttons.shareQR.addEventListener('click', shareQRCode);
+            elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
+        }
+
+        // Manipula a seleção de arquivo
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const MAX_FILE_SIZE = 50 * 1024 * 1024;
+            if (file.size > MAX_FILE_SIZE) {
+                alert('O arquivo é muito grande. O tamanho máximo permitido é 50MB.');
+                return;
+            }
+            
+            state.currentFile = file;
+            elements.inputs.message.placeholder = `Arquivo: ${file.name} (${formatFileSize(file.size)})`;
+            elements.inputs.message.focus();
+        }
+
+        // Formata o tamanho do arquivo para exibição
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Mostra uma tela específica
         function showScreen(screenName) {
             Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
             elements.screens[screenName].classList.add('active');
             
             elements.displays.floatingButtons.style.display = 
                 (screenName === 'main' || screenName === 'chat') ? 'flex' : 'none';
+            
+            if (screenName === 'main') {
+                elements.sections.contacts.style.display = 'block';
+                syncContacts();
+            }
         }
 
+        // Alterna entre seções
         function toggleSection(sectionName) {
             Object.values(elements.sections).forEach(section => section.style.display = 'none');
             elements.sections[sectionName].style.display = 'block';
@@ -617,58 +995,567 @@
             else stopQrScanner();
         }
 
-        // Funções do chat
-        function sendMessage() {
+        // Mostra informações do usuário na seção QR
+        function showUserQRInfo() {
+            if (!state.currentUser) return;
+            
+            elements.displays.userNameDisplay.textContent = state.currentUser.name;
+            elements.displays.userIdDisplayText.textContent = state.currentUser.id;
+            elements.inputs.userIdInput.value = state.currentUser.id;
+        }
+
+        // Cria um novo usuário
+        async function createUser() {
+            const userName = elements.inputs.newUserName.value.trim();
+            if (!userName) {
+                showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
+                return;
+            }
+            
+            setButtonLoading(elements.buttons.createUser, true);
+            
+            const userId = Gun.text.random(16);
+            const user = { 
+                id: userId, 
+                name: userName, 
+                createdAt: Date.now(),
+                lastSeen: Date.now()
+            };
+            
+            elements.displays.createUserFeedback.style.display = 'none';
+            
+            try {
+                await db.put('users', user);
+                gun.get('users').get(userId).put(user);
+                
+                state.currentUser = user;
+                state.contactsCache = {};
+                state.messagesCache = {};
+                
+                showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
+                elements.inputs.newUserName.value = '';
+                
+                setTimeout(() => {
+                    elements.displays.createUserFeedback.style.display = 'none';
+                    showScreen('main');
+                    showUserQRInfo();
+                    generateQrCode();
+                }, 800);
+            } catch (error) {
+                console.error('Erro ao criar usuário:', error);
+                showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
+            } finally {
+                setButtonLoading(elements.buttons.createUser, false);
+            }
+        }
+
+        // Carrega um usuário existente
+        async function loadUser() {
+            const userId = elements.inputs.existingUserId.value.trim();
+            if (!userId) {
+                showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
+                return;
+            }
+            
+            setButtonLoading(elements.buttons.loadUser, true);
+            elements.displays.loadUserFeedback.style.display = 'none';
+            
+            try {
+                let user = await db.get('users', userId);
+                
+                if (!user) {
+                    user = await new Promise((resolve) => {
+                        gun.get('users').get(userId).once(resolve, { wait: 2000 });
+                    });
+                    
+                    if (user) {
+                        await db.put('users', user);
+                    }
+                }
+                
+                if (user && user.name) {
+                    state.currentUser = user;
+                    await loadLocalData();
+                    
+                    showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
+                    elements.inputs.existingUserId.value = '';
+                    
+                    setTimeout(() => {
+                        elements.displays.loadUserFeedback.style.display = 'none';
+                        showScreen('main');
+                    }, 1000);
+                } else {
+                    showFeedback('Usuário não encontrado', 'error', 'loadUser');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuário:', error);
+                showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
+            } finally {
+                setButtonLoading(elements.buttons.loadUser, false);
+            }
+        }
+
+        // Mostra mensagem de feedback
+        function showFeedback(message, type, context) {
+            const feedbackElement = elements.displays[`${context}Feedback`];
+            feedbackElement.textContent = message;
+            feedbackElement.className = `feedback-message feedback-${type}`;
+            feedbackElement.style.display = 'block';
+        }
+
+        // Define estado de loading para um botão
+        function setButtonLoading(button, isLoading) {
+            if (isLoading) {
+                button.classList.add('btn-loading');
+                button.disabled = true;
+            } else {
+                button.classList.remove('btn-loading');
+                button.disabled = false;
+            }
+        }
+
+        // Sincroniza contatos entre IndexedDB e Gun.js
+        async function syncContacts() {
+            if (!state.currentUser) return;
+            
+            try {
+                const contacts = await db.getAll('contacts');
+                state.contactsCache = contacts.reduce((acc, contact) => {
+                    acc[contact.id] = contact;
+                    return acc;
+                }, {});
+                
+                renderContacts(Object.values(state.contactsCache));
+                
+                gun.get('users').get(state.currentUser.id).get('contacts').map().once(async (contact, id) => {
+                    if (!contact) {
+                        if (state.contactsCache[id]) {
+                            delete state.contactsCache[id];
+                            await db.delete('contacts', id);
+                            renderContacts(Object.values(state.contactsCache));
+                        }
+                        return;
+                    }
+                    
+                    state.contactsCache[id] = contact;
+                    await db.put('contacts', contact);
+                    renderContacts(Object.values(state.contactsCache));
+                });
+            } catch (error) {
+                console.error('Erro ao sincronizar contatos:', error);
+            }
+        }
+
+        // Renderiza a lista de contatos
+        function renderContacts(contacts) {
+            elements.displays.contactsList.innerHTML = '';
+            
+            contacts.sort((a, b) => a.name.localeCompare(b.name))
+                .forEach((contact) => {
+                    const contactElement = document.createElement('div');
+                    contactElement.className = 'contact-item';
+                    contactElement.innerHTML = `
+                        <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold;">${contact.name}</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
+                        </div>
+                    `;
+                    
+                    contactElement.addEventListener('click', () => {
+                        state.currentContact = contact;
+                        showChatScreen();
+                    });
+                    
+                    elements.displays.contactsList.appendChild(contactElement);
+                });
+        }
+
+        // Mostra a tela de chat
+        function showChatScreen() {
+            if (!state.currentContact) return;
+            
+            elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
+            elements.displays.chatContactName.textContent = state.currentContact.name;
+            showScreen('chat');
+            syncMessages();
+        }
+
+        // Sincroniza mensagens entre IndexedDB e Gun.js
+        async function syncMessages() {
+            if (!state.currentUser || !state.currentContact) return;
+            
+            try {
+                const now = Date.now();
+                const contactId = state.currentContact.id;
+                
+                const localMessages = await db.getMessages(state.currentUser.id, contactId);
+                const validMessages = localMessages.filter(msg => msg.expiresAt > now);
+                
+                state.messagesCache[contactId] = validMessages;
+                renderMessages(validMessages);
+                
+                gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
+                    if (!message) return;
+                    
+                    if (message.expiresAt && message.expiresAt < now) {
+                        gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                        
+                        // Remove arquivo associado se existir
+                        if (message.file && message.file.id) {
+                            gun.get('files').get(message.file.id).put(null);
+                        }
+                        return;
+                    }
+                    
+                    const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
+                                       (message.sender === state.currentUser.id && message.receiver === contactId);
+                    
+                    if (isRelevant) {
+                        const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
+                        if (!messageExists) {
+                            await db.put('messages', message);
+                            
+                            if (!state.messagesCache[contactId]) {
+                                state.messagesCache[contactId] = [];
+                            }
+                            state.messagesCache[contactId].push(message);
+                            
+                            renderMessages([message]);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao sincronizar mensagens:', error);
+            }
+        }
+
+        // Renderiza mensagens no chat
+        function renderMessages(messages) {
+            if (messages.length === 0 && elements.displays.chatMessages.children.length === 0) {
+                elements.displays.chatMessages.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-comment-dots"></i>
+                        <p>Nenhuma mensagem ainda</p>
+                        <p>Envie uma mensagem para começar a conversa!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (messages.length > 0 && elements.displays.chatMessages.querySelector('.empty-state')) {
+                elements.displays.chatMessages.innerHTML = '';
+            }
+            
+            messages.forEach(async (message) => {
+                if (document.getElementById(`msg-${message.id}`)) return;
+                
+                const isSender = message.sender === state.currentUser.id;
+                
+                const messageElement = document.createElement('div');
+                messageElement.id = `msg-${message.id}`;
+                messageElement.className = 'message-item';
+                messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
+                messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
+                
+                const expiryDate = new Date(message.expiresAt);
+                const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const expiryDateStr = expiryDate.toLocaleDateString();
+                
+                let fileHtml = '';
+                if (message.file) {
+                    try {
+                        const fileMetadata = message.file;
+                        
+                        // Verifica se é um arquivo enviado via GunDB
+                        if (fileMetadata.id) {
+                            // Registra a transferência em andamento
+                            if (!state.activeFileTransfers[fileMetadata.id]) {
+                                state.activeFileTransfers[fileMetadata.id] = {
+                                    chunks: [],
+                                    totalChunks: 0,
+                                    receivedBytes: 0
+                                };
+                            }
+                            
+                            const transfer = state.activeFileTransfers[fileMetadata.id];
+                            const fileRef = gun.get('files').get(fileMetadata.id);
+                            
+                            // Monitora os chunks do arquivo
+                            fileRef.map().once(async (chunk, key) => {
+                                if (key === 'complete') return;
+                                
+                                if (chunk && !transfer.chunks[key]) {
+                                    transfer.chunks[key] = chunk;
+                                    transfer.receivedBytes += chunk.byteLength || chunk.size || 0;
+                                    
+                                    // Verifica se todos os chunks foram recebidos
+                                    const chunkKeys = Object.keys(transfer.chunks)
+                                        .filter(k => k.startsWith('chunk_'))
+                                        .map(k => parseInt(k.replace('chunk_', '')))
+                                        .sort((a, b) => a - b);
+                                    
+                                    const isComplete = chunkKeys.length > 0 && 
+                                        chunkKeys.every((val, i) => i === 0 || val === chunkKeys[i-1] + 1);
+                                    
+                                    if (isComplete) {
+                                        // Combina todos os chunks
+                                        const totalSize = transfer.receivedBytes;
+                                        const combined = new Uint8Array(totalSize);
+                                        let offset = 0;
+                                        
+                                        chunkKeys.forEach(chunkNum => {
+                                            const chunkKey = `chunk_${chunkNum}`;
+                                            const chunkData = transfer.chunks[chunkKey];
+                                            combined.set(new Uint8Array(chunkData), offset);
+                                            offset += chunkData.byteLength || chunkData.size || 0;
+                                        });
+                                        
+                                        // Cria o blob e URL
+                                        const blob = new Blob([combined], { type: fileMetadata.type });
+                                        const fileUrl = URL.createObjectURL(blob);
+                                        
+                                        const fileIcon = getFileIcon(fileMetadata.type);
+                                        fileHtml = `
+                                            <a href="${fileUrl}" download="${fileMetadata.name}" class="message-file">
+                                                <div class="message-file-icon">${fileIcon}</div>
+                                                <div class="message-file-info">
+                                                    <div class="message-file-name">${fileMetadata.name}</div>
+                                                    <div class="message-file-size">${formatFileSize(fileMetadata.size)}</div>
+                                                </div>
+                                            </a>
+                                        `;
+                                        
+                                        // Atualiza a mensagem com o arquivo pronto
+                                        const fileContainer = document.querySelector(`#msg-${message.id} .message-file-container`);
+                                        if (fileContainer) {
+                                            fileContainer.innerHTML = fileHtml;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Mostra placeholder enquanto o arquivo é carregado
+                            fileHtml = `
+                                <div class="message-file-container">
+                                    <div class="message-file">
+                                        <div class="message-file-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                                        <div class="message-file-info">
+                                            <div class="message-file-name">${fileMetadata.name}</div>
+                                            <div class="message-file-size">${formatFileSize(fileMetadata.size)} (transferindo...)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao carregar arquivo:', error);
+                        fileHtml = '<div class="message-file">Arquivo não disponível</div>';
+                    }
+                }
+                
+                messageElement.innerHTML = `
+                    <div class="message-header">
+                        ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
+                        <div class="message-sender">${isSender ? 'Você' : state.currentContact.name}</div>
+                        <div class="message-time">${formatTime(message.timestamp)}</div>
+                    </div>
+                    ${message.text ? `<div class="message-content">${escapeHtml(message.text)}</div>` : ''}
+                    ${fileHtml}
+                    ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
+                `;
+                
+                elements.displays.chatMessages.appendChild(messageElement);
+                elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
+            });
+        }
+
+        // Retorna o ícone apropriado para o tipo de arquivo
+        function getFileIcon(fileType) {
+            if (!fileType) return '<i class="fas fa-file"></i>';
+            
+            const type = fileType.split('/')[0];
+            const extension = fileType.split('/')[1];
+            
+            const icons = {
+                image: 'fa-file-image',
+                audio: 'fa-file-audio',
+                video: 'fa-file-video',
+                application: {
+                    pdf: 'fa-file-pdf',
+                    msword: 'fa-file-word',
+                    'vnd.openxmlformats-officedocument.wordprocessingml.document': 'fa-file-word',
+                    'vnd.ms-excel': 'fa-file-excel',
+                    'vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'fa-file-excel',
+                    'vnd.ms-powerpoint': 'fa-file-powerpoint',
+                    'vnd.openxmlformats-officedocument.presentationml.presentation': 'fa-file-powerpoint',
+                    'zip': 'fa-file-archive',
+                    'x-rar-compressed': 'fa-file-archive',
+                    'x-7z-compressed': 'fa-file-archive'
+                },
+                text: 'fa-file-alt'
+            };
+            
+            if (type === 'application') {
+                const appIcon = icons.application[extension];
+                return `<i class="fas ${appIcon || 'fa-file'}"></i>`;
+            }
+            
+            return `<i class="fas ${icons[type] || 'fa-file'}"></i>`;
+        }
+
+        // Envia uma mensagem
+        async function sendMessage() {
+            if (!state.currentUser || !state.currentContact) return;
+            
             const messageText = elements.inputs.message.value.trim();
-            if (!messageText) return;
+            const hasFile = state.currentFile !== null;
+            
+            if (!messageText && !hasFile) return;
+            
+            elements.displays.uploadProgress.style.display = 'block';
+            elements.displays.progressBar.style.width = '0%';
             
             const messageId = Gun.text.random(16);
             const now = Date.now();
+            const expiresAt = now + (24 * 60 * 60 * 1000); // 24 horas
             
             const message = {
                 id: messageId,
                 sender: state.currentUser.id,
                 receiver: state.currentContact.id,
-                text: messageText,
                 timestamp: now,
-                expiresAt: now + (24 * 60 * 60 * 1000)
+                expiresAt: expiresAt
             };
             
-            renderMessage(message, true);
-            elements.inputs.message.value = '';
-            
-            // Simulação de envio para o GunDB
-            setTimeout(() => {
-                const responseMessage = {
-                    id: Gun.text.random(16),
-                    sender: state.currentContact.id,
-                    receiver: state.currentUser.id,
-                    text: `Resposta para: "${messageText}"`,
-                    timestamp: now + 1000,
-                    expiresAt: now + (24 * 60 * 60 * 1000)
-                };
-                renderMessage(responseMessage, false);
-            }, 1000);
-        }
-
-        function renderMessage(message, isSender) {
-            if (elements.displays.chatMessages.querySelector('.empty-state')) {
-                elements.displays.chatMessages.innerHTML = '';
+            if (messageText) {
+                message.text = messageText;
             }
             
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${isSender ? 'sent' : 'received'}`;
-            messageElement.innerHTML = `
-                ${!isSender ? `<div class="message-sender">${state.currentContact.name}</div>` : ''}
-                <div>${message.text}</div>
-                <div class="message-time">${new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-            `;
-            
-            elements.displays.chatMessages.appendChild(messageElement);
-            elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
+            if (hasFile) {
+                try {
+                    const fileId = Gun.text.random(16);
+                    const fileRef = gun.get('files').get(fileId);
+                    
+                    // Armazena metadados do arquivo
+                    const fileMetadata = {
+                        id: fileId,
+                        name: state.currentFile.name,
+                        type: state.currentFile.type,
+                        size: state.currentFile.size,
+                        expiresAt: expiresAt
+                    };
+                    
+                    message.file = fileMetadata;
+                    
+                    // Envia os chunks do arquivo
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        const chunkSize = 100000; // 100KB por chunk
+                        const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
+                        
+                        for (let i = 0; i < totalChunks; i++) {
+                            const chunk = arrayBuffer.slice(i * chunkSize, (i + 1) * chunkSize);
+                            fileRef.get(`chunk_${i}`).put(chunk);
+                            
+                            // Atualiza progresso
+                            const percent = Math.round(((i + 1) / totalChunks) * 100);
+                            elements.displays.progressBar.style.width = `${percent}%`;
+                        }
+                        
+                        // Marca como completo
+                        fileRef.get('complete').put(true);
+                        
+                        // Completa o envio da mensagem
+                        completeMessageSend(message, messageId);
+                    };
+                    reader.readAsArrayBuffer(state.currentFile);
+                    
+                } catch (error) {
+                    console.error('Erro ao enviar arquivo:', error);
+                    alert('Erro ao enviar arquivo. Tente novamente.');
+                    elements.displays.uploadProgress.style.display = 'none';
+                }
+            } else {
+                await completeMessageSend(message, messageId);
+                elements.displays.uploadProgress.style.display = 'none';
+            }
         }
 
-        // Funções do QR Code
+        // Completa o envio da mensagem (com ou sem arquivo)
+        async function completeMessageSend(message, messageId) {
+            try {
+                await db.put('messages', message);
+                
+                if (!state.messagesCache[state.currentContact.id]) {
+                    state.messagesCache[state.currentContact.id] = [];
+                }
+                state.messagesCache[state.currentContact.id].push(message);
+                
+                renderMessages([message]);
+                
+                // Envia para ambos os usuários no GunDB
+                gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
+                gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
+                
+                // Limpa os campos
+                elements.inputs.message.value = '';
+                elements.inputs.message.placeholder = 'Digite sua mensagem...';
+                state.currentFile = null;
+                elements.inputs.fileInput.value = '';
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                alert('Erro ao enviar mensagem. Tente novamente.');
+            }
+        }
+
+        // Inicia o intervalo para limpar mensagens expiradas
+        function startMessageCleanupInterval() {
+            setInterval(async () => {
+                if (!state.currentUser) return;
+                
+                const now = Date.now();
+                
+                try {
+                    // Limpa mensagens expiradas do IndexedDB
+                    const allMessages = await db.getAll('messages');
+                    const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
+                    
+                    for (const msg of expiredMessages) {
+                        await db.delete('messages', msg.id);
+                        
+                        // Remove arquivo associado se existir
+                        if (msg.file && msg.file.id) {
+                            gun.get('files').get(msg.file.id).put(null);
+                        }
+                    }
+                    
+                    // Limpa mensagens expiradas do GunDB
+                    gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
+                        if (!message || !message.expiresAt) return;
+                        
+                        if (message.expiresAt < now) {
+                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                            
+                            // Remove arquivo associado
+                            if (message.file && message.file.id) {
+                                gun.get('files').get(message.file.id).put(null);
+                            }
+                        }
+                    });
+                    
+                    // Limpa cache local
+                    Object.keys(state.messagesCache).forEach(contactId => {
+                        state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
+                    });
+                } catch (error) {
+                    console.error('Erro ao limpar mensagens expiradas:', error);
+                }
+            }, 60 * 60 * 1000); // Verifica a cada hora
+        }
+
+        // Gera o QR Code do usuário
         function generateQrCode() {
             if (!state.currentUser) return;
             
@@ -679,7 +1566,14 @@
                 userName: state.currentUser.name
             });
             
-            QRCode.toCanvas(elements.displays.qrCode, qrData, {
+            const canvas = elements.displays.qrCode;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            canvas.width = 200;
+            canvas.height = 200;
+            
+            QRCode.toCanvas(canvas, qrData, {
                 width: 200,
                 margin: 2,
                 color: { dark: '#5A2A3E', light: '#FFF2F5' }
@@ -688,49 +1582,86 @@
             });
             
             elements.inputs.userIdInput.value = state.currentUser.id;
-            elements.displays.userNameDisplay.textContent = state.currentUser.name;
-            elements.displays.userIdDisplayText.textContent = state.currentUser.id;
         }
 
+        // Inicia o scanner de QR Code
         function startQrScanner() {
             if (state.qrScannerActive) return;
             state.qrScannerActive = true;
             
+            if (elements.displays.qrVideo.srcObject) {
+                elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            if (elements.displays.scanOverlay) {
+                elements.displays.scanOverlay.style.display = 'none';
+            }
+
             navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
             }).then(stream => {
                 elements.displays.qrVideo.srcObject = stream;
-                elements.displays.qrVideo.play();
+                elements.displays.qrVideo.setAttribute('playsinline', true);
                 
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                function scanFrame() {
-                    if (!state.qrScannerActive) return;
-                    
-                    canvas.width = elements.displays.qrVideo.videoWidth;
-                    canvas.height = elements.displays.qrVideo.videoHeight;
-                    ctx.drawImage(elements.displays.qrVideo, 0, 0, canvas.width, canvas.height);
-                    
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code) {
-                        try {
-                            const qrData = JSON.parse(code.data);
-                            if (qrData.app === "BunnyChat" && qrData.userId) {
-                                stopQrScanner();
-                                addContact(qrData.userId, qrData.userName || 'Novo Contato');
-                            }
-                        } catch (e) {
-                            console.log('QR Code inválido:', e);
+                elements.displays.qrVideo.play()
+                    .then(() => {
+                        if (elements.displays.scanOverlay) {
+                            elements.displays.scanOverlay.style.display = 'flex';
                         }
-                    }
-                    
-                    requestAnimationFrame(scanFrame);
-                }
-                
-                scanFrame();
+
+                        const canvasElement = document.createElement('canvas');
+                        const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
+                        canvasElement.width = elements.displays.qrVideo.videoWidth;
+                        canvasElement.height = elements.displays.qrVideo.videoHeight;
+
+                        function scanFrame() {
+                            if (!state.qrScannerActive || !elements.displays.qrVideo.srcObject) return;
+
+                            try {
+                                if (elements.displays.qrVideo.readyState === elements.displays.qrVideo.HAVE_ENOUGH_DATA) {
+                                    canvasElement.width = elements.displays.qrVideo.videoWidth;
+                                    canvasElement.height = elements.displays.qrVideo.videoHeight;
+                                    canvas.drawImage(elements.displays.qrVideo, 0, 0, canvasElement.width, canvasElement.height);
+                                    
+                                    const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                        inversionAttempts: "dontInvert",
+                                    });
+
+                                    if (code) {
+                                        try {
+                                            const qrData = JSON.parse(code.data);
+                                            if (qrData.app === "BunnyChat" && qrData.userId) {
+                                                if (qrData.userId === state.currentUser.id) {
+                                                    alert('Você não pode adicionar a si mesmo!');
+                                                    return;
+                                                }
+                                                stopQrScanner();
+                                                addContact(qrData.userId, qrData.userName || 'Novo Contato');
+                                                return;
+                                            }
+                                        } catch (e) {
+                                            console.log('QR Code inválido:', e);
+                                        }
+                                    }
+                                }
+                                requestAnimationFrame(scanFrame);
+                            } catch (e) {
+                                console.error('Erro no scanner:', e);
+                            }
+                        }
+
+                        scanFrame();
+                    })
+                    .catch(err => {
+                        console.error('Erro ao reproduzir vídeo:', err);
+                        alert('Erro ao iniciar a câmera. Por favor, recarregue a página e tente novamente.');
+                        stopQrScanner();
+                    });
             }).catch(err => {
                 console.error('Erro ao acessar a câmera:', err);
                 alert('Não foi possível acessar a câmera. Verifique as permissões.');
@@ -738,167 +1669,112 @@
             });
         }
 
+        // Para o scanner de QR Code
         function stopQrScanner() {
             if (!state.qrScannerActive) return;
             state.qrScannerActive = false;
             
+            if (elements.displays.scanOverlay) {
+                elements.displays.scanOverlay.style.display = 'flex';
+            }
+
             if (elements.displays.qrVideo.srcObject) {
-                elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
+                elements.displays.qrVideo.srcObject.getTracks().forEach(track => {
+                    track.stop();
+                });
                 elements.displays.qrVideo.srcObject = null;
             }
         }
 
-        // Funções de contatos
-        function addContact(userId, userName) {
-            if (!state.currentUser) return;
+        // Adiciona um novo contato
+        async function addContact(userId, userName) {
+            if (!state.currentUser || !userId) return;
             
-            if (userId === state.currentUser.id) {
-                alert('Você não pode adicionar a si mesmo!');
-                return;
-            }
-            
+            // Verifica se o contato já existe
             if (state.contactsCache[userId]) {
                 alert('Este contato já está na sua lista!');
                 return;
             }
-            
-            const contact = { id: userId, name: userName };
-            state.contactsCache[userId] = contact;
-            renderContacts();
-            alert(`Contato ${userName} adicionado com sucesso!`);
-        }
 
-        function renderContacts() {
-            elements.displays.contactsList.innerHTML = '';
+            const contact = { id: userId, name: userName, timestamp: Date.now() };
+            const myContact = { 
+                id: state.currentUser.id, 
+                name: state.currentUser.name, 
+                timestamp: Date.now() 
+            };
             
-            Object.values(state.contactsCache).forEach(contact => {
-                const contactElement = document.createElement('div');
-                contactElement.className = 'contact-item';
-                contactElement.innerHTML = `
-                    <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">${contact.name}</div>
-                        <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
-                    </div>
-                    <button class="delete-contact-btn" data-contact-id="${contact.id}" style="background: none; border: none; color: var(--error); cursor: pointer;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+            try {
+                // Adiciona o contato ao IndexedDB local
+                await db.put('contacts', contact);
                 
-                contactElement.addEventListener('click', (e) => {
-                    if (!e.target.closest('.delete-contact-btn')) {
-                        state.currentContact = contact;
-                        showChatScreen();
-                    }
+                // Adiciona ao cache local
+                state.contactsCache[userId] = contact;
+                
+                // Renderiza a lista de contatos
+                renderContacts(Object.values(state.contactsCache));
+                
+                // 1. Adiciona o contato ao usuário atual no GunDB
+                gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
+                
+                // 2. Adiciona o usuário atual como contato do outro usuário
+                // Primeiro verificamos se o outro usuário existe
+                const otherUserExists = await new Promise(resolve => {
+                    gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
                 });
+
+                if (otherUserExists) {
+                    // Adiciona reciprocidade - isso garante que o outro usuário também terá o contato
+                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
+                    
+                    // Atualiza o cache local do outro usuário (se ele estiver online)
+                    gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
+                        if (updated) {
+                            console.log('Contato atualizado para o outro usuário');
+                        }
+                    });
+                } else {
+                    console.log('O outro usuário não foi encontrado no banco de dados');
+                }
                 
-                contactElement.querySelector('.delete-contact-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    removeContact(contact.id);
-                });
-                
-                elements.displays.contactsList.appendChild(contactElement);
-            });
-        }
-
-        function removeContact(userId) {
-            if (!confirm('Tem certeza que deseja remover este contato?')) return;
-            
-            delete state.contactsCache[userId];
-            renderContacts();
-            
-            if (state.currentContact && state.currentContact.id === userId) {
-                state.currentContact = null;
-                showScreen('main');
+                alert(`Contato ${userName} adicionado com sucesso!`);
+            } catch (error) {
+                console.error('Erro ao adicionar contato:', error);
+                alert('Erro ao adicionar contato. Tente novamente.');
             }
         }
 
-        function showChatScreen() {
-            if (!state.currentContact) return;
+        // Remove um contato
+        async function removeContact(userId) {
+            if (!state.currentUser || !userId) return;
             
-            elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
-            elements.displays.chatContactName.textContent = state.currentContact.name;
-            showScreen('chat');
-            
-            // Limpar mensagens existentes
-            elements.displays.chatMessages.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-comment-dots"></i>
-                    <p>Nenhuma mensagem ainda</p>
-                    <p>Envie uma mensagem para começar a conversa!</p>
-                </div>
-            `;
-        }
-
-        // Funções de usuário
-        function createUser() {
-            const userName = elements.inputs.newUserName.value.trim();
-            if (!userName) {
-                showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
-                return;
+            if (confirm(`Tem certeza que deseja remover este contato?`)) {
+                try {
+                    await db.delete('contacts', userId);
+                    delete state.contactsCache[userId];
+                    renderContacts(Object.values(state.contactsCache));
+                    gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
+                } catch (error) {
+                    console.error('Erro ao remover contato:', error);
+                    alert('Erro ao remover contato. Tente novamente.');
+                }
             }
-            
-            const userId = Gun.text.random(16);
-            state.currentUser = { 
-                id: userId, 
-                name: userName,
-                createdAt: Date.now()
-            };
-            
-            showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
-            setTimeout(() => {
-                showScreen('main');
-                generateQrCode();
-            }, 800);
-        }
-
-        function loadUser() {
-            const userId = elements.inputs.existingUserId.value.trim();
-            if (!userId) {
-                showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
-                return;
-            }
-            
-            // Simulação de carregamento de usuário
-            state.currentUser = {
-                id: userId,
-                name: 'Usuário Carregado',
-                createdAt: Date.now()
-            };
-            
-            // Simulação de contatos
-            state.contactsCache = {
-                'contact-1': { id: 'contact-1', name: 'Coelho Branco' },
-                'contact-2': { id: 'contact-2', name: 'Coelho Cinza' }
-            };
-            
-            showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
-            setTimeout(() => {
-                showScreen('main');
-                renderContacts();
-            }, 800);
-        }
-
-        function showFeedback(message, type, context) {
-            const feedbackElement = elements.displays[`${context}Feedback`];
-            feedbackElement.textContent = message;
-            feedbackElement.className = `feedback ${type}`;
-            feedbackElement.style.display = 'block';
-            
-            setTimeout(() => {
-                feedbackElement.style.display = 'none';
-            }, 3000);
         }
 
         // Utilitários
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function copyUserId() {
-            navigator.clipboard.writeText(state.currentUser.id)
-                .then(() => alert('ID copiado para a área de transferência!'))
-                .catch(() => {
-                    elements.inputs.userIdInput.select();
-                    document.execCommand('copy');
-                    alert('ID copiado para a área de transferência!');
-                });
+            elements.inputs.userIdInput.select();
+            document.execCommand('copy');
+            alert('ID copiado para a área de transferência!');
         }
 
         function shareQRCode() {
@@ -920,48 +1796,27 @@
             link.click();
         }
 
-        // Event listeners
-        function setupEventListeners() {
-            // Navegação
-            elements.buttons.newUser.addEventListener('click', () => showScreen('newUser'));
-            elements.buttons.existingUser.addEventListener('click', () => showScreen('existingUser'));
-            elements.buttons.backToSelectFromNew.addEventListener('click', () => showScreen('userSelect'));
-            elements.buttons.backToSelectFromExisting.addEventListener('click', () => showScreen('userSelect'));
-            elements.buttons.backToMain.addEventListener('click', () => {
-                stopQrScanner();
-                showScreen('main');
+        function clearLocalData() {
+            const stores = ['users', 'contacts', 'messages'];
+            const requests = stores.map(storeName => {
+                return new Promise((resolve) => {
+                    const transaction = state.db.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.clear();
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => resolve();
+                });
             });
             
-            // Chat
-            elements.buttons.sendMessage.addEventListener('click', sendMessage);
-            elements.inputs.message.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
+            Promise.all(requests).then(() => {
+                state.currentUser = null;
+                state.contactsCache = {};
+                state.messagesCache = {};
             });
-            
-            // Ações principais
-            elements.buttons.showContacts.addEventListener('click', () => toggleSection('contacts'));
-            elements.buttons.showQR.addEventListener('click', () => {
-                toggleSection('qr');
-                generateQrCode();
-            });
-            elements.buttons.scanQR.addEventListener('click', () => toggleSection('scan'));
-            
-            // Usuário
-            elements.buttons.createUser.addEventListener('click', createUser);
-            elements.buttons.loadUser.addEventListener('click', loadUser);
-            
-            // Utilitários
-            elements.buttons.copyUserId.addEventListener('click', copyUserId);
-            elements.buttons.shareQR.addEventListener('click', shareQRCode);
-            elements.buttons.downloadQR.addEventListener('click', downloadQRCode);
         }
 
-        // Inicialização
-        function init() {
-            setupEventListeners();
-            showScreen('userSelect');
-        }
-
+        // Inicializa o aplicativo
         window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
