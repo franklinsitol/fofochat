@@ -368,6 +368,7 @@
             background-color: white;
             flex: 1;
             overflow-y: auto;
+            padding-bottom: 80px; /* Espaço para o input de mensagem */
         }
         
         .empty-state {
@@ -462,21 +463,21 @@
             opacity: 0.7;
         }
         
-        .message-input {
-            position: sticky;
+        .message-input-container {
+            position: fixed;
             bottom: 0;
+            left: 0;
+            right: 0;
             background-color: white;
             padding: 15px;
             box-shadow: var(--shadow);
-        }
-        
-        .message-input-container {
             display: flex;
             align-items: center;
             gap: 10px;
+            z-index: 1010;
         }
         
-        .message-input input[type="text"] {
+        .message-input-container input[type="text"] {
             flex: 1;
             margin: 0;
         }
@@ -499,7 +500,10 @@
         }
         
         .progress-container {
-            margin-top: 10px;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
             height: 5px;
             background-color: #eee;
             border-radius: 5px;
@@ -554,10 +558,6 @@
                 padding: 10px;
             }
             
-            .chat-messages {
-                max-height: 55vh;
-            }
-            
             .floating-buttons {
                 bottom: 10px;
                 right: 10px;
@@ -567,6 +567,14 @@
                 width: 45px;
                 height: 45px;
                 font-size: 1rem;
+            }
+            
+            .chat-messages {
+                padding-bottom: 70px; /* Ajuste para mobile */
+            }
+            
+            .message-input-container {
+                padding: 10px;
             }
         }
         
@@ -702,15 +710,13 @@
             </div>
         </div>
         
-        <div class="message-input">
-            <div class="message-input-container">
-                <input type="file" id="fileInput" class="file-input">
-                <button id="fileButton" class="file-btn" title="Anexar arquivo">
-                    <i class="fas fa-paperclip"></i>
-                </button>
-                <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-                <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
-            </div>
+        <div class="message-input-container">
+            <input type="file" id="fileInput" class="file-input">
+            <button id="fileButton" class="file-btn" title="Anexar arquivo">
+                <i class="fas fa-paperclip"></i>
+            </button>
+            <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
+            <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
             <div class="progress-container hidden" id="uploadProgress">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
