@@ -503,7 +503,7 @@
             display: none;
         }
         
-        .file-btn, .send-btn {
+        .file-btn, .send-btn, .audio-btn {
             background-color: var(--primary);
             color: white;
             border: none;
@@ -569,6 +569,128 @@
             transform: scale(1.1);
         }
         
+        /* Estilos para o gravador de áudio */
+        .audio-recorder-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1020;
+        }
+        
+        .audio-recorder {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        
+        .record-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .record-btn.recording {
+            animation: pulse 1.5s infinite;
+            background-color: var(--error);
+        }
+        
+        .audio-visualizer {
+            height: 20px;
+            flex: 1;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .audio-level {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary);
+            transition: width 0.1s;
+        }
+        
+        .audio-timer {
+            font-size: 0.8rem;
+            color: var(--dark);
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .audio-player-container {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .audio-player {
+            width: 100%;
+        }
+        
+        .audio-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .audio-send-btn {
+            background-color: var(--success);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 8px 15px;
+            cursor: pointer;
+            flex: 1;
+            margin-left: 5px;
+        }
+        
+        .audio-cancel-btn {
+            background-color: var(--error);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 8px 15px;
+            cursor: pointer;
+            flex: 1;
+            margin-right: 5px;
+        }
+        
+        /* Estilo para mensagens de áudio */
+        .audio-message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .audio-message-player {
+            flex: 1;
+            max-width: 200px;
+        }
+        
+        .audio-message-duration {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            min-width: 40px;
+        }
+        
         /* Responsividade */
         @media (max-width: 600px) {
             .container {
@@ -592,6 +714,10 @@
             
             .message-input-container {
                 padding: 10px;
+            }
+            
+            .audio-message-player {
+                max-width: 150px;
             }
         }
         
@@ -729,6 +855,9 @@
         
         <div class="message-input-container">
             <input type="file" id="fileInput" class="file-input">
+            <button id="audioButton" class="audio-btn" title="Gravar áudio">
+                <i class="fas fa-microphone"></i>
+            </button>
             <button id="fileButton" class="file-btn" title="Anexar arquivo">
                 <i class="fas fa-paperclip"></i>
             </button>
@@ -736,6 +865,29 @@
             <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
             <div class="progress-container hidden" id="uploadProgress">
                 <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- Gravador de áudio -->
+        <div id="audioRecorderContainer" class="audio-recorder-container hidden">
+            <div class="audio-recorder">
+                <button id="startRecordBtn" class="record-btn">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <div class="audio-visualizer">
+                    <div id="audioLevel" class="audio-level"></div>
+                </div>
+                <div id="audioTimer" class="audio-timer">0:00</div>
+            </div>
+            <div class="audio-player-container">
+                <audio id="audioPreview" controls class="audio-player">
+                    <source id="audioSource" src="" type="audio/wav">
+                    Seu navegador não suporta o elemento de áudio.
+                </audio>
+            </div>
+            <div id="audioControls" class="audio-controls hidden">
+                <button id="cancelAudioBtn" class="audio-cancel-btn">Cancelar</button>
+                <button id="sendAudioBtn" class="audio-send-btn">Enviar Áudio</button>
             </div>
         </div>
     </div>
@@ -783,7 +935,14 @@
             db: null,
             activeFileTransfers: {},
             gunListeners: [],
-            unreadMessages: {} // Novo estado para mensagens não lidas
+            unreadMessages: {},
+            // Estado para gravação de áudio
+            audioRecorder: null,
+            audioChunks: [],
+            isRecording: false,
+            audioTimer: 0,
+            audioInterval: null,
+            currentAudio: null
         };
 
         // Elementos DOM
@@ -810,7 +969,11 @@
                 copyUserId: document.getElementById('copyUserIdBtn'),
                 shareQR: document.getElementById('shareQRBtn'),
                 downloadQR: document.getElementById('downloadQRBtn'),
-                fileButton: document.getElementById('fileButton')
+                fileButton: document.getElementById('fileButton'),
+                audioButton: document.getElementById('audioButton'),
+                startRecordBtn: document.getElementById('startRecordBtn'),
+                sendAudioBtn: document.getElementById('sendAudioBtn'),
+                cancelAudioBtn: document.getElementById('cancelAudioBtn')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
@@ -833,7 +996,13 @@
                 createUserFeedback: document.getElementById('createUserFeedback'),
                 loadUserFeedback: document.getElementById('loadUserFeedback'),
                 uploadProgress: document.getElementById('uploadProgress'),
-                progressBar: document.getElementById('progressBar')
+                progressBar: document.getElementById('progressBar'),
+                audioRecorderContainer: document.getElementById('audioRecorderContainer'),
+                audioPreview: document.getElementById('audioPreview'),
+                audioSource: document.getElementById('audioSource'),
+                audioLevel: document.getElementById('audioLevel'),
+                audioTimer: document.getElementById('audioTimer'),
+                audioControls: document.getElementById('audioControls')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -929,6 +1098,97 @@
                 }
                 
                 return `<i class="fas ${icons[type] || 'fa-file'}"></i>`;
+            },
+            
+            // Funções para manipulação de áudio
+            startRecording: async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    state.audioRecorder = new MediaRecorder(stream);
+                    state.audioChunks = [];
+                    state.isRecording = true;
+                    state.audioTimer = 0;
+                    
+                    state.audioRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) {
+                            state.audioChunks.push(e.data);
+                        }
+                    };
+                    
+                    state.audioRecorder.onstop = () => {
+                        const audioBlob = new Blob(state.audioChunks, { type: 'audio/wav' });
+                        state.currentAudio = audioBlob;
+                        utils.updateAudioPlayer(audioBlob);
+                    };
+                    
+                    state.audioRecorder.start(100); // Coletar dados a cada 100ms
+                    
+                    // Iniciar temporizador
+                    state.audioInterval = setInterval(() => {
+                        state.audioTimer++;
+                        elements.displays.audioTimer.textContent = 
+                            `${Math.floor(state.audioTimer / 60)}:${(state.audioTimer % 60).toString().padStart(2, '0')}`;
+                        
+                        // Atualizar visualizador de áudio (simulado)
+                        const level = Math.random() * 100;
+                        elements.displays.audioLevel.style.width = `${level}%`;
+                    }, 1000);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erro ao iniciar gravação:', error);
+                    alert('Não foi possível acessar o microfone. Verifique as permissões.');
+                    return false;
+                }
+            },
+            
+            stopRecording: () => {
+                if (state.audioRecorder && state.isRecording) {
+                    state.audioRecorder.stop();
+                    state.isRecording = false;
+                    clearInterval(state.audioInterval);
+                    
+                    // Parar todas as faixas do stream
+                    state.audioRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+            },
+            
+            updateAudioPlayer: (audioBlob) => {
+                const audioUrl = URL.createObjectURL(audioBlob);
+                elements.displays.audioSource.src = audioUrl;
+                elements.displays.audioPreview.load();
+                
+                // Mostrar controles
+                elements.displays.audioControls.classList.remove('hidden');
+            },
+            
+            resetAudio: () => {
+                if (state.audioRecorder && state.isRecording) {
+                    utils.stopRecording();
+                }
+                
+                state.audioRecorder = null;
+                state.audioChunks = [];
+                state.isRecording = false;
+                state.audioTimer = 0;
+                state.currentAudio = null;
+                clearInterval(state.audioInterval);
+                
+                elements.displays.audioTimer.textContent = '0:00';
+                elements.displays.audioLevel.style.width = '0%';
+                elements.displays.audioControls.classList.add('hidden');
+            },
+            
+            renderAudioMessage: (audioUrl, duration) => {
+                return `
+                    <div class="audio-message">
+                        <audio controls class="audio-message-player">
+                            <source src="${audioUrl}" type="audio/wav">
+                            Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                        <span class="audio-message-duration">${duration}</span>
+                    </div>
+                `;
             }
         };
 
@@ -1103,6 +1363,46 @@
                 elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
                 elements.inputs.fileInput.addEventListener('change', app.handleFileSelect);
                 
+                // Áudio
+                elements.buttons.audioButton.addEventListener('click', () => {
+                    elements.displays.audioRecorderContainer.classList.toggle('hidden');
+                    utils.resetAudio();
+                });
+                
+                elements.buttons.startRecordBtn.addEventListener('click', async () => {
+                    if (!state.isRecording) {
+                        const started = await utils.startRecording();
+                        if (started) {
+                            elements.buttons.startRecordBtn.classList.add('recording');
+                            elements.buttons.startRecordBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                        }
+                    } else {
+                        utils.stopRecording();
+                        elements.buttons.startRecordBtn.classList.remove('recording');
+                        elements.buttons.startRecordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    }
+                });
+                
+                elements.buttons.sendAudioBtn.addEventListener('click', () => {
+                    if (state.currentAudio) {
+                        state.currentFile = {
+                            blob: state.currentAudio,
+                            name: `audio-${Date.now()}.wav`,
+                            type: 'audio/wav',
+                            duration: `${Math.floor(state.audioTimer / 60)}:${(state.audioTimer % 60).toString().padStart(2, '0')}`
+                        };
+                        
+                        elements.inputs.message.placeholder = `Áudio: ${state.currentFile.name}`;
+                        utils.resetAudio();
+                        elements.displays.audioRecorderContainer.classList.add('hidden');
+                    }
+                });
+                
+                elements.buttons.cancelAudioBtn.addEventListener('click', () => {
+                    utils.resetAudio();
+                    elements.displays.audioRecorderContainer.classList.add('hidden');
+                });
+                
                 // Utilitários
                 elements.buttons.copyUserId.addEventListener('click', app.copyUserId);
                 elements.buttons.shareQR.addEventListener('click', app.shareQRCode);
@@ -1153,7 +1453,10 @@
                     
                     // Inicializa contador de mensagens não lidas
                     contacts.forEach(contact => {
-                        state.unreadMessages[contact.id] = 0;
+                        state.unreadMessages[contact.id] = {
+                            count: 0,
+                            lastRead: 0
+                        };
                     });
                     
                     if (state.currentUser && state.currentContact) {
@@ -1179,6 +1482,12 @@
                 if (screenName === 'main') {
                     elements.sections.contacts.style.display = 'block';
                     app.syncContacts();
+                }
+                
+                // Esconde o gravador de áudio ao mudar de tela
+                if (screenName !== 'chat') {
+                    elements.displays.audioRecorderContainer.classList.add('hidden');
+                    utils.resetAudio();
                 }
             },
             
@@ -1368,7 +1677,10 @@
                     // Atualiza contador de mensagens não lidas para cada contato
                     for (const contactId in state.contactsCache) {
                         if (!state.unreadMessages[contactId]) {
-                            state.unreadMessages[contactId] = 0;
+                            state.unreadMessages[contactId] = {
+                                count: 0,
+                                lastRead: 0
+                            };
                         }
                         await app.updateUnreadCount(contactId);
                     }
@@ -1393,7 +1705,10 @@
                         
                         state.contactsCache[id] = contact;
                         if (!state.unreadMessages[id]) {
-                            state.unreadMessages[id] = 0;
+                            state.unreadMessages[id] = {
+                                count: 0,
+                                lastRead: 0
+                            };
                         }
                         await db.put('contacts', contact);
                         await app.updateUnreadCount(id);
@@ -1672,6 +1987,15 @@
                                         </div>
                                     </div>
                                 `;
+                            } else if (fileMetadata.type.startsWith('audio/')) {
+                                // Mensagem de áudio
+                                const audioUrl = URL.createObjectURL(new Blob([fileMetadata.data], { type: fileMetadata.type }));
+                                const duration = fileMetadata.duration || '0:00';
+                                fileHtml = `
+                                    <div class="message-file-container">
+                                        ${utils.renderAudioMessage(audioUrl, duration)}
+                                    </div>
+                                `;
                             }
                         } catch (error) {
                             console.error('Erro ao carregar arquivo:', error);
@@ -1796,50 +2120,75 @@
                 
                 if (hasFile) {
                     try {
-                        const fileId = Gun.text.random(16);
-                        const fileRef = gun.get('files').get(fileId);
-                        
-                        const fileMetadata = {
-                            id: fileId,
-                            name: state.currentFile.name,
-                            type: state.currentFile.type,
-                            size: state.currentFile.size,
-                            expiresAt: expiresAt
-                        };
-                        
-                        message.file = fileMetadata;
-                        
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const arrayBuffer = e.target.result;
-                            const chunkSize = 100000; // 100KB por chunk
-                            const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
+                        if (state.currentFile.type.startsWith('audio/')) {
+                            // Enviar áudio
+                            const fileId = Gun.text.random(16);
+                            const reader = new FileReader();
                             
-                            // Primeiro envia os metadados
-                            gun.get('files').get(fileId).put(fileMetadata);
+                            reader.onload = function(e) {
+                                const arrayBuffer = e.target.result;
+                                const fileMetadata = {
+                                    id: fileId,
+                                    name: state.currentFile.name,
+                                    type: state.currentFile.type,
+                                    size: state.currentFile.blob.size,
+                                    duration: state.currentFile.duration || '0:00',
+                                    data: arrayBuffer,
+                                    expiresAt: expiresAt
+                                };
+
+                                message.file = fileMetadata;
+                                app.completeMessageSend(message, messageId);
+                            };
                             
-                            // Depois envia os chunks
-                            for (let i = 0; i < totalChunks; i++) {
-                                const start = i * chunkSize;
-                                const end = Math.min(start + chunkSize, arrayBuffer.byteLength);
-                                const chunk = arrayBuffer.slice(start, end);
+                            reader.readAsArrayBuffer(state.currentFile.blob);
+                        } else {
+                            // Enviar arquivo regular
+                            const fileId = Gun.text.random(16);
+                            const fileRef = gun.get('files').get(fileId);
+                            
+                            const fileMetadata = {
+                                id: fileId,
+                                name: state.currentFile.name,
+                                type: state.currentFile.type,
+                                size: state.currentFile.size,
+                                expiresAt: expiresAt
+                            };
+                            
+                            message.file = fileMetadata;
+                            
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const arrayBuffer = e.target.result;
+                                const chunkSize = 100000; // 100KB por chunk
+                                const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
                                 
-                                // Envia o chunk com um pequeno delay para evitar sobrecarga
-                                setTimeout(() => {
-                                    fileRef.get(`chunk_${i}`).put(chunk);
+                                // Primeiro envia os metadados
+                                gun.get('files').get(fileId).put(fileMetadata);
+                                
+                                // Depois envia os chunks
+                                for (let i = 0; i < totalChunks; i++) {
+                                    const start = i * chunkSize;
+                                    const end = Math.min(start + chunkSize, arrayBuffer.byteLength);
+                                    const chunk = arrayBuffer.slice(start, end);
                                     
-                                    const percent = Math.round(((i + 1) / totalChunks) * 100);
-                                    elements.displays.progressBar.style.width = `${percent}%`;
-                                    
-                                    // Quando terminar, marca como completo
-                                    if (i === totalChunks - 1) {
-                                        fileRef.get('complete').put(true);
-                                        app.completeMessageSend(message, messageId);
-                                    }
-                                }, i * 100); // Pequeno delay entre chunks
-                            }
-                        };
-                        reader.readAsArrayBuffer(state.currentFile);
+                                    // Envia o chunk com um pequeno delay para evitar sobrecarga
+                                    setTimeout(() => {
+                                        fileRef.get(`chunk_${i}`).put(chunk);
+                                        
+                                        const percent = Math.round(((i + 1) / totalChunks) * 100);
+                                        elements.displays.progressBar.style.width = `${percent}%`;
+                                        
+                                        // Quando terminar, marca como completo
+                                        if (i === totalChunks - 1) {
+                                            fileRef.get('complete').put(true);
+                                            app.completeMessageSend(message, messageId);
+                                        }
+                                    }, i * 100); // Pequeno delay entre chunks
+                                }
+                            };
+                            reader.readAsArrayBuffer(state.currentFile);
+                        }
                         
                     } catch (error) {
                         console.error('Erro ao enviar arquivo:', error);
