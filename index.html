@@ -1520,60 +1520,44 @@
                             if (fileMetadata.id) {
                                 if (!state.activeFileTransfers[fileMetadata.id]) {
                                     state.activeFileTransfers[fileMetadata.id] = {
-                                        chunks: [],
+                                        chunks: {},
                                         totalChunks: 0,
-                                        receivedBytes: 0
+                                        receivedBytes: 0,
+                                        complete: false
                                     };
                                 }
                                 
                                 const transfer = state.activeFileTransfers[fileMetadata.id];
                                 const fileRef = gun.get('files').get(fileMetadata.id);
                                 
+                                // Verifica se já está completo
+                                fileRef.get('complete').once((complete) => {
+                                    if (complete) {
+                                        transfer.complete = true;
+                                        app.assembleFileChunks(fileMetadata, message.id);
+                                    }
+                                });
+                                
+                                // Monitora os chunks
                                 fileRef.map().on(async (chunk, key) => {
                                     if (key === 'complete') return;
                                     
                                     if (chunk && !transfer.chunks[key]) {
                                         transfer.chunks[key] = chunk;
-                                        transfer.receivedBytes += chunk.byteLength || chunk.size || 0;
+                                        transfer.receivedBytes += chunk.size || chunk.byteLength || 0;
+                                        transfer.totalChunks = Object.keys(transfer.chunks).length;
                                         
-                                        const chunkKeys = Object.keys(transfer.chunks)
+                                        // Verifica se todos os chunks foram recebidos
+                                        const chunkNumbers = Object.keys(transfer.chunks)
                                             .filter(k => k.startsWith('chunk_'))
-                                            .map(k => parseInt(k.replace('chunk_', '')))
-                                            .sort((a, b) => a - b);
+                                            .map(k => parseInt(k.replace('chunk_', '')));
                                         
-                                        const isComplete = chunkKeys.length > 0 && 
-                                            chunkKeys.every((val, i) => i === 0 || val === chunkKeys[i-1] + 1);
+                                        const maxChunk = Math.max(...chunkNumbers);
+                                        const allChunksReceived = chunkNumbers.length === maxChunk + 1;
                                         
-                                        if (isComplete) {
-                                            const totalSize = transfer.receivedBytes;
-                                            const combined = new Uint8Array(totalSize);
-                                            let offset = 0;
-                                            
-                                            chunkKeys.forEach(chunkNum => {
-                                                const chunkKey = `chunk_${chunkNum}`;
-                                                const chunkData = transfer.chunks[chunkKey];
-                                                combined.set(new Uint8Array(chunkData), offset);
-                                                offset += chunkData.byteLength || chunkData.size || 0;
-                                            });
-                                            
-                                            const blob = new Blob([combined], { type: fileMetadata.type });
-                                            const fileUrl = URL.createObjectURL(blob);
-                                            
-                                            const fileIcon = utils.getFileIcon(fileMetadata.type);
-                                            fileHtml = `
-                                                <a href="${fileUrl}" download="${fileMetadata.name}" class="message-file">
-                                                    <div class="message-file-icon">${fileIcon}</div>
-                                                    <div class="message-file-info">
-                                                        <div class="message-file-name">${fileMetadata.name}</div>
-                                                        <div class="message-file-size">${utils.formatFileSize(fileMetadata.size)}</div>
-                                                    </div>
-                                                </a>
-                                            `;
-                                            
-                                            const fileContainer = document.querySelector(`#msg-${message.id} .message-file-container`);
-                                            if (fileContainer) {
-                                                fileContainer.innerHTML = fileHtml;
-                                            }
+                                        if (allChunksReceived) {
+                                            transfer.complete = true;
+                                            app.assembleFileChunks(fileMetadata, message.id);
                                         }
                                     }
                                 });
@@ -1584,7 +1568,7 @@
                                             <div class="message-file-icon"><i class="fas fa-spinner fa-spin"></i></div>
                                             <div class="message-file-info">
                                                 <div class="message-file-name">${fileMetadata.name}</div>
-                                                <div class="message-file-size">${utils.formatFileSize(fileMetadata.size)} (transferindo...)</div>
+                                                <div class="message-file-size">${utils.formatFileSize(fileMetadata.size)} (${transfer.complete ? 'montando...' : 'transferindo...'})</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1610,6 +1594,78 @@
                     elements.displays.chatMessages.appendChild(messageElement);
                     elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
                 });
+            },
+            
+            assembleFileChunks: async (fileMetadata, messageId) => {
+                try {
+                    const transfer = state.activeFileTransfers[fileMetadata.id];
+                    if (!transfer || !transfer.complete) return;
+                    
+                    // Ordena os chunks pela chave numérica
+                    const chunkKeys = Object.keys(transfer.chunks)
+                        .filter(k => k.startsWith('chunk_'))
+                        .sort((a, b) => {
+                            const numA = parseInt(a.replace('chunk_', ''));
+                            const numB = parseInt(b.replace('chunk_', ''));
+                            return numA - numB;
+                        });
+                    
+                    // Calcula o tamanho total
+                    const totalSize = chunkKeys.reduce((sum, key) => {
+                        return sum + (transfer.chunks[key].size || transfer.chunks[key].byteLength || 0);
+                    }, 0);
+                    
+                    // Cria um ArrayBuffer combinado
+                    const combined = new Uint8Array(totalSize);
+                    let offset = 0;
+                    
+                    // Monta o arquivo combinando os chunks
+                    for (const key of chunkKeys) {
+                        const chunk = transfer.chunks[key];
+                        const chunkData = new Uint8Array(chunk);
+                        combined.set(chunkData, offset);
+                        offset += chunkData.length;
+                    }
+                    
+                    // Cria o Blob e URL para download
+                    const blob = new Blob([combined], { type: fileMetadata.type });
+                    const fileUrl = URL.createObjectURL(blob);
+                    
+                    // Atualiza a UI com o arquivo pronto
+                    const fileIcon = utils.getFileIcon(fileMetadata.type);
+                    const fileHtml = `
+                        <a href="${fileUrl}" download="${fileMetadata.name}" class="message-file">
+                            <div class="message-file-icon">${fileIcon}</div>
+                            <div class="message-file-info">
+                                <div class="message-file-name">${fileMetadata.name}</div>
+                                <div class="message-file-size">${utils.formatFileSize(fileMetadata.size)}</div>
+                            </div>
+                        </a>
+                    `;
+                    
+                    const messageElement = document.getElementById(`msg-${messageId}`);
+                    if (messageElement) {
+                        const fileContainer = messageElement.querySelector('.message-file-container');
+                        if (fileContainer) {
+                            fileContainer.innerHTML = fileHtml;
+                        }
+                    }
+                    
+                    // Limpa o transfer depois de um tempo
+                    setTimeout(() => {
+                        delete state.activeFileTransfers[fileMetadata.id];
+                    }, 30000);
+                    
+                } catch (error) {
+                    console.error('Erro ao montar arquivo:', error);
+                    const messageElement = document.getElementById(`msg-${messageId}`);
+                    if (messageElement) {
+                        const fileContainer = messageElement.querySelector('.message-file-container');
+                        if (fileContainer) {
+                            fileContainer.innerHTML = '<div class="message-file">Erro ao carregar arquivo</div>';
+                        }
+                    }
+                }
             },
             
             sendMessage: async () => {
@@ -1657,19 +1713,32 @@
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const arrayBuffer = e.target.result;
-                            const chunkSize = 100000;
+                            const chunkSize = 100000; // 100KB por chunk
                             const totalChunks = Math.ceil(arrayBuffer.byteLength / chunkSize);
                             
-                            for (let i = 0; i < totalChunks; i++) {
-                                const chunk = arrayBuffer.slice(i * chunkSize, (i + 1) * chunkSize);
-                                fileRef.get(`chunk_${i}`).put(chunk);
-                                
-                                const percent = Math.round(((i + 1) / totalChunks) * 100);
-                                elements.displays.progressBar.style.width = `${percent}%`;
-                            }
+                            // Primeiro envia os metadados
+                            gun.get('files').get(fileId).put(fileMetadata);
                             
-                            fileRef.get('complete').put(true);
-                            app.completeMessageSend(message, messageId);
+                            // Depois envia os chunks
+                            for (let i = 0; i < totalChunks; i++) {
+                                const start = i * chunkSize;
+                                const end = Math.min(start + chunkSize, arrayBuffer.byteLength);
+                                const chunk = arrayBuffer.slice(start, end);
+                                
+                                // Envia o chunk com um pequeno delay para evitar sobrecarga
+                                setTimeout(() => {
+                                    fileRef.get(`chunk_${i}`).put(chunk);
+                                    
+                                    const percent = Math.round(((i + 1) / totalChunks) * 100);
+                                    elements.displays.progressBar.style.width = `${percent}%`;
+                                    
+                                    // Quando terminar, marca como completo
+                                    if (i === totalChunks - 1) {
+                                        fileRef.get('complete').put(true);
+                                        app.completeMessageSend(message, messageId);
+                                    }
+                                }, i * 100); // Pequeno delay entre chunks
+                            }
                         };
                         reader.readAsArrayBuffer(state.currentFile);
                         
@@ -1702,9 +1771,12 @@
                     elements.inputs.message.placeholder = 'Digite sua mensagem...';
                     state.currentFile = null;
                     elements.inputs.fileInput.value = '';
+                    
+                    elements.displays.uploadProgress.classList.add('hidden');
                 } catch (error) {
                     console.error('Erro ao enviar mensagem:', error);
                     alert('Erro ao enviar mensagem. Tente novamente.');
+                    elements.displays.uploadProgress.classList.add('hidden');
                 }
             },
             
