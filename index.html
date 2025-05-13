@@ -2416,5 +2416,60 @@
         // Inicializa o aplicativo
         window.addEventListener('DOMContentLoaded', app.init);
     </script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- ... (todo o cabeçalho e CSS permanecem iguais) ... -->
+</head>
+<body>
+    <!-- ... (todo o HTML permanece igual) ... -->
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <script>
+        // Configuração do Gun.js - CORREÇÃO AQUI
+        const gun = Gun({
+            peers: [
+                'https://gun-manhattan.herokuapp.com/gun' // Usando apenas o servidor que está funcionando
+            ],
+            localStorage: false,
+            radisk: false,
+            retry: 3,
+            // Adicionando configurações para lidar melhor com falhas de conexão
+            axe: false, // Desativa o sistema de detecção de peers
+            warned: true // Evita mensagens de aviso no console
+        });
+
+        // Adicionando tratamento de erros para os peers
+        gun.on('out', {get: {'#': {'*': ''}}}); // Monitora eventos de saída
+
+        // Estado da aplicação (todo o resto do código permanece igual)
+        const state = {
+            currentUser: null,
+            currentContact: null,
+            contactsCache: {},
+            messagesCache: {},
+            qrScannerActive: false,
+            currentFile: null,
+            db: null,
+            activeFileTransfers: {},
+            gunListeners: [],
+            unreadMessages: {},
+            audioRecorder: null,
+            audioChunks: [],
+            isRecording: false,
+            audioTimer: 0,
+            audioInterval: null,
+            currentAudio: null
+        };
+
+        // ... (todo o resto do JavaScript permanece igual) ...
+    </script>
+</body>
+</html>
 </body>
 </html>
