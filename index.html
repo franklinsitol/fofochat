@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BunnyChat - Mensagens Fofinhas</title>
+    <title>BunnyChat - Mensagens e Chamadas Fofinhas</title>
     
     <!-- Fontes -->
     <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Short+Stack&display=swap" rel="stylesheet">
@@ -184,6 +184,16 @@
             background: none;
             border: none;
             color: var(--error);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+            margin-left: 10px;
+        }
+        
+        .call-contact-btn {
+            background: none;
+            border: none;
+            color: var(--success);
             cursor: pointer;
             font-size: 1rem;
             padding: 5px;
@@ -486,7 +496,7 @@
             display: none;
         }
         
-        .file-btn, .send-btn, .audio-btn {
+        .file-btn, .send-btn, .audio-btn, .call-btn {
             background-color: var(--primary);
             color: white;
             border: none;
@@ -674,6 +684,83 @@
             min-width: 40px;
         }
         
+        /* Estilos para chamadas WebRTC */
+        .call-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .call-container.active {
+            display: flex;
+        }
+        
+        .call-video {
+            width: 100%;
+            max-width: 500px;
+            max-height: 60vh;
+            background-color: black;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+        
+        .call-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .call-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .call-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow);
+        }
+        
+        .call-accept {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .call-reject {
+            background-color: var(--error);
+            color: white;
+        }
+        
+        .call-end {
+            background-color: var(--error);
+            color: white;
+        }
+        
+        .call-mute {
+            background-color: var(--dark);
+            color: white;
+        }
+        
+        .call-status {
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+        
         /* Responsividade */
         @media (max-width: 600px) {
             .container {
@@ -701,6 +788,12 @@
             
             .audio-message-player {
                 max-width: 150px;
+            }
+            
+            .call-button {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
             }
         }
         
@@ -844,6 +937,9 @@
             <button id="fileButton" class="file-btn" title="Anexar arquivo">
                 <i class="fas fa-paperclip"></i>
             </button>
+            <button id="callButton" class="call-btn" title="Chamada de vídeo">
+                <i class="fas fa-video"></i>
+            </button>
             <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
             <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
             <div class="progress-container hidden" id="uploadProgress">
@@ -872,6 +968,30 @@
                 <button id="cancelAudioBtn" class="audio-cancel-btn">Cancelar</button>
                 <button id="sendAudioBtn" class="audio-send-btn">Enviar Áudio</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Tela de chamada WebRTC -->
+    <div id="callScreen" class="call-container">
+        <video id="localVideo" class="call-video" autoplay muted playsinline></video>
+        <video id="remoteVideo" class="call-video" autoplay playsinline></video>
+        <div class="call-info">
+            <h2 id="callContactName">Chamando...</h2>
+            <div id="callStatus" class="call-status">Conectando...</div>
+        </div>
+        <div class="call-buttons">
+            <button id="acceptCallBtn" class="call-button call-accept" title="Atender">
+                <i class="fas fa-phone"></i>
+            </button>
+            <button id="rejectCallBtn" class="call-button call-reject" title="Recusar">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar">
+                <i class="fas fa-microphone"></i>
+            </button>
         </div>
     </div>
 
@@ -924,7 +1044,22 @@
             isRecording: false,
             audioTimer: 0,
             audioInterval: null,
-            currentAudio: null
+            currentAudio: null,
+            // Estado para chamadas WebRTC
+            peerConnection: null,
+            localStream: null,
+            remoteStream: null,
+            callDataChannel: null,
+            isCaller: false,
+            isInCall: false,
+            isMuted: false,
+            callId: null,
+            callListener: null,
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
         };
 
         // Elementos DOM
@@ -934,7 +1069,8 @@
                 newUser: document.getElementById('newUserScreen'),
                 existingUser: document.getElementById('existingUserScreen'),
                 main: document.getElementById('mainScreen'),
-                chat: document.getElementById('chatScreen')
+                chat: document.getElementById('chatScreen'),
+                call: document.getElementById('callScreen')
             },
             buttons: {
                 newUser: document.getElementById('newUserBtn'),
@@ -953,9 +1089,14 @@
                 downloadQR: document.getElementById('downloadQRBtn'),
                 fileButton: document.getElementById('fileButton'),
                 audioButton: document.getElementById('audioButton'),
+                callButton: document.getElementById('callButton'),
                 startRecordBtn: document.getElementById('startRecordBtn'),
                 sendAudioBtn: document.getElementById('sendAudioBtn'),
-                cancelAudioBtn: document.getElementById('cancelAudioBtn')
+                cancelAudioBtn: document.getElementById('cancelAudioBtn'),
+                acceptCallBtn: document.getElementById('acceptCallBtn'),
+                rejectCallBtn: document.getElementById('rejectCallBtn'),
+                endCallBtn: document.getElementById('endCallBtn'),
+                muteCallBtn: document.getElementById('muteCallBtn')
             },
             inputs: {
                 newUserName: document.getElementById('newUserName'),
@@ -984,7 +1125,11 @@
                 audioSource: document.getElementById('audioSource'),
                 audioLevel: document.getElementById('audioLevel'),
                 audioTimer: document.getElementById('audioTimer'),
-                audioControls: document.getElementById('audioControls')
+                audioControls: document.getElementById('audioControls'),
+                localVideo: document.getElementById('localVideo'),
+                remoteVideo: document.getElementById('remoteVideo'),
+                callContactName: document.getElementById('callContactName'),
+                callStatus: document.getElementById('callStatus')
             },
             sections: {
                 contacts: document.getElementById('contactsSection'),
@@ -1181,6 +1326,89 @@
                         <span class="audio-message-duration">${duration}</span>
                     </div>
                 `;
+            },
+            
+            // Funções para chamadas WebRTC
+            setupCallUI: (isCaller) => {
+                state.isInCall = true;
+                state.isCaller = isCaller;
+                
+                elements.displays.callContactName.textContent = state.currentContact.name;
+                
+                if (isCaller) {
+                    elements.displays.callStatus.textContent = 'Chamando...';
+                    elements.buttons.acceptCallBtn.classList.add('hidden');
+                    elements.buttons.rejectCallBtn.classList.add('hidden');
+                    elements.buttons.endCallBtn.classList.remove('hidden');
+                    elements.buttons.muteCallBtn.classList.remove('hidden');
+                } else {
+                    elements.displays.callStatus.textContent = 'Chamada recebida';
+                    elements.buttons.acceptCallBtn.classList.remove('hidden');
+                    elements.buttons.rejectCallBtn.classList.remove('hidden');
+                    elements.buttons.endCallBtn.classList.add('hidden');
+                    elements.buttons.muteCallBtn.classList.add('hidden');
+                }
+                
+                elements.screens.call.classList.add('active');
+            },
+            
+            updateCallStatus: (status) => {
+                elements.displays.callStatus.textContent = status;
+            },
+            
+            resetCallUI: () => {
+                state.isInCall = false;
+                state.isCaller = false;
+                state.callId = null;
+                
+                elements.screens.call.classList.remove('active');
+                elements.buttons.acceptCallBtn.classList.add('hidden');
+                elements.buttons.rejectCallBtn.classList.add('hidden');
+                elements.buttons.endCallBtn.classList.add('hidden');
+                elements.buttons.muteCallBtn.classList.add('hidden');
+                
+                // Limpa os streams de vídeo
+                if (elements.displays.localVideo.srcObject) {
+                    elements.displays.localVideo.srcObject.getTracks().forEach(track => track.stop());
+                    elements.displays.localVideo.srcObject = null;
+                }
+                
+                if (elements.displays.remoteVideo.srcObject) {
+                    elements.displays.remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                    elements.displays.remoteVideo.srcObject = null;
+                }
+                
+                // Limpa o estado da chamada
+                if (state.peerConnection) {
+                    state.peerConnection.close();
+                    state.peerConnection = null;
+                }
+                
+                state.localStream = null;
+                state.remoteStream = null;
+                state.callDataChannel = null;
+                
+                // Remove o listener da chamada se existir
+                if (state.callListener) {
+                    state.callListener.off();
+                    state.callListener = null;
+                }
+            },
+            
+            toggleMute: () => {
+                if (!state.localStream) return;
+                
+                state.isMuted = !state.isMuted;
+                const audioTracks = state.localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = !state.isMuted;
+                });
+                
+                elements.buttons.muteCallBtn.innerHTML = state.isMuted ? 
+                    '<i class="fas fa-microphone-slash"></i>' : 
+                    '<i class="fas fa-microphone"></i>';
+                
+                elements.buttons.muteCallBtn.title = state.isMuted ? 'Desmutar' : 'Mutar';
             }
         };
 
@@ -1275,6 +1503,241 @@
             }
         };
 
+        // Funções para chamadas WebRTC
+        const webrtc = {
+            initPeerConnection: () => {
+                state.peerConnection = new RTCPeerConnection({
+                    iceServers: state.iceServers
+                });
+                
+                // Configura os handlers de ICE candidates
+                state.peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        // Envia o candidato ICE para o outro peer
+                        gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put({
+                            candidate: event.candidate,
+                            from: state.currentUser.id,
+                            to: state.currentContact.id
+                        });
+                    }
+                };
+                
+                // Configura o handler para quando a conexão muda de estado
+                state.peerConnection.onconnectionstatechange = () => {
+                    utils.updateCallStatus(state.peerConnection.connectionState);
+                    
+                    if (state.peerConnection.connectionState === 'disconnected' || 
+                        state.peerConnection.connectionState === 'failed') {
+                        webrtc.endCall();
+                    }
+                };
+                
+                // Configura o handler para quando recebemos um stream remoto
+                state.peerConnection.ontrack = (event) => {
+                    if (event.streams && event.streams[0]) {
+                        state.remoteStream = event.streams[0];
+                        elements.displays.remoteVideo.srcObject = state.remoteStream;
+                    }
+                };
+                
+                // Configura o canal de dados para mensagens de controle
+                if (state.isCaller) {
+                    state.callDataChannel = state.peerConnection.createDataChannel('callControl');
+                    webrtc.setupDataChannel(state.callDataChannel);
+                } else {
+                    state.peerConnection.ondatachannel = (event) => {
+                        state.callDataChannel = event.channel;
+                        webrtc.setupDataChannel(state.callDataChannel);
+                    };
+                }
+            },
+            
+            setupDataChannel: (dataChannel) => {
+                dataChannel.onopen = () => {
+                    console.log('Canal de dados aberto');
+                };
+                
+                dataChannel.onclose = () => {
+                    console.log('Canal de dados fechado');
+                };
+                
+                dataChannel.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    console.log('Mensagem recebida:', message);
+                    
+                    if (message.type === 'end-call') {
+                        webrtc.endCall();
+                    }
+                };
+            },
+            
+            startCall: async () => {
+                if (!state.currentUser || !state.currentContact || state.isInCall) return;
+                
+                try {
+                    // Gera um ID único para a chamada
+                    state.callId = Gun.text.random(16);
+                    
+                    // Configura a UI da chamada
+                    utils.setupCallUI(true);
+                    
+                    // Inicia a conexão peer
+                    webrtc.initPeerConnection();
+                    
+                    // Obtém o stream local (áudio e vídeo)
+                    state.localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: true
+                    });
+                    
+                    // Adiciona o stream local à conexão peer
+                    state.localStream.getTracks().forEach(track => {
+                        state.peerConnection.addTrack(track, state.localStream);
+                    });
+                    
+                    // Mostra o vídeo local
+                    elements.displays.localVideo.srcObject = state.localStream;
+                    
+                    // Cria a oferta SDP
+                    const offer = await state.peerConnection.createOffer();
+                    await state.peerConnection.setLocalDescription(offer);
+                    
+                    // Envia a oferta para o contato
+                    gun.get('calls').get(state.callId).put({
+                        from: state.currentUser.id,
+                        to: state.currentContact.id,
+                        offer: offer,
+                        timestamp: Date.now()
+                    });
+                    
+                    // Escuta por respostas do contato
+                    gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
+                        if (answer && answer.from === state.currentContact.id) {
+                            await state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer.answer));
+                        }
+                    });
+                    
+                    // Escuta por ICE candidates do contato
+                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).on(async (candidateData) => {
+                        if (candidateData && candidateData.candidate) {
+                            try {
+                                await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+                            } catch (error) {
+                                console.error('Erro ao adicionar ICE candidate:', error);
+                            }
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Erro ao iniciar chamada:', error);
+                    alert('Erro ao iniciar chamada. Verifique se você permitiu o acesso à câmera e ao microfone.');
+                    webrtc.endCall();
+                }
+            },
+            
+            listenForCalls: () => {
+                if (!state.currentUser || state.callListener) return;
+                
+                state.callListener = gun.get('users').get(state.currentUser.id).get('calls').map().on(async (call, callId) => {
+                    if (!call || state.isInCall || !call.from || call.from === state.currentUser.id) return;
+                    
+                    // Verifica se a chamada é para o usuário atual
+                    if (call.to === state.currentUser.id) {
+                        const contact = state.contactsCache[call.from];
+                        if (!contact) return;
+                        
+                        // Armazena o ID da chamada e o contato
+                        state.callId = callId;
+                        state.currentContact = contact;
+                        
+                        // Mostra a UI de chamada recebida
+                        utils.setupCallUI(false);
+                        
+                        // Configura a conexão peer
+                        webrtc.initPeerConnection();
+                        
+                        // Obtém o stream local (áudio e vídeo)
+                        state.localStream = await navigator.mediaDevices.getUserMedia({
+                            audio: true,
+                            video: true
+                        });
+                        
+                        // Adiciona o stream local à conexão peer
+                        state.localStream.getTracks().forEach(track => {
+                            state.peerConnection.addTrack(track, state.localStream);
+                        });
+                        
+                        // Mostra o vídeo local
+                        elements.displays.localVideo.srcObject = state.localStream;
+                        
+                        // Define a oferta remota
+                        await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+                        
+                        // Cria e envia a resposta
+                        const answer = await state.peerConnection.createAnswer();
+                        await state.peerConnection.setLocalDescription(answer);
+                        
+                        gun.get('calls').get(callId).get('answer').put({
+                            from: state.currentUser.id,
+                            to: call.from,
+                            answer: answer
+                        });
+                        
+                        // Escuta por ICE candidates do chamador
+                        gun.get('calls').get(callId).get('iceCandidates').get(call.from).on(async (candidateData) => {
+                            if (candidateData && candidateData.candidate) {
+                                try {
+                                    await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+                                } catch (error) {
+                                    console.error('Erro ao adicionar ICE candidate:', error);
+                                }
+                            }
+                        });
+                    }
+                });
+            },
+            
+            acceptCall: () => {
+                if (!state.isInCall || state.isCaller) return;
+                
+                elements.buttons.acceptCallBtn.classList.add('hidden');
+                elements.buttons.rejectCallBtn.classList.add('hidden');
+                elements.buttons.endCallBtn.classList.remove('hidden');
+                elements.buttons.muteCallBtn.classList.remove('hidden');
+                
+                utils.updateCallStatus('Em chamada');
+            },
+            
+            endCall: () => {
+                if (!state.isInCall) return;
+                
+                // Envia mensagem de término pelo canal de dados, se disponível
+                if (state.callDataChannel && state.callDataChannel.readyState === 'open') {
+                    state.callDataChannel.send(JSON.stringify({ type: 'end-call' }));
+                }
+                
+                // Remove a chamada do banco de dados
+                if (state.callId) {
+                    gun.get('calls').get(state.callId).put(null);
+                }
+                
+                // Reseta a UI
+                utils.resetCallUI();
+            },
+            
+            rejectCall: () => {
+                if (!state.isInCall || state.isCaller) return;
+                
+                // Remove a chamada do banco de dados
+                if (state.callId) {
+                    gun.get('calls').get(state.callId).put(null);
+                }
+                
+                // Reseta a UI
+                utils.resetCallUI();
+            }
+        };
+
         // Funções principais da aplicação
         const app = {
             init: async () => {
@@ -1283,6 +1746,7 @@
                     app.setupEventListeners();
                     await app.checkForExistingUser();
                     app.startMessageCleanupInterval();
+                    webrtc.listenForCalls();
                 } catch (error) {
                     console.error('Erro na inicialização:', error);
                     alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
@@ -1408,17 +1872,48 @@
                     elements.displays.audioRecorderContainer.classList.add('hidden');
                 });
                 
+                // Chamadas WebRTC
+                elements.buttons.callButton.addEventListener('click', () => {
+                    if (state.currentContact) {
+                        webrtc.startCall();
+                    }
+                });
+                
+                elements.buttons.acceptCallBtn.addEventListener('click', () => {
+                    webrtc.acceptCall();
+                });
+                
+                elements.buttons.rejectCallBtn.addEventListener('click', () => {
+                    webrtc.rejectCall();
+                });
+                
+                elements.buttons.endCallBtn.addEventListener('click', () => {
+                    webrtc.endCall();
+                });
+                
+                elements.buttons.muteCallBtn.addEventListener('click', () => {
+                    utils.toggleMute();
+                });
+                
                 // Utilitários
                 elements.buttons.copyUserId.addEventListener('click', app.copyUserId);
                 elements.buttons.shareQR.addEventListener('click', app.shareQRCode);
                 elements.buttons.downloadQR.addEventListener('click', app.downloadQRCode);
                 
-                // Event delegation para botões de delete
+                // Event delegation para botões de delete e call
                 elements.displays.contactsList.addEventListener('click', (e) => {
                     if (e.target.closest('.delete-contact-btn')) {
                         e.stopPropagation();
                         const contactId = e.target.closest('.delete-contact-btn').getAttribute('data-contact-id');
                         app.removeContact(contactId);
+                    } else if (e.target.closest('.call-contact-btn')) {
+                        e.stopPropagation();
+                        const contactId = e.target.closest('.call-contact-btn').getAttribute('data-contact-id');
+                        const contact = state.contactsCache[contactId];
+                        if (contact) {
+                            state.currentContact = contact;
+                            webrtc.startCall();
+                        }
                     } else if (e.target.closest('.contact-item')) {
                         const contactId = e.target.closest('.contact-item').getAttribute('data-contact-id');
                         if (contactId && state.contactsCache[contactId]) {
@@ -1709,6 +2204,9 @@
                                 <div style="font-weight: bold;">${contact.name}</div>
                                 <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
                             </div>
+                            <button class="call-contact-btn" title="Chamar" data-contact-id="${contact.id}">
+                                <i class="fas fa-video"></i>
+                            </button>
                             <button class="delete-contact-btn" title="Excluir contato" data-contact-id="${contact.id}">
                                 <i class="fas fa-trash"></i>
                             </button>
