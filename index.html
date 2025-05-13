@@ -1082,36 +1082,44 @@
                 return `<i class="fas ${icons[type] || 'fa-file'}"></i>`;
             },
             
-            // Funções para manipulação de áudio
+            // Funções para manipulação de áudio - VERSÃO CORRIGIDA
             startRecording: async () => {
                 try {
+                    // Solicita permissão para usar o microfone
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    // Configura o MediaRecorder
                     state.audioRecorder = new MediaRecorder(stream);
                     state.audioChunks = [];
                     state.isRecording = true;
                     state.audioTimer = 0;
                     
+                    // Configura o evento para coletar os dados de áudio
                     state.audioRecorder.ondataavailable = (e) => {
                         if (e.data.size > 0) {
                             state.audioChunks.push(e.data);
                         }
                     };
                     
+                    // Configura o evento quando a gravação é parada
                     state.audioRecorder.onstop = () => {
                         const audioBlob = new Blob(state.audioChunks, { type: 'audio/wav' });
                         state.currentAudio = audioBlob;
                         utils.updateAudioPlayer(audioBlob);
                     };
                     
-                    state.audioRecorder.start(100); // Coletar dados a cada 100ms
+                    // Inicia a gravação, coletando dados a cada 100ms
+                    state.audioRecorder.start(100);
                     
-                    // Iniciar temporizador
+                    // Inicia o temporizador
                     state.audioInterval = setInterval(() => {
                         state.audioTimer++;
+                        const minutes = Math.floor(state.audioTimer / 60);
+                        const seconds = state.audioTimer % 60;
                         elements.displays.audioTimer.textContent = 
-                            `${Math.floor(state.audioTimer / 60)}:${(state.audioTimer % 60).toString().padStart(2, '0')}`;
+                            `${minutes}:${seconds.toString().padStart(2, '0')}`;
                         
-                        // Atualizar visualizador de áudio (simulado)
+                        // Atualiza o visualizador de áudio (simulado)
                         const level = Math.random() * 100;
                         elements.displays.audioLevel.style.width = `${level}%`;
                     }, 1000);
@@ -1130,7 +1138,7 @@
                     state.isRecording = false;
                     clearInterval(state.audioInterval);
                     
-                    // Parar todas as faixas do stream
+                    // Para todas as faixas do stream
                     state.audioRecorder.stream.getTracks().forEach(track => track.stop());
                 }
             },
@@ -1140,7 +1148,7 @@
                 elements.displays.audioSource.src = audioUrl;
                 elements.displays.audioPreview.load();
                 
-                // Mostrar controles
+                // Mostra os controles de envio/cancelamento
                 elements.displays.audioControls.classList.remove('hidden');
             },
             
@@ -1149,6 +1157,7 @@
                     utils.stopRecording();
                 }
                 
+                // Reseta todo o estado do áudio
                 state.audioRecorder = null;
                 state.audioChunks = [];
                 state.isRecording = false;
@@ -1156,6 +1165,7 @@
                 state.currentAudio = null;
                 clearInterval(state.audioInterval);
                 
+                // Reseta a interface
                 elements.displays.audioTimer.textContent = '0:00';
                 elements.displays.audioLevel.style.width = '0%';
                 elements.displays.audioControls.classList.add('hidden');
@@ -1345,11 +1355,15 @@
                 elements.buttons.fileButton.addEventListener('click', () => elements.inputs.fileInput.click());
                 elements.inputs.fileInput.addEventListener('change', app.handleFileSelect);
                 
-                // Áudio - Correção aqui para garantir que o gravador de áudio funcione
+                // Áudio - VERSÃO CORRIGIDA
                 elements.buttons.audioButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     elements.displays.audioRecorderContainer.classList.toggle('hidden');
-                    utils.resetAudio();
+                    
+                    // Resetar o gravador quando abrir
+                    if (!elements.displays.audioRecorderContainer.classList.contains('hidden')) {
+                        utils.resetAudio();
+                    }
                 });
                 
                 elements.buttons.startRecordBtn.addEventListener('click', async (e) => {
@@ -1370,11 +1384,16 @@
                 elements.buttons.sendAudioBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (state.currentAudio) {
+                        // Calcula a duração formatada
+                        const minutes = Math.floor(state.audioTimer / 60);
+                        const seconds = state.audioTimer % 60;
+                        const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        
                         state.currentFile = {
                             blob: state.currentAudio,
                             name: `audio-${Date.now()}.wav`,
                             type: 'audio/wav',
-                            duration: `${Math.floor(state.audioTimer / 60)}:${(state.audioTimer % 60).toString().padStart(2, '0')}`
+                            duration: duration
                         };
                         
                         elements.inputs.message.placeholder = `Áudio: ${state.currentFile.name}`;
