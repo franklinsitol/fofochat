@@ -173,7 +173,6 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: var(--shadow);
-            position: relative;
         }
         
         .contact-item:hover {
@@ -189,22 +188,6 @@
             font-size: 1rem;
             padding: 5px;
             margin-left: 10px;
-        }
-        
-        .unread-badge {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            background-color: var(--primary);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: bold;
         }
         
         .user-info {
@@ -935,7 +918,6 @@
             db: null,
             activeFileTransfers: {},
             gunListeners: [],
-            unreadMessages: {}, // Objeto para rastrear mensagens não lidas por contato
             // Estado para gravação de áudio
             audioRecorder: null,
             audioChunks: [],
@@ -1422,8 +1404,6 @@
                         const contactId = e.target.closest('.contact-item').getAttribute('data-contact-id');
                         if (contactId && state.contactsCache[contactId]) {
                             state.currentContact = state.contactsCache[contactId];
-                            // Marca mensagens como lidas ao abrir o chat
-                            app.markMessagesAsRead(contactId);
                             app.showChatScreen();
                         }
                     }
@@ -1454,14 +1434,6 @@
                         acc[contact.id] = contact;
                         return acc;
                     }, {});
-                    
-                    // Inicializa contador de mensagens não lidas
-                    contacts.forEach(contact => {
-                        state.unreadMessages[contact.id] = {
-                            count: 0,
-                            lastRead: 0
-                        };
-                    });
                     
                     if (state.currentUser && state.currentContact) {
                         await app.syncMessages();
@@ -1529,7 +1501,6 @@
                     state.currentUser = user;
                     state.contactsCache = {};
                     state.messagesCache = {};
-                    state.unreadMessages = {};
                     
                     utils.showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
                     elements.inputs.newUserName.value = '';
@@ -1573,7 +1544,6 @@
                     
                     if (user && user.name) {
                         state.currentUser = user;
-                        state.unreadMessages = {};
                         await app.loadLocalData();
                         
                         utils.showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
@@ -1678,17 +1648,6 @@
                         return acc;
                     }, {});
                     
-                    // Atualiza contador de mensagens não lidas para cada contato
-                    for (const contactId in state.contactsCache) {
-                        if (!state.unreadMessages[contactId]) {
-                            state.unreadMessages[contactId] = {
-                                count: 0,
-                                lastRead: 0
-                            };
-                        }
-                        await app.updateUnreadCount(contactId);
-                    }
-                    
                     app.renderContacts(Object.values(state.contactsCache));
                     
                     // Remove listeners antigos
@@ -1700,7 +1659,6 @@
                         if (!contact) {
                             if (state.contactsCache[id]) {
                                 delete state.contactsCache[id];
-                                delete state.unreadMessages[id];
                                 await db.delete('contacts', id);
                                 app.renderContacts(Object.values(state.contactsCache));
                             }
@@ -1708,14 +1666,7 @@
                         }
                         
                         state.contactsCache[id] = contact;
-                        if (!state.unreadMessages[id]) {
-                            state.unreadMessages[id] = {
-                                count: 0,
-                                lastRead: 0
-                            };
-                        }
                         await db.put('contacts', contact);
-                        await app.updateUnreadCount(id);
                         app.renderContacts(Object.values(state.contactsCache));
                     });
                     
@@ -1725,59 +1676,11 @@
                 }
             },
             
-            // Função para atualizar contador de mensagens não lidas
-            updateUnreadCount: async (contactId) => {
-                if (!state.currentUser || !contactId) return;
-                
-                try {
-                    const messages = await db.getMessages(state.currentUser.id, contactId);
-                    const now = Date.now();
-                    
-                    // Filtra mensagens não lidas (recebidas e não visualizadas)
-                    const unreadMessages = messages.filter(msg => 
-                        msg.receiver === state.currentUser.id && 
-                        msg.timestamp > (state.unreadMessages[contactId]?.lastRead || 0) &&
-                        msg.expiresAt > now
-                    );
-                    
-                    state.unreadMessages[contactId] = {
-                        count: unreadMessages.length,
-                        lastRead: state.unreadMessages[contactId]?.lastRead || 0
-                    };
-                    
-                    return unreadMessages.length;
-                } catch (error) {
-                    console.error('Erro ao atualizar contador de mensagens não lidas:', error);
-                    return 0;
-                }
-            },
-            
-            // Função para marcar mensagens como lidas
-            markMessagesAsRead: (contactId) => {
-                if (!state.currentUser || !contactId) return;
-                
-                // Atualiza o timestamp da última leitura
-                state.unreadMessages[contactId] = {
-                    count: 0,
-                    lastRead: Date.now()
-                };
-                
-                // Atualiza a exibição para remover o badge
-                const contactElements = document.querySelectorAll(`.contact-item[data-contact-id="${contactId}"]`);
-                contactElements.forEach(el => {
-                    const badge = el.querySelector('.unread-badge');
-                    if (badge) {
-                        badge.remove();
-                    }
-                });
-            },
-            
             renderContacts: (contacts) => {
                 elements.displays.contactsList.innerHTML = '';
                 
                 contacts.sort((a, b) => a.name.localeCompare(b.name))
                     .forEach(async (contact) => {
-                        const unreadCount = await app.updateUnreadCount(contact.id);
                         const contactElement = document.createElement('div');
                         contactElement.className = 'contact-item';
                         contactElement.setAttribute('data-contact-id', contact.id);
@@ -1787,7 +1690,6 @@
                                 <div style="font-weight: bold;">${contact.name}</div>
                                 <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
                             </div>
-                            ${unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : ''}
                             <button class="delete-contact-btn" title="Excluir contato" data-contact-id="${contact.id}">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -1812,7 +1714,6 @@
                     try {
                         await db.delete('contacts', userId);
                         delete state.contactsCache[userId];
-                        delete state.unreadMessages[userId];
                         gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
                         
                         app.renderContacts(Object.values(state.contactsCache));
@@ -1881,15 +1782,6 @@
                                 state.messagesCache[contactId].push(message);
                                 
                                 app.renderMessages([message]);
-                                
-                                // Se a mensagem é nova e não foi lida, atualiza o contador
-                                if (message.sender === contactId && message.receiver === state.currentUser.id) {
-                                    if (!state.unreadMessages[contactId] || 
-                                        message.timestamp > state.unreadMessages[contactId].lastRead) {
-                                        await app.updateUnreadCount(contactId);
-                                        app.renderContacts(Object.values(state.contactsCache));
-                                    }
-                                }
                             }
                         }
                     });
@@ -2390,7 +2282,6 @@
                 try {
                     await db.put('contacts', contact);
                     state.contactsCache[userId] = contact;
-                    state.unreadMessages[userId] = { count: 0, lastRead: 0 };
                     app.renderContacts(Object.values(state.contactsCache));
                     gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
                     
