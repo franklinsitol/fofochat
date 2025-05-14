@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BunnyChat - Mensagens e Chamadas Fofinhas</title>
-    
-    <!-- Fontes -->
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Short+Stack&display=swap" rel="stylesheet">
+    <title>BunnyChat - Mensagens e Chamadas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         :root {
             --primary: #FF9BB3;
@@ -20,758 +17,118 @@
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             --border-radius: 15px;
         }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Comic Neue', 'Short Stack', cursive, sans-serif;
-        }
-        
-        body {
-            background-color: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        header {
-            background-color: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            box-shadow: var(--shadow);
-        }
-        
-        header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .screen {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 30px;
-        }
-        
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-        
-        .btn:hover {
-            background-color: #ff85a2;
-            transform: translateY(-2px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn.btn-loading::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.3);
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.3; }
-            50% { opacity: 0.6; }
-            100% { opacity: 0.3; }
-        }
-        
-        .feedback-message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: var(--border-radius);
-            text-align: center;
-        }
-        
-        .feedback-success {
-            background-color: rgba(76, 175, 80, 0.2);
-            color: var(--success);
-            border: 1px solid var(--success);
-        }
-        
-        .feedback-error {
-            background-color: rgba(244, 67, 54, 0.2);
-            color: var(--error);
-            border: 1px solid var(--error);
-        }
-        
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 2px solid var(--primary);
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            background-color: white;
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--dark);
-        }
-        
-        /* Estilos para a tela principal */
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background-color: white;
-            border-radius: var(--border-radius);
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow);
-        }
-        
-        .contact-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .delete-contact-btn {
-            background: none;
-            border: none;
-            color: var(--error);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 5px;
-            margin-left: 10px;
-        }
-        
-        .call-contact-btn {
-            background: none;
-            border: none;
-            color: var(--success);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 5px;
-            margin-left: 10px;
-        }
-        
-        .user-info {
-            background-color: white;
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-        }
-        
-        .user-info-item {
-            margin-bottom: 10px;
-        }
-        
-        .user-info-label {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        
-        .qr-code-container {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        
-        .qr-code {
-            border: 10px solid white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-        
-        .user-id-container {
-            display: flex;
-            margin: 20px 0;
-        }
-        
-        .user-id-container input {
-            flex: 1;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-        
-        .user-id-container button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-top-right-radius: var(--border-radius);
-            border-bottom-right-radius: var(--border-radius);
-            padding: 0 15px;
-            cursor: pointer;
-        }
-        
-        .share-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .share-btn {
-            flex: 1;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        /* Estilos para o scanner QR */
-        .qr-scanner {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-        
-        .qr-scanner video {
-            width: 100%;
-            display: block;
-        }
-        
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-        }
-        
-        .scan-frame {
-            width: 70%;
-            height: 70%;
-            border: 4px solid var(--primary);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .scan-frame::before, .scan-frame::after {
-            content: '';
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 4px solid transparent;
-        }
-        
-        .scan-frame::before {
-            top: -4px;
-            left: -4px;
-            border-top-color: var(--primary);
-            border-left-color: var(--primary);
-        }
-        
-        .scan-frame::after {
-            bottom: -4px;
-            right: -4px;
-            border-bottom-color: var(--primary);
-            border-right-color: var(--primary);
-        }
-        
-        /* Estilos para a tela de chat - MODIFICADO PARA SOBREPOR TUDO */
-        #chatScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--light);
-            z-index: 1000;
-            padding: 0;
-            margin: 0;
-            display: none;
-            flex-direction: column;
-        }
-        
-        #chatScreen.active {
-            display: flex;
-        }
-        
-        .chat-header {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background-color: var(--primary);
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            box-shadow: var(--shadow);
-        }
-        
-        .back-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        
-        .chat-messages {
-            padding: 15px;
-            background-color: white;
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 80px; /* Espaço para o input de mensagem */
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 0;
-            color: #888;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--primary);
-        }
-        
-        .message-item {
-            margin-bottom: 15px;
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-        }
-        
-        .message-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        
-        .message-avatar {
-            width: 30px;
-            height: 30px;
-            font-size: 0.8rem;
-            margin-right: 8px;
-        }
-        
-        .message-sender {
-            font-weight: bold;
-            margin-right: 8px;
-        }
-        
-        .message-time {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-        
-        .message-content {
-            word-wrap: break-word;
-        }
-        
-        .message-expiry {
-            font-size: 0.7rem;
-            opacity: 0.6;
-            margin-top: 5px;
-            text-align: right;
-        }
-        
-        .call-button-container {
-            margin-top: 10px;
-            text-align: center;
-        }
-        
-        .call-button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 8px 15px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.9rem;
-        }
-        
-        .message-input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            padding: 15px;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1010;
-        }
-        
-        .message-input-container input[type="text"] {
-            flex: 1;
-            margin: 0;
-        }
-        
-        .send-btn, .call-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-        
-        /* Botões flutuantes - Corrigido */
-        .floating-buttons {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
-        }
-        
-        .floating-buttons.visible {
-            display: flex;
-        }
-        
-        .floating-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .floating-btn:hover {
-            transform: scale(1.1);
-        }
-        
-        /* Estilos para chamadas WebRTC - MODIFICADA */
-        .call-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .call-container.active {
-            display: flex;
-        }
-        
-        .call-video-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 20px;
-        }
-        
-        .call-video {
-            background-color: black;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            width: 100%;
-            max-width: 400px;
-            height: 300px;
-        }
-        
-        .call-video.small {
-            position: absolute;
-            bottom: 100px;
-            right: 20px;
-            width: 120px;
-            height: 90px;
-            z-index: 10;
-        }
-        
-        .call-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .call-buttons {
-            display: flex;
-            gap: 20px;
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            justify-content: center;
-            z-index: 20;
-        }
-        
-        .call-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            cursor: pointer;
-            border: none;
-            box-shadow: var(--shadow);
-        }
-        
-        .call-accept {
-            background-color: var(--success);
-            color: white;
-        }
-        
-        .call-reject {
-            background-color: var(--error);
-            color: white;
-        }
-        
-        .call-end {
-            background-color: var(--error);
-            color: white;
-        }
-        
-        .call-mute {
-            background-color: var(--dark);
-            color: white;
-        }
-        
-        .call-status {
-            margin-top: 20px;
-            font-size: 1.2rem;
-        }
-        
-        /* Responsividade */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Comic Neue', sans-serif; }
+        body { background-color: var(--light); color: var(--dark); line-height: 1.6; min-height: 100vh; }
+        header { background-color: var(--primary); color: white; text-align: center; padding: 15px 0; box-shadow: var(--shadow); }
+        header h1 { font-size: 2rem; font-weight: 700; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .screen { display: none; animation: fadeIn 0.3s ease; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+        .btn { background-color: var(--primary); color: white; border: none; border-radius: var(--border-radius); padding: 15px; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+        .btn:hover { background-color: #ff85a2; transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        .feedback-message { padding: 10px; margin: 10px 0; border-radius: var(--border-radius); text-align: center; }
+        .feedback-success { background-color: rgba(76, 175, 80, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .feedback-error { background-color: rgba(244, 67, 54, 0.2); color: var(--error); border: 1px solid var(--error); }
+        input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border: 2px solid var(--primary); border-radius: var(--border-radius); font-size: 1rem; background-color: white; }
+        input[type="text"]:focus { outline: none; border-color: var(--dark); }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; }
+        .contact-item { display: flex; align-items: center; padding: 12px; background-color: white; border-radius: var(--border-radius); margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; box-shadow: var(--shadow); }
+        .contact-item:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1); }
+        .delete-contact-btn, .call-contact-btn { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 5px; margin-left: 10px; }
+        .delete-contact-btn { color: var(--error); }
+        .call-contact-btn { color: var(--success); }
+        .user-info { background-color: white; padding: 15px; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: var(--shadow); }
+        .qr-code-container { display: flex; justify-content: center; margin: 20px 0; }
+        .qr-code { border: 10px solid white; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        #chatScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background-color: var(--light); z-index: 1000; padding: 0; margin: 0; display: none; flex-direction: column; }
+        #chatScreen.active { display: flex; }
+        .chat-header { display: flex; align-items: center; padding: 15px; background-color: var(--primary); color: white; position: sticky; top: 0; z-index: 10; box-shadow: var(--shadow); }
+        .chat-messages { padding: 15px; background-color: white; flex: 1; overflow-y: auto; padding-bottom: 80px; }
+        .empty-state { text-align: center; padding: 40px 0; color: #888; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .message-item { margin-bottom: 15px; max-width: 80%; padding: 10px 15px; border-radius: var(--border-radius); }
+        .message-header { display: flex; align-items: center; margin-bottom: 5px; }
+        .message-avatar { width: 30px; height: 30px; font-size: 0.8rem; margin-right: 8px; }
+        .message-time { font-size: 0.8rem; opacity: 0.7; }
+        .call-button-container { margin-top: 10px; text-align: center; }
+        .call-button { background-color: var(--primary); color: white; border: none; border-radius: var(--border-radius); padding: 8px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+        .message-input-container { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; padding: 15px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; z-index: 1010; }
+        .send-btn, .call-btn { background-color: var(--primary); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .floating-buttons { position: fixed; bottom: 20px; right: 20px; display: none; flex-direction: column; gap: 10px; z-index: 100; }
+        .floating-buttons.visible { display: flex; }
+        .floating-btn { width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary); color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .call-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .call-container.active { display: flex; }
+        .call-video-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; max-width: 800px; margin-bottom: 20px; }
+        .call-video { background-color: black; border-radius: var(--border-radius); overflow: hidden; width: 100%; max-width: 400px; height: 300px; }
+        .call-video.small { position: absolute; bottom: 100px; right: 20px; width: 120px; height: 90px; z-index: 10; }
+        .call-buttons { display: flex; gap: 20px; position: fixed; bottom: 20px; left: 0; right: 0; justify-content: center; z-index: 20; }
+        .call-button { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; border: none; box-shadow: var(--shadow); }
+        .call-accept { background-color: var(--success); color: white; }
+        .call-reject { background-color: var(--error); color: white; }
+        .call-end { background-color: var(--error); color: white; }
+        .call-mute { background-color: var(--dark); color: white; }
+        .hidden { display: none !important; }
         @media (max-width: 600px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .floating-buttons {
-                bottom: 10px;
-                right: 10px;
-            }
-            
-            .floating-btn {
-                width: 45px;
-                height: 45px;
-                font-size: 1rem;
-            }
-            
-            .chat-messages {
-                padding-bottom: 70px; /* Ajuste para mobile */
-            }
-            
-            .message-input-container {
-                padding: 10px;
-            }
-            
-            .call-button {
-                width: 50px;
-                height: 50px;
-                font-size: 1.2rem;
-            }
-            
-            .call-video {
-                max-width: 100%;
-                height: 200px;
-            }
-            
-            .call-video.small {
-                width: 80px;
-                height: 60px;
-                bottom: 80px;
-            }
-        }
-        
-        .hidden {
-            display: none !important;
+            .container { padding: 10px; }
+            .floating-buttons { bottom: 10px; right: 10px; }
+            .floating-btn { width: 45px; height: 45px; font-size: 1rem; }
+            .chat-messages { padding-bottom: 70px; }
+            .message-input-container { padding: 10px; }
+            .call-button { width: 50px; height: 50px; font-size: 1.2rem; }
+            .call-video { max-width: 100%; height: 200px; }
+            .call-video.small { width: 80px; height: 60px; bottom: 80px; }
         }
     </style>
 </head>
 <body>
-    <!-- Estrutura HTML -->
-    <header>
-        <h1>BunnyChat</h1>
-    </header>
-    
+    <header><h1>BunnyChat</h1></header>
     <div class="container">
-        <!-- Tela de seleção de usuário -->
         <div id="userSelectScreen" class="screen active">
             <div class="btn-group">
-                <button id="newUserBtn" class="btn">
-                    <span class="btn-text">Novo Usuário</span>
-                </button>
-                <button id="existingUserBtn" class="btn">
-                    <span class="btn-text">Usuário Existente</span>
-                </button>
+                <button id="newUserBtn" class="btn"><span class="btn-text">Novo Usuário</span></button>
+                <button id="existingUserBtn" class="btn"><span class="btn-text">Usuário Existente</span></button>
             </div>
         </div>
-        
-        <!-- Tela de novo usuário -->
         <div id="newUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;">
-                <h2>Criar Novo Usuário</h2>
-            </div>
-            
+            <div style="text-align: center; margin: 20px 0;"><h2>Criar Novo Usuário</h2></div>
             <div style="margin-bottom: 20px;">
                 <label for="newUserName">Seu Nome:</label>
                 <input type="text" id="newUserName" placeholder="Digite seu nome">
             </div>
-            
-            <button id="createUserBtn" class="btn" style="width: 100%;">
-                <span class="btn-text">Criar Usuário</span>
-            </button>
+            <button id="createUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Criar Usuário</span></button>
             <div id="createUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;">
-                <span class="btn-text">Voltar</span>
-            </button>
+            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
         </div>
-        
-        <!-- Tela de usuário existente -->
         <div id="existingUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;">
-                <h2>Usar Usuário Existente</h2>
-            </div>
-            
+            <div style="text-align: center; margin: 20px 0;"><h2>Usar Usuário Existente</h2></div>
             <div style="margin-bottom: 20px;">
                 <label for="existingUserId">ID do Usuário:</label>
                 <input type="text" id="existingUserId" placeholder="Digite seu ID de usuário">
             </div>
-            
-            <button id="loadUserBtn" class="btn" style="width: 100%;">
-                <span class="btn-text">Carregar Usuário</span>
-            </button>
+            <button id="loadUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Carregar Usuário</span></button>
             <div id="loadUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;">
-                <span class="btn-text">Voltar</span>
-            </button>
+            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
         </div>
-        
-        <!-- Tela principal do chat -->
         <div id="mainScreen" class="screen">
             <div id="contactsSection" style="margin-top: 20px; display: block;">
                 <h3>Seus Contatos</h3>
                 <div id="contactsList" style="margin-top: 10px;"></div>
             </div>
-            
             <div id="qrSection" class="hidden" style="margin-top: 20px;">
                 <div class="user-info">
-                    <div class="user-info-item">
-                        <span class="user-info-label">Seu Nome:</span>
-                        <span id="userNameDisplay"></span>
-                    </div>
-                    <div class="user-info-item">
-                        <span class="user-info-label">Seu ID:</span>
-                        <span id="userIdDisplayText"></span>
-                    </div>
+                    <div class="user-info-item"><span class="user-info-label">Seu Nome:</span><span id="userNameDisplay"></span></div>
+                    <div class="user-info-item"><span class="user-info-label">Seu ID:</span><span id="userIdDisplayText"></span></div>
                 </div>
-                
                 <h3 style="text-align: center;">Meu QR Code</h3>
-                <div class="qr-code-container">
-                    <canvas id="qrCodeCanvas" class="qr-code"></canvas>
-                </div>
-                
-                <div class="user-id-container">
-                    <input type="text" id="userIdInput" readonly>
-                    <button id="copyUserIdBtn" title="Copiar ID"><i class="fas fa-copy"></i></button>
-                </div>
-                
+                <div class="qr-code-container"><canvas id="qrCodeCanvas" class="qr-code"></canvas></div>
                 <div class="share-buttons">
-                    <button id="shareQRBtn" class="share-btn">
-                        <i class="fas fa-share-alt"></i> Compartilhar
-                    </button>
-                    <button id="downloadQRBtn" class="share-btn">
-                        <i class="fas fa-download"></i> Baixar QR
-                    </button>
+                    <button id="shareQRBtn" class="share-btn"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    <button id="downloadQRBtn" class="share-btn"><i class="fas fa-download"></i> Baixar QR</button>
                 </div>
             </div>
-            
             <div id="scanSection" class="hidden" style="margin-top: 20px;">
                 <div class="qr-scanner">
                     <video id="qrVideo" playsinline></video>
@@ -784,15 +141,12 @@
             </div>
         </div>
     </div>
-
-    <!-- Tela de chat - MODIFICADA PARA SOBREPOR TUDO -->
     <div id="chatScreen" class="screen">
         <div class="chat-header">
             <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
             <div class="avatar" id="chatAvatar"></div>
             <div id="chatContactName"></div>
         </div>
-        
         <div class="chat-messages" id="chatMessages">
             <div class="empty-state">
                 <i class="fas fa-comment-dots"></i>
@@ -800,17 +154,12 @@
                 <p>Envie uma mensagem para começar a conversa!</p>
             </div>
         </div>
-        
         <div class="message-input-container">
             <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-            <button id="callButton" class="call-btn" title="Chamada de vídeo">
-                <i class="fas fa-video"></i>
-            </button>
+            <button id="callButton" class="call-btn" title="Chamada de vídeo"><i class="fas fa-video"></i></button>
             <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
-
-    <!-- Tela de chamada WebRTC - MODIFICADA -->
     <div id="callScreen" class="call-container">
         <div class="call-video-container">
             <video id="remoteVideo" class="call-video" autoplay playsinline></video>
@@ -821,384 +170,194 @@
             <div id="callStatus" class="call-status">Conectando...</div>
         </div>
         <div class="call-buttons">
-            <button id="acceptCallBtn" class="call-button call-accept hidden" title="Atender">
-                <i class="fas fa-phone"></i>
-            </button>
-            <button id="rejectCallBtn" class="call-button call-reject hidden" title="Recusar">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar">
-                <i class="fas fa-microphone"></i>
-            </button>
+            <button id="acceptCallBtn" class="call-button call-accept hidden" title="Atender"><i class="fas fa-phone"></i></button>
+            <button id="rejectCallBtn" class="call-button call-reject hidden" title="Recusar"><i class="fas fa-phone-slash"></i></button>
+            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar"><i class="fas fa-phone-slash"></i></button>
+            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar"><i class="fas fa-microphone"></i></button>
         </div>
     </div>
-
-    <!-- Botões flutuantes - Corrigido -->
     <div class="floating-buttons">
-        <button id="showContactsBtn" class="floating-btn" title="Contatos">
-            <i class="fas fa-address-book"></i>
-        </button>
-        <button id="showQRBtn" class="floating-btn" title="Meu QR Code">
-            <i class="fas fa-qrcode"></i>
-        </button>
-        <button id="scanQRBtn" class="floating-btn" title="Escanear QR">
-            <i class="fas fa-camera"></i>
-        </button>
+        <button id="showContactsBtn" class="floating-btn" title="Contatos"><i class="fas fa-address-book"></i></button>
+        <button id="showQRBtn" class="floating-btn" title="Meu QR Code"><i class="fas fa-qrcode"></i></button>
+        <button id="scanQRBtn" class="floating-btn" title="Escanear QR"><i class="fas fa-camera"></i></button>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     
     <script>
-        // Configuração do Gun.js
+        // Configuração otimizada do Gun.js
         const gun = Gun({
-            peers: [
-                'https://gun-manhattan.herokuapp.com/gun',
-                'https://gun-us.herokuapp.com/gun',
-                'https://gun-eu.herokuapp.com/gun'
-            ],
+            peers: ['https://gun-manhattan.herokuapp.com/gun'],
             localStorage: false,
-            radisk: false,
-            retry: 3
+            radisk: false
         });
 
-        // Estado da aplicação
+        // Estado simplificado
         const state = {
             currentUser: null,
             currentContact: null,
             contactsCache: {},
             messagesCache: {},
-            qrScannerActive: false,
             db: null,
-            gunListeners: [],
-            // Estado para chamadas WebRTC
             peerConnection: null,
             localStream: null,
             remoteStream: null,
-            callDataChannel: null,
             isCaller: false,
             isInCall: false,
-            isMuted: false,
             callId: null,
-            callListener: null,
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                {
-                    urls: 'turn:numb.viagenie.ca',
-                    credential: 'muazkh',
-                    username: 'webrtc@live.com'
-                }
+                { urls: 'stun:stun1.l.google.com:19302' }
             ]
         };
 
-        // Elementos DOM
-        const elements = {
-            screens: {
-                userSelect: document.getElementById('userSelectScreen'),
-                newUser: document.getElementById('newUserScreen'),
-                existingUser: document.getElementById('existingUserScreen'),
-                main: document.getElementById('mainScreen'),
-                chat: document.getElementById('chatScreen'),
-                call: document.getElementById('callScreen')
-            },
-            buttons: {
-                newUser: document.getElementById('newUserBtn'),
-                existingUser: document.getElementById('existingUserBtn'),
-                createUser: document.getElementById('createUserBtn'),
-                loadUser: document.getElementById('loadUserBtn'),
-                backToSelectFromNew: document.getElementById('backToSelectFromNew'),
-                backToSelectFromExisting: document.getElementById('backToSelectFromExisting'),
-                showContacts: document.getElementById('showContactsBtn'),
-                showQR: document.getElementById('showQRBtn'),
-                scanQR: document.getElementById('scanQRBtn'),
-                backToMain: document.getElementById('backToMainBtn'),
-                sendMessage: document.getElementById('sendMessageBtn'),
-                copyUserId: document.getElementById('copyUserIdBtn'),
-                shareQR: document.getElementById('shareQRBtn'),
-                downloadQR: document.getElementById('downloadQRBtn'),
-                callButton: document.getElementById('callButton'),
-                acceptCallBtn: document.getElementById('acceptCallBtn'),
-                rejectCallBtn: document.getElementById('rejectCallBtn'),
-                endCallBtn: document.getElementById('endCallBtn'),
-                muteCallBtn: document.getElementById('muteCallBtn')
-            },
-            inputs: {
-                newUserName: document.getElementById('newUserName'),
-                existingUserId: document.getElementById('existingUserId'),
-                message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput')
-            },
-            displays: {
-                contactsList: document.getElementById('contactsList'),
-                qrCode: document.getElementById('qrCodeCanvas'),
-                chatMessages: document.getElementById('chatMessages'),
-                chatAvatar: document.getElementById('chatAvatar'),
-                chatContactName: document.getElementById('chatContactName'),
-                qrVideo: document.getElementById('qrVideo'),
-                userNameDisplay: document.getElementById('userNameDisplay'),
-                userIdDisplayText: document.getElementById('userIdDisplayText'),
-                floatingButtons: document.querySelector('.floating-buttons'),
-                scanOverlay: document.querySelector('.scan-overlay'),
-                createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback'),
-                localVideo: document.getElementById('localVideo'),
-                remoteVideo: document.getElementById('remoteVideo'),
-                callContactName: document.getElementById('callContactName'),
-                callStatus: document.getElementById('callStatus')
-            },
-            sections: {
-                contacts: document.getElementById('contactsSection'),
-                qr: document.getElementById('qrSection'),
-                scan: document.getElementById('scanSection')
-            }
+        // Cache de elementos DOM
+        const el = {
+            screens: {},
+            buttons: {},
+            inputs: {},
+            displays: {},
+            sections: {}
         };
 
-        // Funções utilitárias
-        const utils = {
-            escapeHtml: (text) => {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            },
+        // Inicialização otimizada dos elementos
+        function initElements() {
+            // Mapeamento de screens
+            el.screens.userSelect = document.getElementById('userSelectScreen');
+            el.screens.newUser = document.getElementById('newUserScreen');
+            el.screens.existingUser = document.getElementById('existingUserScreen');
+            el.screens.main = document.getElementById('mainScreen');
+            el.screens.chat = document.getElementById('chatScreen');
+            el.screens.call = document.getElementById('callScreen');
             
-            formatTime: (timestamp) => {
-                return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            },
+            // Mapeamento de buttons
+            const buttonIds = [
+                'newUserBtn', 'existingUserBtn', 'createUserBtn', 'loadUserBtn', 
+                'backToSelectFromNew', 'backToSelectFromExisting', 'showContactsBtn',
+                'showQRBtn', 'scanQRBtn', 'backToMainBtn', 'sendMessageBtn', 'copyUserIdBtn',
+                'shareQRBtn', 'downloadQRBtn', 'callButton', 'acceptCallBtn', 'rejectCallBtn',
+                'endCallBtn', 'muteCallBtn'
+            ];
+            
+            buttonIds.forEach(id => {
+                el.buttons[id] = document.getElementById(id);
+            });
+            
+            // Mapeamento de inputs
+            el.inputs.newUserName = document.getElementById('newUserName');
+            el.inputs.existingUserId = document.getElementById('existingUserId');
+            el.inputs.message = document.getElementById('messageInput');
+            el.inputs.userIdInput = document.getElementById('userIdInput');
+            
+            // Mapeamento de displays
+            el.displays.contactsList = document.getElementById('contactsList');
+            el.displays.qrCode = document.getElementById('qrCodeCanvas');
+            el.displays.chatMessages = document.getElementById('chatMessages');
+            el.displays.chatAvatar = document.getElementById('chatAvatar');
+            el.displays.chatContactName = document.getElementById('chatContactName');
+            el.displays.qrVideo = document.getElementById('qrVideo');
+            el.displays.userNameDisplay = document.getElementById('userNameDisplay');
+            el.displays.userIdDisplayText = document.getElementById('userIdDisplayText');
+            el.displays.floatingButtons = document.querySelector('.floating-buttons');
+            el.displays.scanOverlay = document.querySelector('.scan-overlay');
+            el.displays.createUserFeedback = document.getElementById('createUserFeedback');
+            el.displays.loadUserFeedback = document.getElementById('loadUserFeedback');
+            el.displays.localVideo = document.getElementById('localVideo');
+            el.displays.remoteVideo = document.getElementById('remoteVideo');
+            el.displays.callContactName = document.getElementById('callContactName');
+            el.displays.callStatus = document.getElementById('callStatus');
+            
+            // Mapeamento de sections
+            el.sections.contacts = document.getElementById('contactsSection');
+            el.sections.qr = document.getElementById('qrSection');
+            el.sections.scan = document.getElementById('scanSection');
+        }
+
+        // Utilitários otimizados
+        const utils = {
+            escapeHtml: text => text.replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+            formatTime: timestamp => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             
             setButtonLoading: (button, isLoading) => {
-                if (isLoading) {
-                    button.classList.add('btn-loading');
-                    button.disabled = true;
-                } else {
-                    button.classList.remove('btn-loading');
-                    button.disabled = false;
-                }
+                button.disabled = isLoading;
+                isLoading ? button.classList.add('btn-loading') : button.classList.remove('btn-loading');
             },
             
             showFeedback: (message, type, context) => {
-                const feedbackElement = elements.displays[`${context}Feedback`];
-                feedbackElement.textContent = message;
-                feedbackElement.className = `feedback-message feedback-${type}`;
-                feedbackElement.classList.remove('hidden');
+                const el = document.getElementById(`${context}Feedback`);
+                if (el) {
+                    el.textContent = message;
+                    el.className = `feedback-message feedback-${type}`;
+                    el.classList.remove('hidden');
+                }
             },
             
-            hideFeedback: (context) => {
-                const feedbackElement = elements.displays[`${context}Feedback`];
-                feedbackElement.classList.add('hidden');
-            },
-            
-            copyToClipboard: (text) => {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Copiado para a área de transferência!');
-                }).catch(() => {
+            copyToClipboard: text => {
+                navigator.clipboard.writeText(text).catch(() => {
                     const input = document.createElement('input');
                     input.value = text;
-                    document.body.appendChild(input);
-                    input.select();
+                    document.body.appendChild(input).select();
                     document.execCommand('copy');
                     document.body.removeChild(input);
-                    alert('Copiado para a área de transferência!');
-                });
-            },
-            
-            // Funções para chamadas WebRTC - MODIFICADAS
-            setupCallUI: (isCaller) => {
-                state.isInCall = true;
-                state.isCaller = isCaller;
-                
-                elements.displays.callContactName.textContent = state.currentContact.name;
-                
-                if (isCaller) {
-                    elements.displays.callStatus.textContent = 'Chamando...';
-                    elements.buttons.acceptCallBtn.classList.add('hidden');
-                    elements.buttons.rejectCallBtn.classList.add('hidden');
-                    elements.buttons.endCallBtn.classList.remove('hidden');
-                    elements.buttons.muteCallBtn.classList.remove('hidden');
-                } else {
-                    elements.displays.callStatus.textContent = 'Chamada recebida';
-                    elements.buttons.acceptCallBtn.classList.remove('hidden');
-                    elements.buttons.rejectCallBtn.classList.remove('hidden');
-                    elements.buttons.endCallBtn.classList.add('hidden');
-                    elements.buttons.muteCallBtn.classList.add('hidden');
-                }
-                
-                elements.screens.call.classList.add('active');
-            },
-            
-            updateCallStatus: (status) => {
-                elements.displays.callStatus.textContent = status;
-            },
-            
-            resetCallUI: () => {
-                state.isInCall = false;
-                state.isCaller = false;
-                state.callId = null;
-                
-                elements.screens.call.classList.remove('active');
-                elements.buttons.acceptCallBtn.classList.add('hidden');
-                elements.buttons.rejectCallBtn.classList.add('hidden');
-                elements.buttons.endCallBtn.classList.add('hidden');
-                elements.buttons.muteCallBtn.classList.add('hidden');
-                
-                // Limpa os streams de vídeo
-                if (elements.displays.localVideo.srcObject) {
-                    elements.displays.localVideo.srcObject.getTracks().forEach(track => track.stop());
-                    elements.displays.localVideo.srcObject = null;
-                }
-                
-                if (elements.displays.remoteVideo.srcObject) {
-                    elements.displays.remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-                    elements.displays.remoteVideo.srcObject = null;
-                }
-                
-                // Limpa o estado da chamada
-                if (state.peerConnection) {
-                    state.peerConnection.close();
-                    state.peerConnection = null;
-                }
-                
-                state.localStream = null;
-                state.remoteStream = null;
-                state.callDataChannel = null;
-                
-                // Remove o listener da chamada se existir
-                if (state.callListener) {
-                    state.callListener.off();
-                    state.callListener = null;
-                }
-            },
-            
-            toggleMute: () => {
-                if (!state.localStream) return;
-                
-                state.isMuted = !state.isMuted;
-                const audioTracks = state.localStream.getAudioTracks();
-                audioTracks.forEach(track => {
-                    track.enabled = !state.isMuted;
-                });
-                
-                elements.buttons.muteCallBtn.innerHTML = state.isMuted ? 
-                    '<i class="fas fa-microphone-slash"></i>' : 
-                    '<i class="fas fa-microphone"></i>';
-                
-                elements.buttons.muteCallBtn.title = state.isMuted ? 'Desmutar' : 'Mutar';
+                }).then(() => alert('Copiado para a área de transferência!'));
             }
         };
 
-        // Operações do IndexedDB
+        // Operações do IndexedDB otimizadas
         const db = {
             put: async (storeName, data) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    await new Promise((resolve, reject) => {
-                        const request = store.put(data);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao salvar em ${storeName}:`, error);
-                    throw error;
-                }
+                const tx = state.db.transaction([storeName], 'readwrite');
+                const store = tx.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const req = store.put(data);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
             },
             
             get: async (storeName, key) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    return await new Promise((resolve, reject) => {
-                        const request = store.get(key);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao ler de ${storeName}:`, error);
-                    throw error;
-                }
+                const tx = state.db.transaction([storeName], 'readonly');
+                const store = tx.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const req = store.get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
             },
             
             getAll: async (storeName) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    return await new Promise((resolve, reject) => {
-                        const request = store.getAll();
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao ler todos de ${storeName}:`, error);
-                    throw error;
-                }
-            },
-            
-            getMessages: async (sender, receiver) => {
-                try {
-                    const transaction = state.db.transaction(['messages'], 'readonly');
-                    const store = transaction.objectStore('messages');
-                    const index = store.index('conversation');
-                    
-                    const range = IDBKeyRange.bound([sender, receiver], [sender, receiver]);
-                    const range2 = IDBKeyRange.bound([receiver, sender], [receiver, sender]);
-                    
-                    const messages1 = await new Promise((resolve, reject) => {
-                        const request = index.getAll(range);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                    
-                    const messages2 = await new Promise((resolve, reject) => {
-                        const request = index.getAll(range2);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                    
-                    return [...messages1, ...messages2].sort((a, b) => a.timestamp - b.timestamp);
-                } catch (error) {
-                    console.error('Erro ao buscar mensagens:', error);
-                    throw error;
-                }
+                const tx = state.db.transaction([storeName], 'readonly');
+                const store = tx.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
             },
             
             delete: async (storeName, key) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    await new Promise((resolve, reject) => {
-                        const request = store.delete(key);
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao deletar de ${storeName}:`, error);
-                    throw error;
-                }
+                const tx = state.db.transaction([storeName], 'readwrite');
+                const store = tx.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const req = store.delete(key);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
             }
         };
 
-        // Funções para chamadas WebRTC - MODIFICADAS
+        // WebRTC otimizado
         const webrtc = {
             initPeerConnection: () => {
-                state.peerConnection = new RTCPeerConnection({
-                    iceServers: state.iceServers
-                });
+                state.peerConnection = new RTCPeerConnection({ iceServers: state.iceServers });
                 
-                // Configura os handlers de ICE candidates
-                state.peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        // Envia o candidato ICE para o outro peer
+                state.peerConnection.onicecandidate = e => {
+                    if (e.candidate) {
                         gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put({
-                            candidate: event.candidate,
+                            candidate: e.candidate,
                             from: state.currentUser.id,
                             to: state.currentContact.id,
                             timestamp: Date.now()
@@ -1206,98 +365,45 @@
                     }
                 };
                 
-                // Configura o handler para quando a conexão muda de estado
                 state.peerConnection.onconnectionstatechange = () => {
                     const status = state.peerConnection.connectionState;
-                    utils.updateCallStatus(status.charAt(0).toUpperCase() + status.slice(1));
-                    
-                    if (status === 'disconnected' || status === 'failed') {
-                        webrtc.endCall();
+                    el.displays.callStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                    if (status === 'disconnected' || status === 'failed') webrtc.endCall();
+                };
+                
+                state.peerConnection.ontrack = e => {
+                    if (e.streams?.[0]) {
+                        state.remoteStream = e.streams[0];
+                        el.displays.remoteVideo.srcObject = state.remoteStream;
+                        el.displays.callStatus.textContent = 'Chamada em andamento';
                     }
                 };
                 
-                // Configura o handler para quando recebemos um stream remoto
-                state.peerConnection.ontrack = (event) => {
-                    if (event.streams && event.streams[0]) {
-                        state.remoteStream = event.streams[0];
-                        elements.displays.remoteVideo.srcObject = state.remoteStream;
-                        
-                        // Atualiza o status quando o stream remoto é recebido
-                        if (state.isCaller) {
-                            utils.updateCallStatus('Chamada em andamento');
-                        } else {
-                            utils.updateCallStatus('Chamada em andamento');
-                        }
-                    }
-                };
-                
-                // Configura o canal de dados para mensagens de controle
                 if (state.isCaller) {
-                    state.callDataChannel = state.peerConnection.createDataChannel('callControl');
-                    webrtc.setupDataChannel(state.callDataChannel);
-                } else {
-                    state.peerConnection.ondatachannel = (event) => {
-                        state.callDataChannel = event.channel;
-                        webrtc.setupDataChannel(state.callDataChannel);
-                    };
+                    state.peerConnection.createDataChannel('callControl');
                 }
-            },
-            
-            setupDataChannel: (dataChannel) => {
-                dataChannel.onopen = () => {
-                    console.log('Canal de dados aberto');
-                };
-                
-                dataChannel.onclose = () => {
-                    console.log('Canal de dados fechado');
-                };
-                
-                dataChannel.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    console.log('Mensagem recebida:', message);
-                    
-                    if (message.type === 'end-call') {
-                        webrtc.endCall();
-                    }
-                };
             },
             
             startCall: async () => {
                 if (!state.currentUser || !state.currentContact || state.isInCall) return;
                 
                 try {
-                    // Gera um ID único para a chamada
                     state.callId = Gun.text.random(16);
+                    state.isCaller = true;
+                    state.isInCall = true;
                     
-                    // Configura a UI da chamada
-                    utils.setupCallUI(true);
+                    el.displays.callContactName.textContent = state.currentContact.name;
+                    el.displays.callStatus.textContent = 'Chamando...';
+                    el.screens.call.classList.add('active');
                     
-                    // Inicia a conexão peer
                     webrtc.initPeerConnection();
+                    state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                    state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
+                    el.displays.localVideo.srcObject = state.localStream;
                     
-                    // Obtém o stream local (áudio e vídeo)
-                    state.localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true,
-                        video: true
-                    });
-                    
-                    // Adiciona o stream local à conexão peer
-                    state.localStream.getTracks().forEach(track => {
-                        state.peerConnection.addTrack(track, state.localStream);
-                    });
-                    
-                    // Mostra o vídeo local
-                    elements.displays.localVideo.srcObject = state.localStream;
-                    
-                    // Cria a oferta SDP
-                    const offer = await state.peerConnection.createOffer({
-                        offerToReceiveAudio: true,
-                        offerToReceiveVideo: true
-                    });
-                    
+                    const offer = await state.peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
                     await state.peerConnection.setLocalDescription(offer);
                     
-                    // Envia a oferta para o contato
                     gun.get('calls').get(state.callId).put({
                         from: state.currentUser.id,
                         to: state.currentContact.id,
@@ -1305,225 +411,90 @@
                         timestamp: Date.now()
                     });
                     
-                    // Envia uma mensagem com um botão para entrar na chamada
                     const callMessage = {
                         id: Gun.text.random(16),
                         sender: state.currentUser.id,
                         receiver: state.currentContact.id,
                         text: `Você está sendo chamado!`,
                         timestamp: Date.now(),
-                        expiresAt: Date.now() + (24 * 60 * 60 * 1000), // Expira em 24 horas
+                        expiresAt: Date.now() + 86400000,
                         callId: state.callId
                     };
                     
                     gun.get('users').get(state.currentContact.id).get('messages').get(callMessage.id).put(callMessage);
-                    gun.get('users').get(state.currentUser.id).get('messages').get(callMessage.id).put(callMessage);
                     
-                    // Escuta por respostas do contato
-                    gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
-                        if (answer && answer.from === state.currentContact.id) {
-                            try {
-                                await state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer.answer));
-                                console.log('Resposta da chamada recebida e configurada');
-                            } catch (error) {
-                                console.error('Erro ao configurar resposta remota:', error);
-                                webrtc.endCall();
-                            }
+                    gun.get('calls').get(state.callId).get('answer').on(answer => {
+                        if (answer?.from === state.currentContact.id) {
+                            state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer.answer))
+                                .catch(e => { console.error('Erro ao configurar resposta:', e); webrtc.endCall(); });
                         }
                     });
                     
-                    // Escuta por ICE candidates do contato
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).on(async (candidateData) => {
-                        if (candidateData && candidateData.candidate) {
-                            try {
-                                await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                console.log('ICE candidate adicionado com sucesso');
-                            } catch (error) {
-                                console.error('Erro ao adicionar ICE candidate:', error);
-                            }
-                        }
-                    });
-                    
-                    // Configura timeout para chamada não atendida
                     setTimeout(() => {
                         if (state.isInCall && !state.peerConnection.remoteDescription) {
                             alert('Chamada não atendida');
                             webrtc.endCall();
                         }
                     }, 30000);
-                    
                 } catch (error) {
-                    console.error('Erro ao iniciar chamada:', error);
-                    alert('Erro ao iniciar chamada. Verifique se você permitiu o acesso à câmera e ao microfone.');
+                    console.error('Erro na chamada:', error);
+                    alert('Erro ao iniciar chamada. Verifique as permissões.');
                     webrtc.endCall();
                 }
-            },
-            
-            listenForCalls: () => {
-                if (!state.currentUser || state.callListener) return;
-                
-                state.callListener = gun.get('users').get(state.currentUser.id).get('calls').map().on(async (call, callId) => {
-                    if (!call || state.isInCall || !call.from || call.from === state.currentUser.id) return;
-                    
-                    // Verifica se a chamada é para o usuário atual
-                    if (call.to === state.currentUser.id) {
-                        const contact = state.contactsCache[call.from];
-                        if (!contact) return;
-                        
-                        // Armazena o ID da chamada e o contato
-                        state.callId = callId;
-                        state.currentContact = contact;
-                        
-                        // Mostra a UI de chamada recebida
-                        utils.setupCallUI(false);
-                        
-                        // Configura a conexão peer
-                        webrtc.initPeerConnection();
-                        
-                        // Obtém o stream local (áudio e vídeo)
-                        try {
-                            state.localStream = await navigator.mediaDevices.getUserMedia({
-                                audio: true,
-                                video: true
-                            });
-                            
-                            // Adiciona o stream local à conexão peer
-                            state.localStream.getTracks().forEach(track => {
-                                state.peerConnection.addTrack(track, state.localStream);
-                            });
-                            
-                            // Mostra o vídeo local
-                            elements.displays.localVideo.srcObject = state.localStream;
-                            
-                            // Define a oferta remota
-                            await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
-                            
-                            // Cria e envia a resposta
-                            const answer = await state.peerConnection.createAnswer();
-                            await state.peerConnection.setLocalDescription(answer);
-                            
-                            gun.get('calls').get(callId).get('answer').put({
-                                from: state.currentUser.id,
-                                to: call.from,
-                                answer: answer,
-                                timestamp: Date.now()
-                            });
-                            
-                            // Escuta por ICE candidates do chamador
-                            gun.get('calls').get(callId).get('iceCandidates').get(call.from).on(async (candidateData) => {
-                                if (candidateData && candidateData.candidate) {
-                                    try {
-                                        await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                        console.log('ICE candidate adicionado com sucesso');
-                                    } catch (error) {
-                                        console.error('Erro ao adicionar ICE candidate:', error);
-                                    }
-                                }
-                            });
-                            
-                        } catch (error) {
-                            console.error('Erro ao atender chamada:', error);
-                            alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
-                            webrtc.endCall();
-                        }
-                    }
-                });
-            },
-            
-            acceptCall: () => {
-                if (!state.isInCall || state.isCaller) return;
-                
-                elements.buttons.acceptCallBtn.classList.add('hidden');
-                elements.buttons.rejectCallBtn.classList.add('hidden');
-                elements.buttons.endCallBtn.classList.remove('hidden');
-                elements.buttons.muteCallBtn.classList.remove('hidden');
-                
-                utils.updateCallStatus('Chamada em andamento');
             },
             
             endCall: () => {
                 if (!state.isInCall) return;
                 
-                // Envia mensagem de término pelo canal de dados, se disponível
-                if (state.callDataChannel && state.callDataChannel.readyState === 'open') {
-                    state.callDataChannel.send(JSON.stringify({ type: 'end-call' }));
-                }
-                
-                // Remove a chamada do banco de dados
                 if (state.callId) {
                     gun.get('calls').get(state.callId).put(null);
                     gun.get('calls').get(state.callId).get('answer').put(null);
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put(null);
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).put(null);
                 }
                 
-                // Reseta a UI
-                utils.resetCallUI();
+                if (state.peerConnection) state.peerConnection.close();
+                if (state.localStream) state.localStream.getTracks().forEach(track => track.stop());
+                if (state.remoteStream) state.remoteStream.getTracks().forEach(track => track.stop());
+                
+                state.peerConnection = null;
+                state.localStream = null;
+                state.remoteStream = null;
+                state.isInCall = false;
+                state.callId = null;
+                
+                el.screens.call.classList.remove('active');
             },
             
-            rejectCall: () => {
-                if (!state.isInCall || state.isCaller) return;
-                
-                // Remove a chamada do banco de dados
-                if (state.callId) {
-                    gun.get('calls').get(state.callId).put(null);
-                }
-                
-                // Reseta a UI
-                utils.resetCallUI();
-            },
-            
-            joinCall: (callId) => {
+            joinCall: async (callId) => {
                 if (!state.currentUser || state.isInCall) return;
                 
-                // Verifica se a chamada existe
-                gun.get('calls').get(callId).once(async (callData) => {
-                    if (!callData || !callData.from) {
-                        alert('Chamada não encontrada ou já encerrada.');
+                gun.get('calls').get(callId).once(async callData => {
+                    if (!callData?.from || callData.to !== state.currentUser.id) {
+                        alert('Chamada inválida');
                         return;
                     }
                     
-                    // Verifica se o usuário atual é o destinatário da chamada
-                    if (callData.to !== state.currentUser.id) {
-                        alert('Você não é o destinatário desta chamada.');
-                        return;
-                    }
-                    
-                    // Obtém o contato que está chamando
                     const contact = state.contactsCache[callData.from];
                     if (!contact) {
-                        alert('Contato não encontrado em sua lista.');
+                        alert('Contato não encontrado');
                         return;
                     }
                     
-                    state.currentContact = contact;
                     state.callId = callId;
+                    state.currentContact = contact;
+                    state.isCaller = false;
+                    state.isInCall = true;
                     
-                    // Configura a UI de chamada recebida
-                    utils.setupCallUI(false);
+                    el.displays.callContactName.textContent = contact.name;
+                    el.displays.callStatus.textContent = 'Chamada recebida';
+                    el.screens.call.classList.add('active');
                     
-                    // Configura a conexão peer
-                    webrtc.initPeerConnection();
-                    
-                    // Obtém o stream local (áudio e vídeo)
                     try {
-                        state.localStream = await navigator.mediaDevices.getUserMedia({
-                            audio: true,
-                            video: true
-                        });
+                        webrtc.initPeerConnection();
+                        state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                        state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
+                        el.displays.localVideo.srcObject = state.localStream;
                         
-                        // Adiciona o stream local à conexão peer
-                        state.localStream.getTracks().forEach(track => {
-                            state.peerConnection.addTrack(track, state.localStream);
-                        });
-                        
-                        // Mostra o vídeo local
-                        elements.displays.localVideo.srcObject = state.localStream;
-                        
-                        // Define a oferta remota
                         await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-                        
-                        // Cria e envia a resposta
                         const answer = await state.peerConnection.createAnswer();
                         await state.peerConnection.setLocalDescription(answer);
                         
@@ -1533,165 +504,115 @@
                             answer: answer,
                             timestamp: Date.now()
                         });
-                        
-                        // Escuta por ICE candidates do chamador
-                        gun.get('calls').get(callId).get('iceCandidates').get(callData.from).on(async (candidateData) => {
-                            if (candidateData && candidateData.candidate) {
-                                try {
-                                    await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                    console.log('ICE candidate adicionado com sucesso');
-                                } catch (error) {
-                                    console.error('Erro ao adicionar ICE candidate:', error);
-                                }
-                            }
-                        });
-                        
-                        // Aceita a chamada automaticamente
-                        webrtc.acceptCall();
-                        
                     } catch (error) {
                         console.error('Erro ao entrar na chamada:', error);
-                        alert('Erro ao entrar na chamada. Verifique as permissões de câmera e microfone.');
+                        alert('Erro ao atender chamada.');
                         webrtc.endCall();
                     }
                 });
             }
         };
 
-        // Funções principais da aplicação
+        // Aplicação principal otimizada
         const app = {
             init: async () => {
+                initElements();
                 try {
-                    state.db = await app.initIndexedDB();
-                    app.setupEventListeners();
+                    state.db = await new Promise((resolve, reject) => {
+                        const req = indexedDB.open('BunnyChatDB', 3);
+                        req.onerror = () => reject(req.error);
+                        req.onsuccess = () => resolve(req.result);
+                        req.onupgradeneeded = e => {
+                            const db = e.target.result;
+                            if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'id' });
+                            if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'id' });
+                            if (!db.objectStoreNames.contains('messages')) {
+                                const store = db.createObjectStore('messages', { keyPath: 'id' });
+                                store.createIndex('conversation', ['sender', 'receiver'], { unique: false });
+                            }
+                        };
+                    });
+                    
                     await app.checkForExistingUser();
-                    app.startMessageCleanupInterval();
-                    webrtc.listenForCalls();
+                    app.setupEventListeners();
+                    setInterval(app.cleanupExpiredMessages, 3600000);
                 } catch (error) {
                     console.error('Erro na inicialização:', error);
-                    alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
+                    alert('Erro ao iniciar. Recarregue a página.');
                 }
-            },
-            
-            initIndexedDB: () => {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open('BunnyChatDB', 3);
-                    
-                    request.onerror = (event) => {
-                        console.error('Erro ao abrir o IndexedDB:', event.target.error);
-                        reject(event.target.error);
-                    };
-                    
-                    request.onsuccess = (event) => {
-                        resolve(event.target.result);
-                    };
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        
-                        if (!db.objectStoreNames.contains('users')) {
-                            db.createObjectStore('users', { keyPath: 'id' });
-                        }
-                        
-                        if (!db.objectStoreNames.contains('contacts')) {
-                            db.createObjectStore('contacts', { keyPath: 'id' });
-                        }
-                        
-                        if (!db.objectStoreNames.contains('messages')) {
-                            const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
-                            messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
-                        }
-                    };
-                });
             },
             
             setupEventListeners: () => {
                 // Navegação
-                elements.buttons.newUser.addEventListener('click', () => app.showScreen('newUser'));
-                elements.buttons.existingUser.addEventListener('click', () => app.showScreen('existingUser'));
-                elements.buttons.backToSelectFromNew.addEventListener('click', () => app.showScreen('userSelect'));
-                elements.buttons.backToSelectFromExisting.addEventListener('click', () => app.showScreen('userSelect'));
-                elements.buttons.backToMain.addEventListener('click', () => {
-                    app.stopQrScanner();
-                    app.showScreen('main');
-                });
+                el.buttons.newUser.addEventListener('click', () => app.showScreen('newUser'));
+                el.buttons.existingUser.addEventListener('click', () => app.showScreen('existingUser'));
+                el.buttons.backToSelectFromNew.addEventListener('click', () => app.showScreen('userSelect'));
+                el.buttons.backToSelectFromExisting.addEventListener('click', () => app.showScreen('userSelect'));
+                el.buttons.backToMain.addEventListener('click', () => { app.stopQrScanner(); app.showScreen('main'); });
                 
                 // Usuário
-                elements.buttons.createUser.addEventListener('click', app.createUser);
-                elements.buttons.loadUser.addEventListener('click', app.loadUser);
+                el.buttons.createUser.addEventListener('click', app.createUser);
+                el.buttons.loadUser.addEventListener('click', app.loadUser);
                 
                 // Ações principais
-                elements.buttons.showContacts.addEventListener('click', () => app.toggleSection('contacts'));
-                elements.buttons.showQR.addEventListener('click', () => {
-                    app.toggleSection('qr');
-                    app.showUserQRInfo();
-                    app.generateQrCode();
-                });
-                elements.buttons.scanQR.addEventListener('click', () => app.toggleSection('scan'));
+                el.buttons.showContacts.addEventListener('click', () => app.toggleSection('contacts'));
+                el.buttons.showQR.addEventListener('click', () => { app.toggleSection('qr'); app.showUserQRInfo(); app.generateQrCode(); });
+                el.buttons.scanQR.addEventListener('click', () => app.toggleSection('scan'));
                 
                 // Chat
-                elements.buttons.sendMessage.addEventListener('click', app.sendMessage);
-                elements.inputs.message.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') app.sendMessage();
-                });
+                el.buttons.sendMessage.addEventListener('click', app.sendMessage);
+                el.inputs.message.addEventListener('keypress', e => e.key === 'Enter' && app.sendMessage());
                 
-                // Chamadas WebRTC
-                elements.buttons.callButton.addEventListener('click', () => {
-                    if (state.currentContact) {
-                        webrtc.startCall();
-                    }
+                // Chamadas
+                el.buttons.callButton.addEventListener('click', () => state.currentContact && webrtc.startCall());
+                el.buttons.acceptCallBtn.addEventListener('click', () => {
+                    el.buttons.acceptCallBtn.classList.add('hidden');
+                    el.buttons.rejectCallBtn.classList.add('hidden');
+                    el.buttons.endCallBtn.classList.remove('hidden');
+                    el.buttons.muteCallBtn.classList.remove('hidden');
+                    el.displays.callStatus.textContent = 'Chamada em andamento';
                 });
-                
-                elements.buttons.acceptCallBtn.addEventListener('click', () => {
-                    webrtc.acceptCall();
-                });
-                
-                elements.buttons.rejectCallBtn.addEventListener('click', () => {
-                    webrtc.rejectCall();
-                });
-                
-                elements.buttons.endCallBtn.addEventListener('click', () => {
-                    webrtc.endCall();
-                });
-                
-                elements.buttons.muteCallBtn.addEventListener('click', () => {
-                    utils.toggleMute();
+                el.buttons.rejectCallBtn.addEventListener('click', webrtc.endCall);
+                el.buttons.endCallBtn.addEventListener('click', webrtc.endCall);
+                el.buttons.muteCallBtn.addEventListener('click', () => {
+                    if (!state.localStream) return;
+                    state.isMuted = !state.isMuted;
+                    state.localStream.getAudioTracks().forEach(track => track.enabled = !state.isMuted);
+                    el.buttons.muteCallBtn.innerHTML = state.isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
                 });
                 
                 // Utilitários
-                elements.buttons.copyUserId.addEventListener('click', app.copyUserId);
-                elements.buttons.shareQR.addEventListener('click', app.shareQRCode);
-                elements.buttons.downloadQR.addEventListener('click', app.downloadQRCode);
+                el.buttons.copyUserId.addEventListener('click', () => utils.copyToClipboard(state.currentUser?.id || ''));
+                el.buttons.shareQR.addEventListener('click', app.shareQRCode);
+                el.buttons.downloadQR.addEventListener('click', app.downloadQRCode);
                 
-                // Event delegation para botões de delete e call
-                elements.displays.contactsList.addEventListener('click', (e) => {
-                    if (e.target.closest('.delete-contact-btn')) {
+                // Event delegation
+                el.displays.contactsList.addEventListener('click', e => {
+                    const contactId = e.target.closest('.contact-item')?.getAttribute('data-contact-id');
+                    const deleteBtn = e.target.closest('.delete-contact-btn');
+                    const callBtn = e.target.closest('.call-contact-btn');
+                    
+                    if (deleteBtn) {
                         e.stopPropagation();
-                        const contactId = e.target.closest('.delete-contact-btn').getAttribute('data-contact-id');
-                        app.removeContact(contactId);
-                    } else if (e.target.closest('.call-contact-btn')) {
+                        app.removeContact(deleteBtn.getAttribute('data-contact-id'));
+                    } else if (callBtn) {
                         e.stopPropagation();
-                        const contactId = e.target.closest('.call-contact-btn').getAttribute('data-contact-id');
-                        const contact = state.contactsCache[contactId];
+                        const contact = state.contactsCache[callBtn.getAttribute('data-contact-id')];
                         if (contact) {
                             state.currentContact = contact;
                             webrtc.startCall();
                         }
-                    } else if (e.target.closest('.contact-item')) {
-                        const contactId = e.target.closest('.contact-item').getAttribute('data-contact-id');
-                        if (contactId && state.contactsCache[contactId]) {
-                            state.currentContact = state.contactsCache[contactId];
-                            app.showChatScreen();
-                        }
+                    } else if (contactId && state.contactsCache[contactId]) {
+                        state.currentContact = state.contactsCache[contactId];
+                        app.showChatScreen();
                     }
                 });
                 
-                // Event delegation para botão de chamada nas mensagens
-                elements.displays.chatMessages.addEventListener('click', (e) => {
-                    if (e.target.closest('.join-call-btn')) {
+                el.displays.chatMessages.addEventListener('click', e => {
+                    const callBtn = e.target.closest('.join-call-btn');
+                    if (callBtn) {
                         e.stopPropagation();
-                        const callId = e.target.closest('.join-call-btn').getAttribute('data-call-id');
-                        webrtc.joinCall(callId);
+                        webrtc.joinCall(callBtn.getAttribute('data-call-id'));
                     }
                 });
             },
@@ -1699,16 +620,15 @@
             checkForExistingUser: async () => {
                 try {
                     const users = await db.getAll('users');
-                    if (users.length > 0) {
+                    if (users.length) {
                         state.currentUser = users[0];
                         await app.loadLocalData();
                         app.showScreen('main');
-                        await app.syncContacts();
                     } else {
                         app.showScreen('userSelect');
                     }
                 } catch (error) {
-                    console.error('Erro ao carregar usuário:', error);
+                    console.error('Erro ao verificar usuário:', error);
                     app.showScreen('userSelect');
                 }
             },
@@ -1716,74 +636,46 @@
             loadLocalData: async () => {
                 try {
                     const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => {
-                        acc[contact.id] = contact;
-                        return acc;
-                    }, {});
-                    
-                    if (state.currentUser && state.currentContact) {
-                        await app.syncMessages();
-                    }
+                    state.contactsCache = contacts.reduce((acc, contact) => (acc[contact.id] = contact, acc), {});
+                    app.renderContacts(Object.values(state.contactsCache));
                 } catch (error) {
-                    console.error('Erro ao carregar dados locais:', error);
+                    console.error('Erro ao carregar dados:', error);
                 }
             },
             
             showScreen: (screenName) => {
-                Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
-                elements.screens[screenName].classList.add('active');
-                
-                // Correção da exibição dos botões flutuantes
-                const floatingButtons = document.querySelector('.floating-buttons');
-                if (screenName === 'main' || screenName === 'chat') {
-                    floatingButtons.classList.add('visible');
-                } else {
-                    floatingButtons.classList.remove('visible');
-                }
-                
-                if (screenName === 'main') {
-                    elements.sections.contacts.style.display = 'block';
-                    app.syncContacts();
-                }
+                Object.values(el.screens).forEach(screen => screen.classList.remove('active'));
+                el.screens[screenName].classList.add('active');
+                el.displays.floatingButtons.classList.toggle('visible', screenName === 'main' || screenName === 'chat');
+                if (screenName === 'main') el.sections.contacts.style.display = 'block';
             },
             
             toggleSection: (sectionName) => {
-                Object.values(elements.sections).forEach(section => section.classList.add('hidden'));
-                elements.sections[sectionName].classList.remove('hidden');
-                
-                if (sectionName === 'scan') app.startQrScanner();
-                else app.stopQrScanner();
+                Object.values(el.sections).forEach(section => section.classList.add('hidden'));
+                el.sections[sectionName].classList.remove('hidden');
+                sectionName === 'scan' ? app.startQrScanner() : app.stopQrScanner();
             },
             
             createUser: async () => {
-                const userName = elements.inputs.newUserName.value.trim();
-                if (!userName) {
-                    utils.showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
-                    return;
-                }
+                const userName = el.inputs.newUserName.value.trim();
+                if (!userName) return utils.showFeedback('Digite um nome', 'error', 'createUser');
                 
-                utils.setButtonLoading(elements.buttons.createUser, true);
-                
-                const userId = Gun.text.random(16);
-                const user = { 
-                    id: userId, 
-                    name: userName, 
-                    createdAt: Date.now(),
-                    lastSeen: Date.now()
-                };
-                
-                utils.hideFeedback('createUser');
+                utils.setButtonLoading(el.buttons.createUser, true);
                 
                 try {
+                    const user = { 
+                        id: Gun.text.random(16), 
+                        name: userName, 
+                        createdAt: Date.now(),
+                        lastSeen: Date.now()
+                    };
+                    
                     await db.put('users', user);
-                    gun.get('users').get(userId).put(user);
+                    gun.get('users').get(user.id).put(user);
                     
                     state.currentUser = user;
                     state.contactsCache = {};
-                    state.messagesCache = {};
-                    
-                    utils.showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
-                    elements.inputs.newUserName.value = '';
+                    utils.showFeedback('Usuário criado!', 'success', 'createUser');
                     
                     setTimeout(() => {
                         utils.hideFeedback('createUser');
@@ -1793,63 +685,43 @@
                     }, 800);
                 } catch (error) {
                     console.error('Erro ao criar usuário:', error);
-                    utils.showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
+                    utils.showFeedback('Erro ao criar usuário', 'error', 'createUser');
                 } finally {
-                    utils.setButtonLoading(elements.buttons.createUser, false);
+                    utils.setButtonLoading(el.buttons.createUser, false);
                 }
             },
             
             loadUser: async () => {
-                const userId = elements.inputs.existingUserId.value.trim();
-                if (!userId) {
-                    utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
-                    return;
-                }
+                const userId = el.inputs.existingUserId.value.trim();
+                if (!userId) return utils.showFeedback('Digite um ID', 'error', 'loadUser');
                 
-                utils.setButtonLoading(elements.buttons.loadUser, true);
-                utils.hideFeedback('loadUser');
+                utils.setButtonLoading(el.buttons.loadUser, true);
                 
                 try {
-                    let user = await db.get('users', userId);
+                    let user = await db.get('users', userId) || 
+                              await new Promise(resolve => gun.get('users').get(userId).once(resolve, { wait: 2000 }));
                     
-                    if (!user) {
-                        user = await new Promise((resolve) => {
-                            gun.get('users').get(userId).once(resolve, { wait: 2000 });
-                        });
-                        
-                        if (user) {
-                            await db.put('users', user);
-                        }
-                    }
-                    
-                    if (user && user.name) {
+                    if (user?.name) {
+                        await db.put('users', user);
                         state.currentUser = user;
                         await app.loadLocalData();
-                        
-                        utils.showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
-                        elements.inputs.existingUserId.value = '';
-                        
-                        setTimeout(() => {
-                            utils.hideFeedback('loadUser');
-                            app.showScreen('main');
-                        }, 1000);
+                        utils.showFeedback('Usuário carregado!', 'success', 'loadUser');
+                        setTimeout(() => app.showScreen('main'), 1000);
                     } else {
                         utils.showFeedback('Usuário não encontrado', 'error', 'loadUser');
                     }
                 } catch (error) {
                     console.error('Erro ao carregar usuário:', error);
-                    utils.showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
+                    utils.showFeedback('Erro ao carregar usuário', 'error', 'loadUser');
                 } finally {
-                    utils.setButtonLoading(elements.buttons.loadUser, false);
+                    utils.setButtonLoading(el.buttons.loadUser, false);
                 }
             },
             
             showUserQRInfo: () => {
                 if (!state.currentUser) return;
-                
-                elements.displays.userNameDisplay.textContent = state.currentUser.name;
-                elements.displays.userIdDisplayText.textContent = state.currentUser.id;
-                elements.inputs.userIdInput.value = state.currentUser.id;
+                el.displays.userNameDisplay.textContent = state.currentUser.name;
+                el.displays.userIdDisplayText.textContent = state.currentUser.id;
             },
             
             generateQrCode: () => {
@@ -1862,94 +734,33 @@
                     userName: state.currentUser.name
                 });
                 
-                const canvas = elements.displays.qrCode;
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                canvas.width = 200;
-                canvas.height = 200;
-                
-                QRCode.toCanvas(canvas, qrData, {
+                QRCode.toCanvas(el.displays.qrCode, qrData, {
                     width: 200,
                     margin: 2,
                     color: { dark: '#5A2A3E', light: '#FFF2F5' }
-                }, (error) => {
-                    if (error) console.error('Erro ao gerar QR Code:', error);
-                });
-                
-                elements.inputs.userIdInput.value = state.currentUser.id;
-            },
-            
-            copyUserId: () => {
-                utils.copyToClipboard(state.currentUser.id);
+                }, error => error && console.error('Erro no QR Code:', error));
             },
             
             shareQRCode: () => {
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Meu BunnyChat QR Code',
-                        text: `Adicione-me no BunnyChat! Meu nome: ${state.currentUser.name}`,
-                        url: `${window.location.href}?user=${state.currentUser.id}`
-                    }).catch(() => app.copyUserId());
-                } else {
-                    app.copyUserId();
-                }
+                navigator.share ? navigator.share({
+                    title: 'Meu BunnyChat QR Code',
+                    text: `Adicione-me no BunnyChat! Meu nome: ${state.currentUser.name}`,
+                    url: `${window.location.href}?user=${state.currentUser.id}`
+                }).catch(() => utils.copyToClipboard(state.currentUser.id)) : utils.copyToClipboard(state.currentUser.id);
             },
             
             downloadQRCode: () => {
                 const link = document.createElement('a');
                 link.download = `BunnyChat-${state.currentUser.name}.png`;
-                link.href = elements.displays.qrCode.toDataURL();
+                link.href = el.displays.qrCode.toDataURL();
                 link.click();
             },
             
-            syncContacts: async () => {
-                if (!state.currentUser) return;
-                
-                try {
-                    const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => {
-                        acc[contact.id] = contact;
-                        return acc;
-                    }, {});
-                    
-                    app.renderContacts(Object.values(state.contactsCache));
-                    
-                    // Remove listeners antigos
-                    state.gunListeners.forEach(listener => listener.off());
-                    state.gunListeners = [];
-                    
-                    // Adiciona novo listener
-                    const listener = gun.get('users').get(state.currentUser.id).get('contacts').map().on(async (contact, id) => {
-                        if (!contact) {
-                            if (state.contactsCache[id]) {
-                                delete state.contactsCache[id];
-                                await db.delete('contacts', id);
-                                app.renderContacts(Object.values(state.contactsCache));
-                            }
-                            return;
-                        }
-                        
-                        state.contactsCache[id] = contact;
-                        await db.put('contacts', contact);
-                        app.renderContacts(Object.values(state.contactsCache));
-                    });
-                    
-                    state.gunListeners.push(listener);
-                } catch (error) {
-                    console.error('Erro ao sincronizar contatos:', error);
-                }
-            },
-            
             renderContacts: (contacts) => {
-                elements.displays.contactsList.innerHTML = '';
-                
-                contacts.sort((a, b) => a.name.localeCompare(b.name))
-                    .forEach(async (contact) => {
-                        const contactElement = document.createElement('div');
-                        contactElement.className = 'contact-item';
-                        contactElement.setAttribute('data-contact-id', contact.id);
-                        contactElement.innerHTML = `
+                el.displays.contactsList.innerHTML = contacts
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(contact => `
+                        <div class="contact-item" data-contact-id="${contact.id}">
                             <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
                             <div style="flex: 1;">
                                 <div style="font-weight: bold;">${contact.name}</div>
@@ -1961,47 +772,37 @@
                             <button class="delete-contact-btn" title="Excluir contato" data-contact-id="${contact.id}">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        `;
-                        
-                        elements.displays.contactsList.appendChild(contactElement);
-                    });
+                        </div>
+                    `).join('');
             },
             
             removeContact: async (userId) => {
-                if (!state.currentUser || !userId) return;
-                
-                if (userId === state.currentUser.id) {
-                    alert('Você não pode se remover da sua lista de contatos!');
-                    return;
-                }
+                if (!state.currentUser || !userId || userId === state.currentUser.id) return;
                 
                 const contact = state.contactsCache[userId];
-                if (!contact) return;
+                if (!contact || !confirm(`Remover ${contact.name} dos contatos?`)) return;
                 
-                if (confirm(`Tem certeza que deseja remover ${contact.name} dos seus contatos?\nIsso não afetará as mensagens existentes.`)) {
-                    try {
-                        await db.delete('contacts', userId);
-                        delete state.contactsCache[userId];
-                        gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
-                        
-                        app.renderContacts(Object.values(state.contactsCache));
-                        
-                        if (state.currentContact && state.currentContact.id === userId) {
-                            state.currentContact = null;
-                            app.showScreen('main');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao remover contato:', error);
-                        alert('Erro ao remover contato. Tente novamente.');
+                try {
+                    await db.delete('contacts', userId);
+                    delete state.contactsCache[userId];
+                    gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
+                    app.renderContacts(Object.values(state.contactsCache));
+                    
+                    if (state.currentContact?.id === userId) {
+                        state.currentContact = null;
+                        app.showScreen('main');
                     }
+                } catch (error) {
+                    console.error('Erro ao remover contato:', error);
+                    alert('Erro ao remover contato.');
                 }
             },
             
             showChatScreen: () => {
                 if (!state.currentContact) return;
                 
-                elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
-                elements.displays.chatContactName.textContent = state.currentContact.name;
+                el.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
+                el.displays.chatContactName.textContent = state.currentContact.name;
                 app.showScreen('chat');
                 app.syncMessages();
             },
@@ -2010,55 +811,33 @@
                 if (!state.currentUser || !state.currentContact) return;
                 
                 try {
-                    const now = Date.now();
                     const contactId = state.currentContact.id;
-                    
-                    const localMessages = await db.getMessages(state.currentUser.id, contactId);
-                    const validMessages = localMessages.filter(msg => msg.expiresAt > now);
+                    const messages = await db.getMessages(state.currentUser.id, contactId);
+                    const validMessages = messages.filter(msg => msg.expiresAt > Date.now());
                     
                     state.messagesCache[contactId] = validMessages;
                     app.renderMessages(validMessages);
                     
-                    // Remove listeners antigos
-                    state.gunListeners.forEach(listener => listener.off());
-                    state.gunListeners = [];
-                    
-                    // Adiciona novo listener
-                    const listener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
-                        if (!message) return;
+                    gun.get('users').get(state.currentUser.id).get('messages').map().on(msg => {
+                        if (!msg || msg.expiresAt < Date.now()) return;
                         
-                        if (message.expiresAt && message.expiresAt < now) {
-                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            return;
-                        }
+                        const isRelevant = (msg.sender === contactId && msg.receiver === state.currentUser.id) || 
+                                         (msg.sender === state.currentUser.id && msg.receiver === contactId);
                         
-                        const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
-                                           (message.sender === state.currentUser.id && message.receiver === contactId);
-                        
-                        if (isRelevant) {
-                            const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
-                            if (!messageExists) {
-                                await db.put('messages', message);
-                                
-                                if (!state.messagesCache[contactId]) {
-                                    state.messagesCache[contactId] = [];
-                                }
-                                state.messagesCache[contactId].push(message);
-                                
-                                app.renderMessages([message]);
-                            }
+                        if (isRelevant && !state.messagesCache[contactId]?.some(m => m.id === msg.id)) {
+                            db.put('messages', msg);
+                            state.messagesCache[contactId] = [...(state.messagesCache[contactId] || []), msg];
+                            app.renderMessages([msg]);
                         }
                     });
-                    
-                    state.gunListeners.push(listener);
                 } catch (error) {
                     console.error('Erro ao sincronizar mensagens:', error);
                 }
             },
             
             renderMessages: (messages) => {
-                if (messages.length === 0 && elements.displays.chatMessages.children.length === 0) {
-                    elements.displays.chatMessages.innerHTML = `
+                if (!messages.length && !el.displays.chatMessages.querySelector('.message-item')) {
+                    el.displays.chatMessages.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-comment-dots"></i>
                             <p>Nenhuma mensagem ainda</p>
@@ -2068,73 +847,61 @@
                     return;
                 }
                 
-                if (messages.length > 0 && elements.displays.chatMessages.querySelector('.empty-state')) {
-                    elements.displays.chatMessages.innerHTML = '';
+                if (messages.length && el.displays.chatMessages.querySelector('.empty-state')) {
+                    el.displays.chatMessages.innerHTML = '';
                 }
                 
-                messages.forEach(async (message) => {
-                    if (document.getElementById(`msg-${message.id}`)) return;
+                messages.forEach(msg => {
+                    if (document.getElementById(`msg-${msg.id}`)) return;
                     
-                    const isSender = message.sender === state.currentUser.id;
+                    const isSender = msg.sender === state.currentUser.id;
+                    const expiryDate = new Date(msg.expiresAt);
                     
                     const messageElement = document.createElement('div');
-                    messageElement.id = `msg-${message.id}`;
+                    messageElement.id = `msg-${msg.id}`;
                     messageElement.className = 'message-item';
                     messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
                     messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
-                    
-                    const expiryDate = new Date(message.expiresAt);
-                    const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const expiryDateStr = expiryDate.toLocaleDateString();
-                    
-                    let callButton = '';
-                    if (message.callId) {
-                        callButton = `
-                            <div class="call-button-container">
-                                <button class="call-button join-call-btn" data-call-id="${message.callId}">
-                                    <i class="fas fa-video"></i> Entrar na Chamada
-                                </button>
-                            </div>
-                        `;
-                    }
                     
                     messageElement.innerHTML = `
                         <div class="message-header">
                             ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
                             <div class="message-sender">${isSender ? 'Você' : state.currentContact.name}</div>
-                            <div class="message-time">${utils.formatTime(message.timestamp)}</div>
+                            <div class="message-time">${utils.formatTime(msg.timestamp)}</div>
                         </div>
-                        ${message.text ? `<div class="message-content">${utils.escapeHtml(message.text)}</div>` : ''}
-                        ${callButton}
-                        ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
+                        <div class="message-content">${utils.escapeHtml(msg.text)}</div>
+                        ${msg.callId ? `
+                            <div class="call-button-container">
+                                <button class="call-button join-call-btn" data-call-id="${msg.callId}">
+                                    <i class="fas fa-video"></i> Entrar na Chamada
+                                </button>
+                            </div>
+                        ` : ''}
+                        ${!isSender ? `<div class="message-expiry">Expira: ${expiryDate.toLocaleDateString()} às ${expiryDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>` : ''}
                     `;
                     
-                    elements.displays.chatMessages.appendChild(messageElement);
-                    elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
+                    el.displays.chatMessages.appendChild(messageElement);
+                    el.displays.chatMessages.scrollTop = el.displays.chatMessages.scrollHeight;
                 });
             },
             
             sendMessage: async () => {
-                if (!state.currentUser || !state.currentContact) return;
-                
-                const messageText = elements.inputs.message.value.trim();
-                if (!messageText) return;
-                
-                const messageId = Gun.text.random(16);
-                const now = Date.now();
-                const expiresAt = now + (24 * 60 * 60 * 1000);
+                const messageText = el.inputs.message.value.trim();
+                if (!messageText || !state.currentUser || !state.currentContact) return;
                 
                 const message = {
-                    id: messageId,
+                    id: Gun.text.random(16),
                     sender: state.currentUser.id,
                     receiver: state.currentContact.id,
                     text: messageText,
-                    timestamp: now,
-                    expiresAt: expiresAt
+                    timestamp: Date.now(),
+                    expiresAt: Date.now() + 86400000
                 };
                 
                 try {
                     await db.put('messages', message);
+                    gun.get('users').get(state.currentUser.id).get('messages').get(message.id).put(message);
+                    gun.get('users').get(state.currentContact.id).get('messages').get(message.id).put(message);
                     
                     if (!state.messagesCache[state.currentContact.id]) {
                         state.messagesCache[state.currentContact.id] = [];
@@ -2142,128 +909,91 @@
                     state.messagesCache[state.currentContact.id].push(message);
                     
                     app.renderMessages([message]);
-                    
-                    gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
-                    gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
-                    
-                    elements.inputs.message.value = '';
+                    el.inputs.message.value = '';
                 } catch (error) {
                     console.error('Erro ao enviar mensagem:', error);
-                    alert('Erro ao enviar mensagem. Tente novamente.');
+                    alert('Erro ao enviar mensagem.');
                 }
             },
             
-            startMessageCleanupInterval: () => {
-                setInterval(async () => {
-                    if (!state.currentUser) return;
-                    
+            cleanupExpiredMessages: async () => {
+                if (!state.currentUser) return;
+                
+                try {
                     const now = Date.now();
+                    const messages = await db.getAll('messages');
+                    const expired = messages.filter(msg => msg.expiresAt < now);
                     
-                    try {
-                        const allMessages = await db.getAll('messages');
-                        const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
-                        
-                        for (const msg of expiredMessages) {
-                            await db.delete('messages', msg.id);
-                        }
-                        
-                        gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
-                            if (!message || !message.expiresAt) return;
-                            
-                            if (message.expiresAt < now) {
-                                gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            }
-                        });
-                        
-                        Object.keys(state.messagesCache).forEach(contactId => {
-                            state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
-                        });
-                    } catch (error) {
-                        console.error('Erro ao limpar mensagens expiradas:', error);
+                    for (const msg of expired) {
+                        await db.delete('messages', msg.id);
+                        gun.get('users').get(state.currentUser.id).get('messages').get(msg.id).put(null);
                     }
-                }, 60 * 60 * 1000);
+                    
+                    Object.keys(state.messagesCache).forEach(contactId => {
+                        state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
+                    });
+                } catch (error) {
+                    console.error('Erro ao limpar mensagens:', error);
+                }
             },
             
             startQrScanner: () => {
                 if (state.qrScannerActive) return;
                 state.qrScannerActive = true;
                 
-                if (elements.displays.qrVideo.srcObject) {
-                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
+                if (el.displays.qrVideo.srcObject) {
+                    el.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
                 }
 
-                if (elements.displays.scanOverlay) {
-                    elements.displays.scanOverlay.style.display = 'none';
-                }
+                el.displays.scanOverlay.style.display = 'none';
 
                 navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
                 }).then(stream => {
-                    elements.displays.qrVideo.srcObject = stream;
-                    elements.displays.qrVideo.setAttribute('playsinline', true);
+                    el.displays.qrVideo.srcObject = stream;
                     
-                    elements.displays.qrVideo.play()
-                        .then(() => {
-                            if (elements.displays.scanOverlay) {
-                                elements.displays.scanOverlay.style.display = 'flex';
-                            }
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    
+                    function scanFrame() {
+                        if (!state.qrScannerActive) return;
 
-                            const canvasElement = document.createElement('canvas');
-                            const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                            canvasElement.width = elements.displays.qrVideo.videoWidth;
-                            canvasElement.height = elements.displays.qrVideo.videoHeight;
+                        try {
+                            if (el.displays.qrVideo.readyState === el.displays.qrVideo.HAVE_ENOUGH_DATA) {
+                                canvas.width = el.displays.qrVideo.videoWidth;
+                                canvas.height = el.displays.qrVideo.videoHeight;
+                                ctx.drawImage(el.displays.qrVideo, 0, 0, canvas.width, canvas.height);
+                                
+                                const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, {
+                                    inversionAttempts: "dontInvert",
+                                });
 
-                            function scanFrame() {
-                                if (!state.qrScannerActive || !elements.displays.qrVideo.srcObject) return;
-
-                                try {
-                                    if (elements.displays.qrVideo.readyState === elements.displays.qrVideo.HAVE_ENOUGH_DATA) {
-                                        canvasElement.width = elements.displays.qrVideo.videoWidth;
-                                        canvasElement.height = elements.displays.qrVideo.videoHeight;
-                                        canvas.drawImage(elements.displays.qrVideo, 0, 0, canvasElement.width, canvasElement.height);
-                                        
-                                        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                            inversionAttempts: "dontInvert",
-                                        });
-
-                                        if (code) {
-                                            try {
-                                                const qrData = JSON.parse(code.data);
-                                                if (qrData.app === "BunnyChat" && qrData.userId) {
-                                                    if (qrData.userId === state.currentUser.id) {
-                                                        alert('Você não pode adicionar a si mesmo!');
-                                                        return;
-                                                    }
-                                                    app.stopQrScanner();
-                                                    app.addContact(qrData.userId, qrData.userName || 'Novo Contato');
-                                                    return;
-                                                }
-                                            } catch (e) {
-                                                console.log('QR Code inválido:', e);
-                                            }
+                                if (code) {
+                                    try {
+                                        const qrData = JSON.parse(code.data);
+                                        if (qrData.app === "BunnyChat" && qrData.userId && qrData.userId !== state.currentUser.id) {
+                                            app.stopQrScanner();
+                                            app.addContact(qrData.userId, qrData.userName || 'Novo Contato');
+                                            return;
                                         }
+                                    } catch (e) {
+                                        console.log('QR inválido:', e);
                                     }
-                                    requestAnimationFrame(scanFrame);
-                                } catch (e) {
-                                    console.error('Erro no scanner:', e);
                                 }
                             }
+                            requestAnimationFrame(scanFrame);
+                        } catch (e) {
+                            console.error('Erro no scanner:', e);
+                        }
+                    }
 
-                            scanFrame();
-                        })
-                        .catch(err => {
-                            console.error('Erro ao reproduzir vídeo:', err);
-                            alert('Erro ao iniciar a câmera. Por favor, recarregue a página e tente novamente.');
-                            app.stopQrScanner();
-                        });
+                    el.displays.qrVideo.onplaying = () => {
+                        el.displays.scanOverlay.style.display = 'flex';
+                        scanFrame();
+                    };
                 }).catch(err => {
-                    console.error('Erro ao acessar a câmera:', err);
-                    alert('Não foi possível acessar a câmera. Verifique as permissões.');
+                    console.error('Erro na câmera:', err);
+                    alert('Não foi possível acessar a câmera.');
                     app.stopQrScanner();
                 });
             },
@@ -2271,33 +1001,22 @@
             stopQrScanner: () => {
                 if (!state.qrScannerActive) return;
                 state.qrScannerActive = false;
+                el.displays.scanOverlay.style.display = 'flex';
                 
-                if (elements.displays.scanOverlay) {
-                    elements.displays.scanOverlay.style.display = 'flex';
-                }
-
-                if (elements.displays.qrVideo.srcObject) {
-                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => {
-                        track.stop();
-                    });
-                    elements.displays.qrVideo.srcObject = null;
+                if (el.displays.qrVideo.srcObject) {
+                    el.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
+                    el.displays.qrVideo.srcObject = null;
                 }
             },
             
             addContact: async (userId, userName) => {
-                if (!state.currentUser || !userId) return;
-                
-                if (state.contactsCache[userId]) {
-                    alert('Este contato já está na sua lista!');
+                if (!state.currentUser || !userId || state.contactsCache[userId]) {
+                    alert(state.contactsCache[userId] ? 'Contato já existe!' : 'Erro ao adicionar contato');
                     return;
                 }
 
                 const contact = { id: userId, name: userName, timestamp: Date.now() };
-                const myContact = { 
-                    id: state.currentUser.id, 
-                    name: state.currentUser.name, 
-                    timestamp: Date.now() 
-                };
+                const myContact = { id: state.currentUser.id, name: state.currentUser.name, timestamp: Date.now() };
                 
                 try {
                     await db.put('contacts', contact);
@@ -2311,20 +1030,12 @@
 
                     if (otherUserExists) {
                         gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
-                        
-                        gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
-                            if (updated) {
-                                console.log('Contato atualizado para o outro usuário');
-                            }
-                        });
-                    } else {
-                        console.log('O outro usuário não foi encontrado no banco de dados');
                     }
                     
-                    alert(`Contato ${userName} adicionado com sucesso!`);
+                    alert(`Contato ${userName} adicionado!`);
                 } catch (error) {
                     console.error('Erro ao adicionar contato:', error);
-                    alert('Erro ao adicionar contato. Tente novamente.');
+                    alert('Erro ao adicionar contato.');
                 }
             }
         };
