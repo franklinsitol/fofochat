@@ -2303,28 +2303,34 @@
                 };
                 
                 try {
+                    // Adiciona o contato ao usuário atual
                     await db.put('contacts', contact);
                     state.contactsCache[userId] = contact;
                     app.renderContacts(Object.values(state.contactsCache));
+                    
+                    // Envia o contato para o banco de dados Gun
                     gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
                     
+                    // Verifica se o outro usuário existe
                     const otherUserExists = await new Promise(resolve => {
                         gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
                     });
 
                     if (otherUserExists) {
+                        // Adiciona o usuário atual como contato do outro usuário
                         gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
                         
+                        // Aguarda confirmação de que o contato foi adicionado
                         gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
                             if (updated) {
-                                console.log('Contato atualizado para o outro usuário');
+                                console.log('Contato adicionado mutuamente com sucesso');
+                                alert(`Contato ${userName} adicionado com sucesso! Agora vocês podem conversar.`);
                             }
                         });
                     } else {
                         console.log('O outro usuário não foi encontrado no banco de dados');
+                        alert(`Contato ${userName} adicionado localmente. Quando o outro usuário entrar no app, ele será notificado.`);
                     }
-                    
-                    alert(`Contato ${userName} adicionado com sucesso!`);
                 } catch (error) {
                     console.error('Erro ao adicionar contato:', error);
                     alert('Erro ao adicionar contato. Tente novamente.');
