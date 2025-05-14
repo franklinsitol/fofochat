@@ -454,7 +454,6 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.9rem;
         }
         
         .message-input-container {
@@ -559,8 +558,8 @@
             border-radius: var(--border-radius);
             overflow: hidden;
             width: 100%;
-            max-width: 400px;
-            height: 300px;
+            max-width: 100%;
+            height: calc(100vh - 200px);
         }
         
         .call-video.small {
@@ -1222,6 +1221,10 @@
                         state.remoteStream = event.streams[0];
                         elements.displays.remoteVideo.srcObject = state.remoteStream;
                         
+                        // Ajusta o vídeo remoto para ocupar toda a tela
+                        elements.displays.remoteVideo.classList.remove('small');
+                        elements.displays.remoteVideo.classList.add('fullscreen');
+                        
                         // Atualiza o status quando o stream remoto é recebido
                         if (state.isCaller) {
                             utils.updateCallStatus('Chamada em andamento');
@@ -1305,12 +1308,12 @@
                         timestamp: Date.now()
                     });
                     
-                    // Envia uma mensagem com um botão para entrar na chamada
+                    // Envia uma mensagem com um botão simplificado para entrar na chamada
                     const callMessage = {
                         id: Gun.text.random(16),
                         sender: state.currentUser.id,
                         receiver: state.currentContact.id,
-                        text: `Você está sendo chamado!`,
+                        text: `Chamada de vídeo recebida!`,
                         timestamp: Date.now(),
                         expiresAt: Date.now() + (24 * 60 * 60 * 1000), // Expira em 24 horas
                         callId: state.callId
@@ -2092,7 +2095,7 @@
                         callButton = `
                             <div class="call-button-container">
                                 <button class="call-button join-call-btn" data-call-id="${message.callId}">
-                                    <i class="fas fa-video"></i> Entrar na Chamada
+                                    <i class="fas fa-video"></i>
                                 </button>
                             </div>
                         `;
