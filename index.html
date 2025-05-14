@@ -1667,6 +1667,20 @@
                         timestamp: Date.now()
                     });
                     
+                    // Envia uma mensagem com o link da chamada para o contato
+                    const callLink = `${window.location.href.split('?')[0]}?call=${state.callId}`;
+                    const callMessage = {
+                        id: Gun.text.random(16),
+                        sender: state.currentUser.id,
+                        receiver: state.currentContact.id,
+                        text: `Você está sendo chamado! Clique aqui para entrar na chamada: ${callLink}`,
+                        timestamp: Date.now(),
+                        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // Expira em 24 horas
+                    };
+                    
+                    gun.get('users').get(state.currentContact.id).get('messages').get(callMessage.id).put(callMessage);
+                    gun.get('users').get(state.currentUser.id).get('messages').get(callMessage.id).put(callMessage);
+                    
                     // Escuta por respostas do contato
                     gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
                         if (answer && answer.from === state.currentContact.id) {
@@ -1831,9 +1845,107 @@
                     await app.checkForExistingUser();
                     app.startMessageCleanupInterval();
                     webrtc.listenForCalls();
+                    
+                    // Verifica se há um parâmetro de chamada na URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const callId = urlParams.get('call');
+                    
+                    if (callId) {
+                        // Se houver um ID de chamada na URL, tenta entrar na chamada
+                        app.joinCallFromLink(callId);
+                    }
                 } catch (error) {
                     console.error('Erro na inicialização:', error);
                     alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
+                }
+            },
+            
+            joinCallFromLink: async (callId) => {
+                if (!state.currentUser) {
+                    alert('Por favor, faça login primeiro para entrar na chamada.');
+                    return;
+                }
+                
+                try {
+                    // Busca os dados da chamada
+                    const callData = await new Promise(resolve => {
+                        gun.get('calls').get(callId).once(resolve, { wait: 2000 });
+                    });
+                    
+                    if (!callData || !callData.from) {
+                        alert('Chamada não encontrada ou já encerrada.');
+                        return;
+                    }
+                    
+                    // Verifica se o usuário atual é o destinatário da chamada
+                    if (callData.to !== state.currentUser.id) {
+                        alert('Você não é o destinatário desta chamada.');
+                        return;
+                    }
+                    
+                    // Obtém o contato que está chamando
+                    const contact = state.contactsCache[callData.from];
+                    if (!contact) {
+                        alert('Contato não encontrado em sua lista.');
+                        return;
+                    }
+                    
+                    state.currentContact = contact;
+                    state.callId = callId;
+                    
+                    // Configura a UI de chamada recebida
+                    utils.setupCallUI(false);
+                    
+                    // Configura a conexão peer
+                    webrtc.initPeerConnection();
+                    
+                    // Obtém o stream local (áudio e vídeo)
+                    state.localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: true
+                    });
+                    
+                    // Adiciona o stream local à conexão peer
+                    state.localStream.getTracks().forEach(track => {
+                        state.peerConnection.addTrack(track, state.localStream);
+                    });
+                    
+                    // Mostra o vídeo local
+                    elements.displays.localVideo.srcObject = state.localStream;
+                    
+                    // Define a oferta remota
+                    await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+                    
+                    // Cria e envia a resposta
+                    const answer = await state.peerConnection.createAnswer();
+                    await state.peerConnection.setLocalDescription(answer);
+                    
+                    gun.get('calls').get(callId).get('answer').put({
+                        from: state.currentUser.id,
+                        to: callData.from,
+                        answer: answer,
+                        timestamp: Date.now()
+                    });
+                    
+                    // Escuta por ICE candidates do chamador
+                    gun.get('calls').get(callId).get('iceCandidates').get(callData.from).on(async (candidateData) => {
+                        if (candidateData && candidateData.candidate) {
+                            try {
+                                await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+                                console.log('ICE candidate adicionado com sucesso');
+                            } catch (error) {
+                                console.error('Erro ao adicionar ICE candidate:', error);
+                            }
+                        }
+                    });
+                    
+                    // Aceita a chamada automaticamente
+                    webrtc.acceptCall();
+                    
+                } catch (error) {
+                    console.error('Erro ao entrar na chamada:', error);
+                    alert('Erro ao entrar na chamada. Verifique as permissões de câmera e microfone.');
+                    webrtc.endCall();
                 }
             },
             
