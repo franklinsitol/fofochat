@@ -695,6 +695,11 @@
             padding: 20px;
             color: #888;
         }
+        
+        /* Garante que o ícone apareça nas notificações */
+        notification {
+            icon: url('/icon.png');
+        }
     </style>
 </head>
 <body>
@@ -1613,9 +1618,29 @@
                     await app.checkForExistingUser();
                     app.startMessageCleanupInterval();
                     webrtc.listenForCalls();
+                    
+                    // Solicita permissão para notificações quando o usuário logar
+                    app.requestNotificationPermission();
                 } catch (error) {
                     console.error('Erro na inicialização:', error);
                     alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
+                }
+            },
+            
+            // 1. Solicitar Permissão do Usuário
+            requestNotificationPermission: () => {
+                if (!("Notification" in window)) {
+                    console.warn("Este navegador não suporta notificações!");
+                    return;
+                }
+                
+                // Solicita permissão quando o usuário logar
+                if (state.currentUser) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            console.log("Permissão para notificações concedida!");
+                        }
+                    });
                 }
             },
             
@@ -1843,6 +1868,9 @@
                         app.showScreen('main');
                         app.showUserQRInfo();
                         app.generateQrCode();
+                        
+                        // Solicita permissão para notificações após criar usuário
+                        app.requestNotificationPermission();
                     }, 800);
                 } catch (error) {
                     console.error('Erro ao criar usuário:', error);
@@ -1885,6 +1913,9 @@
                         setTimeout(() => {
                             utils.hideFeedback('loadUser');
                             app.showScreen('main');
+                            
+                            // Solicita permissão para notificações após carregar usuário
+                            app.requestNotificationPermission();
                         }, 1000);
                     } else {
                         utils.showFeedback('Usuário não encontrado', 'error', 'loadUser');
@@ -2069,6 +2100,7 @@
                 app.syncMessages();
             },
             
+            // 2. Disparar Notificação ao Receber Mensagem
             syncMessages: async () => {
                 if (!state.currentUser || !state.currentContact) return;
                 
@@ -2107,6 +2139,20 @@
                                     state.messagesCache[contactId] = [];
                                 }
                                 state.messagesCache[contactId].push(message);
+                                
+                                // Verifica se é uma mensagem nova (não está no cache)
+                                const isNewMessage = !state.messagesCache[message.sender]?.some(msg => msg.id === id);
+                                
+                                if (isNewMessage) {
+                                    // Se a permissão foi concedida, mostra a notificação
+                                    if (Notification.permission === "granted") {
+                                        const senderName = state.contactsCache[message.sender]?.name || "Contato";
+                                        new Notification(senderName, {
+                                            body: message.text || "Você recebeu uma nova mensagem",
+                                            icon: "/icon.png" // Substitua pelo caminho do seu ícone
+                                        });
+                                    }
+                                }
                                 
                                 app.renderMessages([message]);
                             }
@@ -2397,6 +2443,11 @@
                 }
             }
         };
+
+        // 4. Tratamento de Erros para Notificações
+        if (!("Notification" in window)) {
+            console.warn("Este navegador não suporta notificações!");
+        }
 
         // Inicializa o aplicativo
         window.addEventListener('DOMContentLoaded', app.init);
