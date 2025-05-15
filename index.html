@@ -671,6 +671,30 @@
         .hidden {
             display: none !important;
         }
+        
+        /* Estilos para a barra de busca de contatos */
+        .search-container {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+        }
+        
+        .search-container input {
+            padding-left: 40px !important;
+        }
+        
+        .no-contacts {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
@@ -736,6 +760,10 @@
         <div id="mainScreen" class="screen">
             <div id="contactsSection" style="margin-top: 20px; display: block;">
                 <h3>Seus Contatos</h3>
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchContactsInput" placeholder="Buscar contatos...">
+                </div>
                 <div id="contactsList" style="margin-top: 10px;"></div>
             </div>
             
@@ -935,7 +963,8 @@
                 newUserName: document.getElementById('newUserName'),
                 existingUserId: document.getElementById('existingUserId'),
                 message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput')
+                userIdInput: document.getElementById('userIdInput'),
+                searchContacts: document.getElementById('searchContactsInput')
             },
             displays: {
                 contactsList: document.getElementById('contactsList'),
@@ -1091,6 +1120,20 @@
                     '<i class="fas fa-microphone"></i>';
                 
                 elements.buttons.muteCallBtn.title = state.isMuted ? 'Desmutar' : 'Mutar';
+            },
+            
+            // Função para filtrar contatos
+            filterContacts: (searchTerm) => {
+                const contacts = Object.values(state.contactsCache);
+                if (!searchTerm) {
+                    return contacts;
+                }
+                
+                const term = searchTerm.toLowerCase();
+                return contacts.filter(contact => 
+                    contact.name.toLowerCase().includes(term) || 
+                    contact.id.toLowerCase().includes(term)
+                );
             }
         };
 
@@ -1666,6 +1709,13 @@
                 elements.buttons.shareQR.addEventListener('click', app.shareQRCode);
                 elements.buttons.downloadQR.addEventListener('click', app.downloadQRCode);
                 
+                // Busca de contatos
+                elements.inputs.searchContacts.addEventListener('input', () => {
+                    const searchTerm = elements.inputs.searchContacts.value.trim();
+                    const filteredContacts = utils.filterContacts(searchTerm);
+                    app.renderContacts(filteredContacts);
+                });
+                
                 // Event delegation para botões de delete e call
                 elements.displays.contactsList.addEventListener('click', (e) => {
                     if (e.target.closest('.delete-contact-btn')) {
@@ -1946,6 +1996,16 @@
             
             renderContacts: (contacts) => {
                 elements.displays.contactsList.innerHTML = '';
+                
+                if (contacts.length === 0) {
+                    elements.displays.contactsList.innerHTML = `
+                        <div class="no-contacts">
+                            <i class="fas fa-user-friends" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
+                            <p>Nenhum contato encontrado</p>
+                        </div>
+                    `;
+                    return;
+                }
                 
                 contacts.sort((a, b) => a.name.localeCompare(b.name))
                     .forEach(async (contact) => {
