@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Estilos mantidos exatamente como no código original */
         :root {
             --primary: #FF9BB3;
             --secondary: #FFD1DC;
@@ -1157,7 +1156,6 @@
                     
                     await state.peerConnection.setLocalDescription(offer);
                     
-                    // Envia a oferta para o nó de chamadas
                     gun.get('calls').get(state.callId).put({
                         from: state.currentUser.id,
                         to: state.currentContact.id,
@@ -1165,7 +1163,6 @@
                         timestamp: Date.now()
                     });
                     
-                    // Notifica o contato sobre a chamada
                     const callMessage = {
                         id: Gun.text.random(16),
                         sender: state.currentUser.id,
@@ -1179,7 +1176,6 @@
                     gun.get('users').get(state.currentContact.id).get('messages').get(callMessage.id).put(callMessage);
                     gun.get('users').get(state.currentUser.id).get('messages').get(callMessage.id).put(callMessage);
                     
-                    // Monitora a resposta do contato
                     gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
                         if (answer?.from === state.currentContact.id) {
                             try {
@@ -1191,7 +1187,6 @@
                         }
                     });
                     
-                    // Monitora os candidatos ICE do contato
                     gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).on(async (candidateData) => {
                         if (candidateData?.candidate) {
                             try {
@@ -1202,7 +1197,6 @@
                         }
                     });
                     
-                    // Timeout se a chamada não for atendida
                     setTimeout(() => {
                         if (state.isInCall && !state.peerConnection.remoteDescription) {
                             alert('Chamada não atendida');
@@ -1219,63 +1213,52 @@
             listenForCalls: () => {
                 if (!state.currentUser || state.callListener) return;
                 
-                // Monitora mensagens de chamada diretamente na lista de mensagens do usuário
-                state.callListener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
-                    if (!message || !message.callId || state.isInCall) return;
+                state.callListener = gun.get('users').get(state.currentUser.id).get('calls').map().on(async (call, callId) => {
+                    if (!call || state.isInCall || !call.from || call.from === state.currentUser.id) return;
                     
-                    // Verifica se é uma mensagem de chamada destinada a este usuário
-                    if (message.receiver === state.currentUser.id && message.callId) {
-                        const contact = state.contactsCache[message.sender];
+                    if (call.to === state.currentUser.id) {
+                        const contact = state.contactsCache[call.from];
                         if (!contact) return;
                         
-                        state.callId = message.callId;
+                        state.callId = callId;
                         state.currentContact = contact;
+                        utils.setupCallUI(false);
+                        webrtc.initPeerConnection();
                         
-                        // Obtém os detalhes da chamada do nó de chamadas
-                        gun.get('calls').get(state.callId).once(async (callData) => {
-                            if (!callData || callData.to !== state.currentUser.id) return;
+                        try {
+                            state.localStream = await navigator.mediaDevices.getUserMedia({
+                                audio: true,
+                                video: true
+                            });
                             
-                            utils.setupCallUI(false);
-                            webrtc.initPeerConnection();
+                            state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
+                            elements.displays.localVideo.srcObject = state.localStream;
+                            await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
                             
-                            try {
-                                state.localStream = await navigator.mediaDevices.getUserMedia({
-                                    audio: true,
-                                    video: true
-                                });
-                                
-                                state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
-                                elements.displays.localVideo.srcObject = state.localStream;
-                                
-                                await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-                                
-                                const answer = await state.peerConnection.createAnswer();
-                                await state.peerConnection.setLocalDescription(answer);
-                                
-                                // Envia a resposta para o chamador
-                                gun.get('calls').get(state.callId).get('answer').put({
-                                    from: state.currentUser.id,
-                                    to: callData.from,
-                                    answer: answer,
-                                    timestamp: Date.now()
-                                });
-                                
-                                // Monitora os candidatos ICE do chamador
-                                gun.get('calls').get(state.callId).get('iceCandidates').get(callData.from).on(async (candidateData) => {
-                                    if (candidateData?.candidate) {
-                                        try {
-                                            await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                        } catch (error) {
-                                            console.error('Erro ao adicionar ICE candidate:', error);
-                                        }
+                            const answer = await state.peerConnection.createAnswer();
+                            await state.peerConnection.setLocalDescription(answer);
+                            
+                            gun.get('calls').get(callId).get('answer').put({
+                                from: state.currentUser.id,
+                                to: call.from,
+                                answer: answer,
+                                timestamp: Date.now()
+                            });
+                            
+                            gun.get('calls').get(callId).get('iceCandidates').get(call.from).on(async (candidateData) => {
+                                if (candidateData?.candidate) {
+                                    try {
+                                        await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+                                    } catch (error) {
+                                        console.error('Erro ao adicionar ICE candidate:', error);
                                     }
-                                });
-                            } catch (error) {
-                                console.error('Erro ao atender chamada:', error);
-                                alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
-                                webrtc.endCall();
-                            }
-                        });
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Erro ao atender chamada:', error);
+                            alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
+                            webrtc.endCall();
+                        }
                     }
                 });
             },
