@@ -149,7 +149,6 @@
             border-color: var(--dark);
         }
         
-        /* Estilos para a tela principal */
         .avatar {
             width: 40px;
             height: 40px;
@@ -180,25 +179,17 @@
             box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
         }
         
-        .delete-contact-btn {
+        .delete-contact-btn, .call-contact-btn {
             background: none;
             border: none;
-            color: var(--error);
             cursor: pointer;
             font-size: 1rem;
             padding: 5px;
             margin-left: 10px;
         }
         
-        .call-contact-btn {
-            background: none;
-            border: none;
-            color: var(--success);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 5px;
-            margin-left: 10px;
-        }
+        .delete-contact-btn { color: var(--error); }
+        .call-contact-btn { color: var(--success); }
         
         .user-info {
             background-color: white;
@@ -270,7 +261,6 @@
             gap: 5px;
         }
         
-        /* Estilos para o scanner QR */
         .qr-scanner {
             position: relative;
             width: 100%;
@@ -331,7 +321,6 @@
             border-right-color: var(--primary);
         }
         
-        /* Estilos para a tela de chat - MODIFICADO PARA SOBREPOR TUDO */
         #chatScreen {
             position: fixed;
             top: 0;
@@ -378,7 +367,7 @@
             background-color: white;
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 80px; /* Espaço para o input de mensagem */
+            padding-bottom: 80px;
         }
         
         .empty-state {
@@ -488,7 +477,6 @@
             cursor: pointer;
         }
         
-        /* Botões flutuantes - Corrigido */
         .floating-buttons {
             position: fixed;
             bottom: 20px;
@@ -523,7 +511,6 @@
             transform: scale(1.1);
         }
         
-        /* Estilos para chamadas WebRTC - MODIFICADA */
         .call-container {
             position: fixed;
             top: 0;
@@ -600,32 +587,15 @@
             box-shadow: var(--shadow);
         }
         
-        .call-accept {
-            background-color: var(--success);
-            color: white;
-        }
-        
-        .call-reject {
-            background-color: var(--error);
-            color: white;
-        }
-        
-        .call-end {
-            background-color: var(--error);
-            color: white;
-        }
-        
-        .call-mute {
-            background-color: var(--dark);
-            color: white;
-        }
+        .call-accept { background-color: var(--success); color: white; }
+        .call-reject, .call-end { background-color: var(--error); color: white; }
+        .call-mute { background-color: var(--dark); color: white; }
         
         .call-status {
             margin-top: 20px;
             font-size: 1.2rem;
         }
         
-        /* Responsividade */
         @media (max-width: 600px) {
             .container {
                 padding: 10px;
@@ -643,7 +613,7 @@
             }
             
             .chat-messages {
-                padding-bottom: 70px; /* Ajuste para mobile */
+                padding-bottom: 70px;
             }
             
             .message-input-container {
@@ -672,7 +642,6 @@
             display: none !important;
         }
         
-        /* Estilos para a barra de busca de contatos */
         .search-container {
             margin-bottom: 15px;
             position: relative;
@@ -695,73 +664,43 @@
             padding: 20px;
             color: #888;
         }
-        
-        /* Garante que o ícone apareça nas notificações */
-        notification {
-            icon: url('/icon.png');
-        }
     </style>
 </head>
 <body>
-    <!-- Estrutura HTML -->
     <header>
         <h1>BunnyChat</h1>
     </header>
     
     <div class="container">
-        <!-- Tela de seleção de usuário -->
         <div id="userSelectScreen" class="screen active">
             <div class="btn-group">
-                <button id="newUserBtn" class="btn">
-                    <span class="btn-text">Novo Usuário</span>
-                </button>
-                <button id="existingUserBtn" class="btn">
-                    <span class="btn-text">Usuário Existente</span>
-                </button>
+                <button id="newUserBtn" class="btn"><span class="btn-text">Novo Usuário</span></button>
+                <button id="existingUserBtn" class="btn"><span class="btn-text">Usuário Existente</span></button>
             </div>
         </div>
         
-        <!-- Tela de novo usuário -->
         <div id="newUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;">
-                <h2>Criar Novo Usuário</h2>
-            </div>
-            
+            <div style="text-align: center; margin: 20px 0;"><h2>Criar Novo Usuário</h2></div>
             <div style="margin-bottom: 20px;">
                 <label for="newUserName">Seu Nome:</label>
                 <input type="text" id="newUserName" placeholder="Digite seu nome">
             </div>
-            
-            <button id="createUserBtn" class="btn" style="width: 100%;">
-                <span class="btn-text">Criar Usuário</span>
-            </button>
+            <button id="createUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Criar Usuário</span></button>
             <div id="createUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;">
-                <span class="btn-text">Voltar</span>
-            </button>
+            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
         </div>
         
-        <!-- Tela de usuário existente -->
         <div id="existingUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;">
-                <h2>Usar Usuário Existente</h2>
-            </div>
-            
+            <div style="text-align: center; margin: 20px 0;"><h2>Usar Usuário Existente</h2></div>
             <div style="margin-bottom: 20px;">
                 <label for="existingUserId">ID do Usuário:</label>
                 <input type="text" id="existingUserId" placeholder="Digite seu ID de usuário">
             </div>
-            
-            <button id="loadUserBtn" class="btn" style="width: 100%;">
-                <span class="btn-text">Carregar Usuário</span>
-            </button>
+            <button id="loadUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Carregar Usuário</span></button>
             <div id="loadUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;">
-                <span class="btn-text">Voltar</span>
-            </button>
+            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
         </div>
         
-        <!-- Tela principal do chat -->
         <div id="mainScreen" class="screen">
             <div id="contactsSection" style="margin-top: 20px; display: block;">
                 <h3>Seus Contatos</h3>
@@ -783,24 +722,17 @@
                         <span id="userIdDisplayText"></span>
                     </div>
                 </div>
-                
                 <h3 style="text-align: center;">Meu QR Code</h3>
                 <div class="qr-code-container">
                     <canvas id="qrCodeCanvas" class="qr-code"></canvas>
                 </div>
-                
                 <div class="user-id-container">
                     <input type="text" id="userIdInput" readonly>
                     <button id="copyUserIdBtn" title="Copiar ID"><i class="fas fa-copy"></i></button>
                 </div>
-                
                 <div class="share-buttons">
-                    <button id="shareQRBtn" class="share-btn">
-                        <i class="fas fa-share-alt"></i> Compartilhar
-                    </button>
-                    <button id="downloadQRBtn" class="share-btn">
-                        <i class="fas fa-download"></i> Baixar QR
-                    </button>
+                    <button id="shareQRBtn" class="share-btn"><i class="fas fa-share-alt"></i> Compartilhar</button>
+                    <button id="downloadQRBtn" class="share-btn"><i class="fas fa-download"></i> Baixar QR</button>
                 </div>
             </div>
             
@@ -817,14 +749,12 @@
         </div>
     </div>
 
-    <!-- Tela de chat - MODIFICADA PARA SOBREPOR TUDO -->
     <div id="chatScreen" class="screen">
         <div class="chat-header">
             <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
             <div class="avatar" id="chatAvatar"></div>
             <div id="chatContactName"></div>
         </div>
-        
         <div class="chat-messages" id="chatMessages">
             <div class="empty-state">
                 <i class="fas fa-comment-dots"></i>
@@ -832,17 +762,13 @@
                 <p>Envie uma mensagem para começar a conversa!</p>
             </div>
         </div>
-        
         <div class="message-input-container">
             <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-            <button id="callButton" class="call-btn" title="Chamada de vídeo">
-                <i class="fas fa-video"></i>
-            </button>
+            <button id="callButton" class="call-btn" title="Chamada de vídeo"><i class="fas fa-video"></i></button>
             <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
-    <!-- Tela de chamada WebRTC - MODIFICADA -->
     <div id="callScreen" class="call-container">
         <div class="call-video-container">
             <video id="remoteVideo" class="call-video" autoplay playsinline></video>
@@ -853,35 +779,19 @@
             <div id="callStatus" class="call-status">Conectando...</div>
         </div>
         <div class="call-buttons">
-            <button id="acceptCallBtn" class="call-button call-accept hidden" title="Atender">
-                <i class="fas fa-phone"></i>
-            </button>
-            <button id="rejectCallBtn" class="call-button call-reject hidden" title="Recusar">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar">
-                <i class="fas fa-phone-slash"></i>
-            </button>
-            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar">
-                <i class="fas fa-microphone"></i>
-            </button>
+            <button id="acceptCallBtn" class="call-button call-accept hidden" title="Atender"><i class="fas fa-phone"></i></button>
+            <button id="rejectCallBtn" class="call-button call-reject hidden" title="Recusar"><i class="fas fa-phone-slash"></i></button>
+            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar"><i class="fas fa-phone-slash"></i></button>
+            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar"><i class="fas fa-microphone"></i></button>
         </div>
     </div>
 
-    <!-- Botões flutuantes - Corrigido -->
     <div class="floating-buttons">
-        <button id="showContactsBtn" class="floating-btn" title="Contatos">
-            <i class="fas fa-address-book"></i>
-        </button>
-        <button id="showQRBtn" class="floating-btn" title="Meu QR Code">
-            <i class="fas fa-qrcode"></i>
-        </button>
-        <button id="scanQRBtn" class="floating-btn" title="Escanear QR">
-            <i class="fas fa-camera"></i>
-        </button>
+        <button id="showContactsBtn" class="floating-btn" title="Contatos"><i class="fas fa-address-book"></i></button>
+        <button id="showQRBtn" class="floating-btn" title="Meu QR Code"><i class="fas fa-qrcode"></i></button>
+        <button id="scanQRBtn" class="floating-btn" title="Escanear QR"><i class="fas fa-camera"></i></button>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
@@ -909,7 +819,6 @@
             qrScannerActive: false,
             db: null,
             gunListeners: [],
-            // Estado para chamadas WebRTC
             peerConnection: null,
             localStream: null,
             remoteStream: null,
@@ -1004,18 +913,11 @@
                 return div.innerHTML;
             },
             
-            formatTime: (timestamp) => {
-                return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            },
+            formatTime: (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             
             setButtonLoading: (button, isLoading) => {
-                if (isLoading) {
-                    button.classList.add('btn-loading');
-                    button.disabled = true;
-                } else {
-                    button.classList.remove('btn-loading');
-                    button.disabled = false;
-                }
+                button.classList.toggle('btn-loading', isLoading);
+                button.disabled = isLoading;
             },
             
             showFeedback: (message, type, context) => {
@@ -1025,10 +927,7 @@
                 feedbackElement.classList.remove('hidden');
             },
             
-            hideFeedback: (context) => {
-                const feedbackElement = elements.displays[`${context}Feedback`];
-                feedbackElement.classList.add('hidden');
-            },
+            hideFeedback: (context) => elements.displays[`${context}Feedback`].classList.add('hidden'),
             
             copyToClipboard: (text) => {
                 navigator.clipboard.writeText(text).then(() => {
@@ -1044,11 +943,9 @@
                 });
             },
             
-            // Funções para chamadas WebRTC - MODIFICADAS
             setupCallUI: (isCaller) => {
                 state.isInCall = true;
                 state.isCaller = isCaller;
-                
                 elements.displays.callContactName.textContent = state.currentContact.name;
                 
                 if (isCaller) {
@@ -1069,70 +966,47 @@
             },
             
             updateCallStatus: (status) => {
-                elements.displays.callStatus.textContent = status;
+                elements.displays.callStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
             },
             
             resetCallUI: () => {
                 state.isInCall = false;
                 state.isCaller = false;
                 state.callId = null;
-                
                 elements.screens.call.classList.remove('active');
                 elements.buttons.acceptCallBtn.classList.add('hidden');
                 elements.buttons.rejectCallBtn.classList.add('hidden');
                 elements.buttons.endCallBtn.classList.add('hidden');
                 elements.buttons.muteCallBtn.classList.add('hidden');
                 
-                // Limpa os streams de vídeo
-                if (elements.displays.localVideo.srcObject) {
-                    elements.displays.localVideo.srcObject.getTracks().forEach(track => track.stop());
-                    elements.displays.localVideo.srcObject = null;
-                }
+                [elements.displays.localVideo, elements.displays.remoteVideo].forEach(video => {
+                    if (video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                });
                 
-                if (elements.displays.remoteVideo.srcObject) {
-                    elements.displays.remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-                    elements.displays.remoteVideo.srcObject = null;
-                }
-                
-                // Limpa o estado da chamada
-                if (state.peerConnection) {
-                    state.peerConnection.close();
-                    state.peerConnection = null;
-                }
-                
+                if (state.peerConnection) state.peerConnection.close();
+                state.peerConnection = null;
                 state.localStream = null;
                 state.remoteStream = null;
                 state.callDataChannel = null;
-                
-                // Remove o listener da chamada se existir
-                if (state.callListener) {
-                    state.callListener.off();
-                    state.callListener = null;
-                }
+                if (state.callListener) state.callListener.off();
+                state.callListener = null;
             },
             
             toggleMute: () => {
                 if (!state.localStream) return;
-                
                 state.isMuted = !state.isMuted;
-                const audioTracks = state.localStream.getAudioTracks();
-                audioTracks.forEach(track => {
-                    track.enabled = !state.isMuted;
-                });
-                
+                state.localStream.getAudioTracks().forEach(track => track.enabled = !state.isMuted);
                 elements.buttons.muteCallBtn.innerHTML = state.isMuted ? 
-                    '<i class="fas fa-microphone-slash"></i>' : 
-                    '<i class="fas fa-microphone"></i>';
-                
+                    '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
                 elements.buttons.muteCallBtn.title = state.isMuted ? 'Desmutar' : 'Mutar';
             },
             
-            // Função para filtrar contatos
             filterContacts: (searchTerm) => {
                 const contacts = Object.values(state.contactsCache);
-                if (!searchTerm) {
-                    return contacts;
-                }
+                if (!searchTerm) return contacts;
                 
                 const term = searchTerm.toLowerCase();
                 return contacts.filter(contact => 
@@ -1145,105 +1019,76 @@
         // Operações do IndexedDB
         const db = {
             put: async (storeName, data) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    await new Promise((resolve, reject) => {
-                        const request = store.put(data);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao salvar em ${storeName}:`, error);
-                    throw error;
-                }
+                const transaction = state.db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const request = store.put(data);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
             },
             
             get: async (storeName, key) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    return await new Promise((resolve, reject) => {
-                        const request = store.get(key);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao ler de ${storeName}:`, error);
-                    throw error;
-                }
+                const transaction = state.db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
             },
             
             getAll: async (storeName) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readonly');
-                    const store = transaction.objectStore(storeName);
-                    return await new Promise((resolve, reject) => {
-                        const request = store.getAll();
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao ler todos de ${storeName}:`, error);
-                    throw error;
-                }
+                const transaction = state.db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
             },
             
             getMessages: async (sender, receiver) => {
-                try {
-                    const transaction = state.db.transaction(['messages'], 'readonly');
-                    const store = transaction.objectStore('messages');
-                    const index = store.index('conversation');
-                    
-                    const range = IDBKeyRange.bound([sender, receiver], [sender, receiver]);
-                    const range2 = IDBKeyRange.bound([receiver, sender], [receiver, sender]);
-                    
-                    const messages1 = await new Promise((resolve, reject) => {
-                        const request = index.getAll(range);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                    
-                    const messages2 = await new Promise((resolve, reject) => {
-                        const request = index.getAll(range2);
-                        request.onsuccess = () => resolve(request.result);
-                        request.onerror = () => reject(request.error);
-                    });
-                    
-                    return [...messages1, ...messages2].sort((a, b) => a.timestamp - b.timestamp);
-                } catch (error) {
-                    console.error('Erro ao buscar mensagens:', error);
-                    throw error;
-                }
+                const transaction = state.db.transaction(['messages'], 'readonly');
+                const store = transaction.objectStore('messages');
+                const index = store.index('conversation');
+                
+                const range = IDBKeyRange.bound([sender, receiver], [sender, receiver]);
+                const range2 = IDBKeyRange.bound([receiver, sender], [receiver, sender]);
+                
+                const messages1 = await new Promise((resolve, reject) => {
+                    const request = index.getAll(range);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                const messages2 = await new Promise((resolve, reject) => {
+                    const request = index.getAll(range2);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+                
+                return [...messages1, ...messages2].sort((a, b) => a.timestamp - b.timestamp);
             },
             
             delete: async (storeName, key) => {
-                try {
-                    const transaction = state.db.transaction([storeName], 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    await new Promise((resolve, reject) => {
-                        const request = store.delete(key);
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    });
-                } catch (error) {
-                    console.error(`Erro ao deletar de ${storeName}:`, error);
-                    throw error;
-                }
+                const transaction = state.db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                return new Promise((resolve, reject) => {
+                    const request = store.delete(key);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
             }
         };
 
-        // Funções para chamadas WebRTC - MODIFICADAS
+        // Funções para chamadas WebRTC
         const webrtc = {
             initPeerConnection: () => {
-                state.peerConnection = new RTCPeerConnection({
-                    iceServers: state.iceServers
-                });
+                state.peerConnection = new RTCPeerConnection({ iceServers: state.iceServers });
                 
-                // Configura os handlers de ICE candidates
                 state.peerConnection.onicecandidate = (event) => {
                     if (event.candidate) {
-                        // Envia o candidato ICE para o outro peer
                         gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put({
                             candidate: event.candidate,
                             from: state.currentUser.id,
@@ -1253,36 +1098,21 @@
                     }
                 };
                 
-                // Configura o handler para quando a conexão muda de estado
                 state.peerConnection.onconnectionstatechange = () => {
                     const status = state.peerConnection.connectionState;
-                    utils.updateCallStatus(status.charAt(0).toUpperCase() + status.slice(1));
-                    
-                    if (status === 'disconnected' || status === 'failed') {
-                        webrtc.endCall();
-                    }
+                    utils.updateCallStatus(status);
+                    if (status === 'disconnected' || status === 'failed') webrtc.endCall();
                 };
                 
-                // Configura o handler para quando recebemos um stream remoto
                 state.peerConnection.ontrack = (event) => {
-                    if (event.streams && event.streams[0]) {
+                    if (event.streams?.[0]) {
                         state.remoteStream = event.streams[0];
                         elements.displays.remoteVideo.srcObject = state.remoteStream;
-                        
-                        // Ajusta o vídeo remoto para ocupar toda a tela
                         elements.displays.remoteVideo.classList.remove('small');
-                        elements.displays.remoteVideo.classList.add('fullscreen');
-                        
-                        // Atualiza o status quando o stream remoto é recebido
-                        if (state.isCaller) {
-                            utils.updateCallStatus('Chamada em andamento');
-                        } else {
-                            utils.updateCallStatus('Chamada em andamento');
-                        }
+                        utils.updateCallStatus('Chamada em andamento');
                     }
                 };
                 
-                // Configura o canal de dados para mensagens de controle
                 if (state.isCaller) {
                     state.callDataChannel = state.peerConnection.createDataChannel('callControl');
                     webrtc.setupDataChannel(state.callDataChannel);
@@ -1295,21 +1125,11 @@
             },
             
             setupDataChannel: (dataChannel) => {
-                dataChannel.onopen = () => {
-                    console.log('Canal de dados aberto');
-                };
-                
-                dataChannel.onclose = () => {
-                    console.log('Canal de dados fechado');
-                };
-                
+                dataChannel.onopen = () => console.log('Canal de dados aberto');
+                dataChannel.onclose = () => console.log('Canal de dados fechado');
                 dataChannel.onmessage = (event) => {
                     const message = JSON.parse(event.data);
-                    console.log('Mensagem recebida:', message);
-                    
-                    if (message.type === 'end-call') {
-                        webrtc.endCall();
-                    }
+                    if (message.type === 'end-call') webrtc.endCall();
                 };
             },
             
@@ -1317,30 +1137,18 @@
                 if (!state.currentUser || !state.currentContact || state.isInCall) return;
                 
                 try {
-                    // Gera um ID único para a chamada
                     state.callId = Gun.text.random(16);
-                    
-                    // Configura a UI da chamada
                     utils.setupCallUI(true);
-                    
-                    // Inicia a conexão peer
                     webrtc.initPeerConnection();
                     
-                    // Obtém o stream local (áudio e vídeo)
                     state.localStream = await navigator.mediaDevices.getUserMedia({
                         audio: true,
                         video: true
                     });
                     
-                    // Adiciona o stream local à conexão peer
-                    state.localStream.getTracks().forEach(track => {
-                        state.peerConnection.addTrack(track, state.localStream);
-                    });
-                    
-                    // Mostra o vídeo local
+                    state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                     elements.displays.localVideo.srcObject = state.localStream;
                     
-                    // Cria a oferta SDP
                     const offer = await state.peerConnection.createOffer({
                         offerToReceiveAudio: true,
                         offerToReceiveVideo: true
@@ -1348,7 +1156,6 @@
                     
                     await state.peerConnection.setLocalDescription(offer);
                     
-                    // Envia a oferta para o contato
                     gun.get('calls').get(state.callId).put({
                         from: state.currentUser.id,
                         to: state.currentContact.id,
@@ -1356,26 +1163,23 @@
                         timestamp: Date.now()
                     });
                     
-                    // Envia uma mensagem com um botão simplificado para entrar na chamada
                     const callMessage = {
                         id: Gun.text.random(16),
                         sender: state.currentUser.id,
                         receiver: state.currentContact.id,
                         text: `Chamada de vídeo recebida!`,
                         timestamp: Date.now(),
-                        expiresAt: Date.now() + (24 * 60 * 60 * 1000), // Expira em 24 horas
+                        expiresAt: Date.now() + (24 * 60 * 60 * 1000),
                         callId: state.callId
                     };
                     
                     gun.get('users').get(state.currentContact.id).get('messages').get(callMessage.id).put(callMessage);
                     gun.get('users').get(state.currentUser.id).get('messages').get(callMessage.id).put(callMessage);
                     
-                    // Escuta por respostas do contato
                     gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
-                        if (answer && answer.from === state.currentContact.id) {
+                        if (answer?.from === state.currentContact.id) {
                             try {
                                 await state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer.answer));
-                                console.log('Resposta da chamada recebida e configurada');
                             } catch (error) {
                                 console.error('Erro ao configurar resposta remota:', error);
                                 webrtc.endCall();
@@ -1383,26 +1187,22 @@
                         }
                     });
                     
-                    // Escuta por ICE candidates do contato
                     gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).on(async (candidateData) => {
-                        if (candidateData && candidateData.candidate) {
+                        if (candidateData?.candidate) {
                             try {
                                 await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                console.log('ICE candidate adicionado com sucesso');
                             } catch (error) {
                                 console.error('Erro ao adicionar ICE candidate:', error);
                             }
                         }
                     });
                     
-                    // Configura timeout para chamada não atendida
                     setTimeout(() => {
                         if (state.isInCall && !state.peerConnection.remoteDescription) {
                             alert('Chamada não atendida');
                             webrtc.endCall();
                         }
                     }, 30000);
-                    
                 } catch (error) {
                     console.error('Erro ao iniciar chamada:', error);
                     alert('Erro ao iniciar chamada. Verifique se você permitiu o acesso à câmera e ao microfone.');
@@ -1416,40 +1216,25 @@
                 state.callListener = gun.get('users').get(state.currentUser.id).get('calls').map().on(async (call, callId) => {
                     if (!call || state.isInCall || !call.from || call.from === state.currentUser.id) return;
                     
-                    // Verifica se a chamada é para o usuário atual
                     if (call.to === state.currentUser.id) {
                         const contact = state.contactsCache[call.from];
                         if (!contact) return;
                         
-                        // Armazena o ID da chamada e o contato
                         state.callId = callId;
                         state.currentContact = contact;
-                        
-                        // Mostra a UI de chamada recebida
                         utils.setupCallUI(false);
-                        
-                        // Configura a conexão peer
                         webrtc.initPeerConnection();
                         
-                        // Obtém o stream local (áudio e vídeo)
                         try {
                             state.localStream = await navigator.mediaDevices.getUserMedia({
                                 audio: true,
                                 video: true
                             });
                             
-                            // Adiciona o stream local à conexão peer
-                            state.localStream.getTracks().forEach(track => {
-                                state.peerConnection.addTrack(track, state.localStream);
-                            });
-                            
-                            // Mostra o vídeo local
+                            state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                             elements.displays.localVideo.srcObject = state.localStream;
-                            
-                            // Define a oferta remota
                             await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
                             
-                            // Cria e envia a resposta
                             const answer = await state.peerConnection.createAnswer();
                             await state.peerConnection.setLocalDescription(answer);
                             
@@ -1460,18 +1245,15 @@
                                 timestamp: Date.now()
                             });
                             
-                            // Escuta por ICE candidates do chamador
                             gun.get('calls').get(callId).get('iceCandidates').get(call.from).on(async (candidateData) => {
-                                if (candidateData && candidateData.candidate) {
+                                if (candidateData?.candidate) {
                                     try {
                                         await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                        console.log('ICE candidate adicionado com sucesso');
                                     } catch (error) {
                                         console.error('Erro ao adicionar ICE candidate:', error);
                                     }
                                 }
                             });
-                            
                         } catch (error) {
                             console.error('Erro ao atender chamada:', error);
                             alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
@@ -1483,24 +1265,20 @@
             
             acceptCall: () => {
                 if (!state.isInCall || state.isCaller) return;
-                
                 elements.buttons.acceptCallBtn.classList.add('hidden');
                 elements.buttons.rejectCallBtn.classList.add('hidden');
                 elements.buttons.endCallBtn.classList.remove('hidden');
                 elements.buttons.muteCallBtn.classList.remove('hidden');
-                
                 utils.updateCallStatus('Chamada em andamento');
             },
             
             endCall: () => {
                 if (!state.isInCall) return;
                 
-                // Envia mensagem de término pelo canal de dados, se disponível
-                if (state.callDataChannel && state.callDataChannel.readyState === 'open') {
+                if (state.callDataChannel?.readyState === 'open') {
                     state.callDataChannel.send(JSON.stringify({ type: 'end-call' }));
                 }
                 
-                // Remove a chamada do banco de dados
                 if (state.callId) {
                     gun.get('calls').get(state.callId).put(null);
                     gun.get('calls').get(state.callId).get('answer').put(null);
@@ -1508,39 +1286,29 @@
                     gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).put(null);
                 }
                 
-                // Reseta a UI
                 utils.resetCallUI();
             },
             
             rejectCall: () => {
                 if (!state.isInCall || state.isCaller) return;
-                
-                // Remove a chamada do banco de dados
-                if (state.callId) {
-                    gun.get('calls').get(state.callId).put(null);
-                }
-                
-                // Reseta a UI
+                if (state.callId) gun.get('calls').get(state.callId).put(null);
                 utils.resetCallUI();
             },
             
             joinCall: (callId) => {
                 if (!state.currentUser || state.isInCall) return;
                 
-                // Verifica se a chamada existe
                 gun.get('calls').get(callId).once(async (callData) => {
-                    if (!callData || !callData.from) {
+                    if (!callData?.from) {
                         alert('Chamada não encontrada ou já encerrada.');
                         return;
                     }
                     
-                    // Verifica se o usuário atual é o destinatário da chamada
                     if (callData.to !== state.currentUser.id) {
                         alert('Você não é o destinatário desta chamada.');
                         return;
                     }
                     
-                    // Obtém o contato que está chamando
                     const contact = state.contactsCache[callData.from];
                     if (!contact) {
                         alert('Contato não encontrado em sua lista.');
@@ -1549,32 +1317,19 @@
                     
                     state.currentContact = contact;
                     state.callId = callId;
-                    
-                    // Configura a UI de chamada recebida
                     utils.setupCallUI(false);
-                    
-                    // Configura a conexão peer
                     webrtc.initPeerConnection();
                     
-                    // Obtém o stream local (áudio e vídeo)
                     try {
                         state.localStream = await navigator.mediaDevices.getUserMedia({
                             audio: true,
                             video: true
                         });
                         
-                        // Adiciona o stream local à conexão peer
-                        state.localStream.getTracks().forEach(track => {
-                            state.peerConnection.addTrack(track, state.localStream);
-                        });
-                        
-                        // Mostra o vídeo local
+                        state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                         elements.displays.localVideo.srcObject = state.localStream;
-                        
-                        // Define a oferta remota
                         await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
                         
-                        // Cria e envia a resposta
                         const answer = await state.peerConnection.createAnswer();
                         await state.peerConnection.setLocalDescription(answer);
                         
@@ -1585,21 +1340,17 @@
                             timestamp: Date.now()
                         });
                         
-                        // Escuta por ICE candidates do chamador
                         gun.get('calls').get(callId).get('iceCandidates').get(callData.from).on(async (candidateData) => {
-                            if (candidateData && candidateData.candidate) {
+                            if (candidateData?.candidate) {
                                 try {
                                     await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                    console.log('ICE candidate adicionado com sucesso');
                                 } catch (error) {
                                     console.error('Erro ao adicionar ICE candidate:', error);
                                 }
                             }
                         });
                         
-                        // Aceita a chamada automaticamente
                         webrtc.acceptCall();
-                        
                     } catch (error) {
                         console.error('Erro ao entrar na chamada:', error);
                         alert('Erro ao entrar na chamada. Verifique as permissões de câmera e microfone.');
@@ -1618,8 +1369,6 @@
                     await app.checkForExistingUser();
                     app.startMessageCleanupInterval();
                     webrtc.listenForCalls();
-                    
-                    // Solicita permissão para notificações quando o usuário logar
                     app.requestNotificationPermission();
                 } catch (error) {
                     console.error('Erro na inicialização:', error);
@@ -1627,54 +1376,25 @@
                 }
             },
             
-            // 1. Solicitar Permissão do Usuário
             requestNotificationPermission: () => {
-                if (!("Notification" in window)) {
-                    console.warn("Este navegador não suporta notificações!");
-                    return;
-                }
-                
-                // Solicita permissão quando o usuário logar
-                if (state.currentUser) {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            console.log("Permissão para notificações concedida!");
-                        }
-                    });
-                }
+                if (!("Notification" in window)) return console.warn("Este navegador não suporta notificações!");
+                if (state.currentUser) Notification.requestPermission();
             },
             
-            initIndexedDB: () => {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open('BunnyChatDB', 3);
-                    
-                    request.onerror = (event) => {
-                        console.error('Erro ao abrir o IndexedDB:', event.target.error);
-                        reject(event.target.error);
-                    };
-                    
-                    request.onsuccess = (event) => {
-                        resolve(event.target.result);
-                    };
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        
-                        if (!db.objectStoreNames.contains('users')) {
-                            db.createObjectStore('users', { keyPath: 'id' });
-                        }
-                        
-                        if (!db.objectStoreNames.contains('contacts')) {
-                            db.createObjectStore('contacts', { keyPath: 'id' });
-                        }
-                        
-                        if (!db.objectStoreNames.contains('messages')) {
-                            const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
-                            messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
-                        }
-                    };
-                });
-            },
+            initIndexedDB: () => new Promise((resolve, reject) => {
+                const request = indexedDB.open('BunnyChatDB', 3);
+                request.onerror = (event) => reject(event.target.error);
+                request.onsuccess = (event) => resolve(event.target.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('messages')) {
+                        const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
+                        messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
+                    }
+                };
+            }),
             
             setupEventListeners: () => {
                 // Navegação
@@ -1702,32 +1422,14 @@
                 
                 // Chat
                 elements.buttons.sendMessage.addEventListener('click', app.sendMessage);
-                elements.inputs.message.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') app.sendMessage();
-                });
+                elements.inputs.message.addEventListener('keypress', (e) => e.key === 'Enter' && app.sendMessage());
                 
                 // Chamadas WebRTC
-                elements.buttons.callButton.addEventListener('click', () => {
-                    if (state.currentContact) {
-                        webrtc.startCall();
-                    }
-                });
-                
-                elements.buttons.acceptCallBtn.addEventListener('click', () => {
-                    webrtc.acceptCall();
-                });
-                
-                elements.buttons.rejectCallBtn.addEventListener('click', () => {
-                    webrtc.rejectCall();
-                });
-                
-                elements.buttons.endCallBtn.addEventListener('click', () => {
-                    webrtc.endCall();
-                });
-                
-                elements.buttons.muteCallBtn.addEventListener('click', () => {
-                    utils.toggleMute();
-                });
+                elements.buttons.callButton.addEventListener('click', () => state.currentContact && webrtc.startCall());
+                elements.buttons.acceptCallBtn.addEventListener('click', webrtc.acceptCall);
+                elements.buttons.rejectCallBtn.addEventListener('click', webrtc.rejectCall);
+                elements.buttons.endCallBtn.addEventListener('click', webrtc.endCall);
+                elements.buttons.muteCallBtn.addEventListener('click', utils.toggleMute);
                 
                 // Utilitários
                 elements.buttons.copyUserId.addEventListener('click', app.copyUserId);
@@ -1736,28 +1438,28 @@
                 
                 // Busca de contatos
                 elements.inputs.searchContacts.addEventListener('input', () => {
-                    const searchTerm = elements.inputs.searchContacts.value.trim();
-                    const filteredContacts = utils.filterContacts(searchTerm);
-                    app.renderContacts(filteredContacts);
+                    app.renderContacts(utils.filterContacts(elements.inputs.searchContacts.value.trim()));
                 });
                 
                 // Event delegation para botões de delete e call
                 elements.displays.contactsList.addEventListener('click', (e) => {
-                    if (e.target.closest('.delete-contact-btn')) {
+                    const deleteBtn = e.target.closest('.delete-contact-btn');
+                    const callBtn = e.target.closest('.call-contact-btn');
+                    const contactItem = e.target.closest('.contact-item');
+                    
+                    if (deleteBtn) {
                         e.stopPropagation();
-                        const contactId = e.target.closest('.delete-contact-btn').getAttribute('data-contact-id');
-                        app.removeContact(contactId);
-                    } else if (e.target.closest('.call-contact-btn')) {
+                        app.removeContact(deleteBtn.getAttribute('data-contact-id'));
+                    } else if (callBtn) {
                         e.stopPropagation();
-                        const contactId = e.target.closest('.call-contact-btn').getAttribute('data-contact-id');
-                        const contact = state.contactsCache[contactId];
+                        const contact = state.contactsCache[callBtn.getAttribute('data-contact-id')];
                         if (contact) {
                             state.currentContact = contact;
                             webrtc.startCall();
                         }
-                    } else if (e.target.closest('.contact-item')) {
-                        const contactId = e.target.closest('.contact-item').getAttribute('data-contact-id');
-                        if (contactId && state.contactsCache[contactId]) {
+                    } else if (contactItem?.getAttribute('data-contact-id')) {
+                        const contactId = contactItem.getAttribute('data-contact-id');
+                        if (state.contactsCache[contactId]) {
                             state.currentContact = state.contactsCache[contactId];
                             app.showChatScreen();
                         }
@@ -1766,10 +1468,10 @@
                 
                 // Event delegation para botão de chamada nas mensagens
                 elements.displays.chatMessages.addEventListener('click', (e) => {
-                    if (e.target.closest('.join-call-btn')) {
+                    const joinCallBtn = e.target.closest('.join-call-btn');
+                    if (joinCallBtn) {
                         e.stopPropagation();
-                        const callId = e.target.closest('.join-call-btn').getAttribute('data-call-id');
-                        webrtc.joinCall(callId);
+                        webrtc.joinCall(joinCallBtn.getAttribute('data-call-id'));
                     }
                 });
             },
@@ -1794,10 +1496,7 @@
             loadLocalData: async () => {
                 try {
                     const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => {
-                        acc[contact.id] = contact;
-                        return acc;
-                    }, {});
+                    state.contactsCache = contacts.reduce((acc, contact) => (acc[contact.id] = contact, acc), {});
                     
                     if (state.currentUser && state.currentContact) {
                         await app.syncMessages();
@@ -1811,13 +1510,8 @@
                 Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
                 elements.screens[screenName].classList.add('active');
                 
-                // Correção da exibição dos botões flutuantes
                 const floatingButtons = document.querySelector('.floating-buttons');
-                if (screenName === 'main' || screenName === 'chat') {
-                    floatingButtons.classList.add('visible');
-                } else {
-                    floatingButtons.classList.remove('visible');
-                }
+                floatingButtons.classList.toggle('visible', screenName === 'main' || screenName === 'chat');
                 
                 if (screenName === 'main') {
                     elements.sections.contacts.style.display = 'block';
@@ -1828,17 +1522,12 @@
             toggleSection: (sectionName) => {
                 Object.values(elements.sections).forEach(section => section.classList.add('hidden'));
                 elements.sections[sectionName].classList.remove('hidden');
-                
-                if (sectionName === 'scan') app.startQrScanner();
-                else app.stopQrScanner();
+                sectionName === 'scan' ? app.startQrScanner() : app.stopQrScanner();
             },
             
             createUser: async () => {
                 const userName = elements.inputs.newUserName.value.trim();
-                if (!userName) {
-                    utils.showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
-                    return;
-                }
+                if (!userName) return utils.showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
                 
                 utils.setButtonLoading(elements.buttons.createUser, true);
                 
@@ -1868,8 +1557,6 @@
                         app.showScreen('main');
                         app.showUserQRInfo();
                         app.generateQrCode();
-                        
-                        // Solicita permissão para notificações após criar usuário
                         app.requestNotificationPermission();
                     }, 800);
                 } catch (error) {
@@ -1882,10 +1569,7 @@
             
             loadUser: async () => {
                 const userId = elements.inputs.existingUserId.value.trim();
-                if (!userId) {
-                    utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
-                    return;
-                }
+                if (!userId) return utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
                 
                 utils.setButtonLoading(elements.buttons.loadUser, true);
                 utils.hideFeedback('loadUser');
@@ -1898,12 +1582,10 @@
                             gun.get('users').get(userId).once(resolve, { wait: 2000 });
                         });
                         
-                        if (user) {
-                            await db.put('users', user);
-                        }
+                        if (user) await db.put('users', user);
                     }
                     
-                    if (user && user.name) {
+                    if (user?.name) {
                         state.currentUser = user;
                         await app.loadLocalData();
                         
@@ -1913,8 +1595,6 @@
                         setTimeout(() => {
                             utils.hideFeedback('loadUser');
                             app.showScreen('main');
-                            
-                            // Solicita permissão para notificações após carregar usuário
                             app.requestNotificationPermission();
                         }, 1000);
                     } else {
@@ -1930,7 +1610,6 @@
             
             showUserQRInfo: () => {
                 if (!state.currentUser) return;
-                
                 elements.displays.userNameDisplay.textContent = state.currentUser.name;
                 elements.displays.userIdDisplayText.textContent = state.currentUser.id;
                 elements.inputs.userIdInput.value = state.currentUser.id;
@@ -1949,24 +1628,18 @@
                 const canvas = elements.displays.qrCode;
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                canvas.width = 200;
-                canvas.height = 200;
+                canvas.width = canvas.height = 200;
                 
                 QRCode.toCanvas(canvas, qrData, {
                     width: 200,
                     margin: 2,
                     color: { dark: '#5A2A3E', light: '#FFF2F5' }
-                }, (error) => {
-                    if (error) console.error('Erro ao gerar QR Code:', error);
-                });
+                }, (error) => error && console.error('Erro ao gerar QR Code:', error));
                 
                 elements.inputs.userIdInput.value = state.currentUser.id;
             },
             
-            copyUserId: () => {
-                utils.copyToClipboard(state.currentUser.id);
-            },
+            copyUserId: () => utils.copyToClipboard(state.currentUser.id),
             
             shareQRCode: () => {
                 if (navigator.share) {
@@ -1992,18 +1665,12 @@
                 
                 try {
                     const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => {
-                        acc[contact.id] = contact;
-                        return acc;
-                    }, {});
-                    
+                    state.contactsCache = contacts.reduce((acc, contact) => (acc[contact.id] = contact, acc), {});
                     app.renderContacts(Object.values(state.contactsCache));
                     
-                    // Remove listeners antigos
                     state.gunListeners.forEach(listener => listener.off());
                     state.gunListeners = [];
                     
-                    // Adiciona novo listener
                     const listener = gun.get('users').get(state.currentUser.id).get('contacts').map().on(async (contact, id) => {
                         if (!contact) {
                             if (state.contactsCache[id]) {
@@ -2039,7 +1706,7 @@
                 }
                 
                 contacts.sort((a, b) => a.name.localeCompare(b.name))
-                    .forEach(async (contact) => {
+                    .forEach(contact => {
                         const contactElement = document.createElement('div');
                         contactElement.className = 'contact-item';
                         contactElement.setAttribute('data-contact-id', contact.id);
@@ -2056,18 +1723,13 @@
                                 <i class="fas fa-trash"></i>
                             </button>
                         `;
-                        
                         elements.displays.contactsList.appendChild(contactElement);
                     });
             },
             
             removeContact: async (userId) => {
-                if (!state.currentUser || !userId) return;
-                
-                if (userId === state.currentUser.id) {
-                    alert('Você não pode se remover da sua lista de contatos!');
-                    return;
-                }
+                if (!state.currentUser || !userId || userId === state.currentUser.id) 
+                    return alert(userId === state.currentUser.id ? 'Você não pode se remover da sua lista de contatos!' : '');
                 
                 const contact = state.contactsCache[userId];
                 if (!contact) return;
@@ -2080,7 +1742,7 @@
                         
                         app.renderContacts(Object.values(state.contactsCache));
                         
-                        if (state.currentContact && state.currentContact.id === userId) {
+                        if (state.currentContact?.id === userId) {
                             state.currentContact = null;
                             app.showScreen('main');
                         }
@@ -2093,14 +1755,12 @@
             
             showChatScreen: () => {
                 if (!state.currentContact) return;
-                
                 elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
                 elements.displays.chatContactName.textContent = state.currentContact.name;
                 app.showScreen('chat');
                 app.syncMessages();
             },
             
-            // 2. Disparar Notificação ao Receber Mensagem
             syncMessages: async () => {
                 if (!state.currentUser || !state.currentContact) return;
                 
@@ -2114,11 +1774,9 @@
                     state.messagesCache[contactId] = validMessages;
                     app.renderMessages(validMessages);
                     
-                    // Remove listeners antigos
                     state.gunListeners.forEach(listener => listener.off());
                     state.gunListeners = [];
                     
-                    // Adiciona novo listener
                     const listener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
                         if (!message) return;
                         
@@ -2135,23 +1793,16 @@
                             if (!messageExists) {
                                 await db.put('messages', message);
                                 
-                                if (!state.messagesCache[contactId]) {
-                                    state.messagesCache[contactId] = [];
-                                }
+                                if (!state.messagesCache[contactId]) state.messagesCache[contactId] = [];
                                 state.messagesCache[contactId].push(message);
                                 
-                                // Verifica se é uma mensagem nova (não está no cache)
                                 const isNewMessage = !state.messagesCache[message.sender]?.some(msg => msg.id === id);
-                                
-                                if (isNewMessage) {
-                                    // Se a permissão foi concedida, mostra a notificação
-                                    if (Notification.permission === "granted") {
-                                        const senderName = state.contactsCache[message.sender]?.name || "Contato";
-                                        new Notification(senderName, {
-                                            body: message.text || "Você recebeu uma nova mensagem",
-                                            icon: "/icon.png" // Substitua pelo caminho do seu ícone
-                                        });
-                                    }
+                                if (isNewMessage && Notification.permission === "granted") {
+                                    const senderName = state.contactsCache[message.sender]?.name || "Contato";
+                                    new Notification(senderName, {
+                                        body: message.text || "Você recebeu uma nova mensagem",
+                                        icon: "/icon.png"
+                                    });
                                 }
                                 
                                 app.renderMessages([message]);
@@ -2181,32 +1832,27 @@
                     elements.displays.chatMessages.innerHTML = '';
                 }
                 
-                messages.forEach(async (message) => {
+                messages.forEach(message => {
                     if (document.getElementById(`msg-${message.id}`)) return;
                     
                     const isSender = message.sender === state.currentUser.id;
+                    const expiryDate = new Date(message.expiresAt);
+                    const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const expiryDateStr = expiryDate.toLocaleDateString();
+                    
+                    const callButton = message.callId ? `
+                        <div class="call-button-container">
+                            <button class="call-button join-call-btn" data-call-id="${message.callId}">
+                                <i class="fas fa-video"></i>
+                            </button>
+                        </div>
+                    ` : '';
                     
                     const messageElement = document.createElement('div');
                     messageElement.id = `msg-${message.id}`;
                     messageElement.className = 'message-item';
                     messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
                     messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
-                    
-                    const expiryDate = new Date(message.expiresAt);
-                    const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const expiryDateStr = expiryDate.toLocaleDateString();
-                    
-                    let callButton = '';
-                    if (message.callId) {
-                        callButton = `
-                            <div class="call-button-container">
-                                <button class="call-button join-call-btn" data-call-id="${message.callId}">
-                                    <i class="fas fa-video"></i>
-                                </button>
-                            </div>
-                        `;
-                    }
-                    
                     messageElement.innerHTML = `
                         <div class="message-header">
                             ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
@@ -2245,9 +1891,7 @@
                 try {
                     await db.put('messages', message);
                     
-                    if (!state.messagesCache[state.currentContact.id]) {
-                        state.messagesCache[state.currentContact.id] = [];
-                    }
+                    if (!state.messagesCache[state.currentContact.id]) state.messagesCache[state.currentContact.id] = [];
                     state.messagesCache[state.currentContact.id].push(message);
                     
                     app.renderMessages([message]);
@@ -2272,14 +1916,10 @@
                         const allMessages = await db.getAll('messages');
                         const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
                         
-                        for (const msg of expiredMessages) {
-                            await db.delete('messages', msg.id);
-                        }
+                        for (const msg of expiredMessages) await db.delete('messages', msg.id);
                         
                         gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
-                            if (!message || !message.expiresAt) return;
-                            
-                            if (message.expiresAt < now) {
+                            if (message?.expiresAt < now) {
                                 gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                             }
                         });
@@ -2386,20 +2026,14 @@
                 }
 
                 if (elements.displays.qrVideo.srcObject) {
-                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => {
-                        track.stop();
-                    });
+                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
                     elements.displays.qrVideo.srcObject = null;
                 }
             },
             
             addContact: async (userId, userName) => {
-                if (!state.currentUser || !userId) return;
-                
-                if (state.contactsCache[userId]) {
-                    alert('Este contato já está na sua lista!');
-                    return;
-                }
+                if (!state.currentUser || !userId || state.contactsCache[userId]) 
+                    return alert(state.contactsCache[userId] ? 'Este contato já está na sua lista!' : '');
 
                 const contact = { id: userId, name: userName, timestamp: Date.now() };
                 const myContact = { 
@@ -2409,24 +2043,17 @@
                 };
                 
                 try {
-                    // Adiciona o contato ao usuário atual
                     await db.put('contacts', contact);
                     state.contactsCache[userId] = contact;
                     app.renderContacts(Object.values(state.contactsCache));
-                    
-                    // Envia o contato para o banco de dados Gun
                     gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
                     
-                    // Verifica se o outro usuário existe
                     const otherUserExists = await new Promise(resolve => {
                         gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
                     });
 
                     if (otherUserExists) {
-                        // Adiciona o usuário atual como contato do outro usuário
                         gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
-                        
-                        // Aguarda confirmação de que o contato foi adicionado
                         gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
                             if (updated) {
                                 console.log('Contato adicionado mutuamente com sucesso');
@@ -2444,12 +2071,8 @@
             }
         };
 
-        // 4. Tratamento de Erros para Notificações
-        if (!("Notification" in window)) {
-            console.warn("Este navegador não suporta notificações!");
-        }
+        if (!("Notification" in window)) console.warn("Este navegador não suporta notificações!");
 
-        // Inicializa o aplicativo
         window.addEventListener('DOMContentLoaded', app.init);
     </script>
 </body>
