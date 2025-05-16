@@ -1568,46 +1568,56 @@
             },
             
             loadUser: async () => {
-                const userId = elements.inputs.existingUserId.value.trim();
-                if (!userId) return utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
+    const userId = elements.inputs.existingUserId.value.trim();
+    if (!userId) return utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
+
+    utils.setButtonLoading(elements.buttons.loadUser, true);
+    utils.hideFeedback('loadUser');
+
+    try {
+        // Primeiro verifica no IndexedDB local
+        let user = await db.get('users', userId);
+        
+        // Se não encontrou localmente, busca no Gun.js
+        if (!user) {
+            user = await new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(null), 2000); // Timeout de 2 segundos
                 
-                utils.setButtonLoading(elements.buttons.loadUser, true);
+                gun.get('users').get(userId).once((data) => {
+                    clearTimeout(timeout);
+                    resolve(data);
+                });
+            });
+
+            if (user) {
+                // Salva o usuário no IndexedDB para acesso futuro
+                await db.put('users', user);
+            }
+        }
+
+        if (user?.id) {
+            state.currentUser = user;
+            await app.loadLocalData();
+
+            utils.showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
+            elements.inputs.existingUserId.value = '';
+
+            setTimeout(() => {
                 utils.hideFeedback('loadUser');
-                
-                try {
-                    let user = await db.get('users', userId);
-                    
-                    if (!user) {
-                        user = await new Promise((resolve) => {
-                            gun.get('users').get(userId).once(resolve, { wait: 2000 });
-                        });
-                        
-                        if (user) await db.put('users', user);
-                    }
-                    
-                    if (user?.name) {
-                        state.currentUser = user;
-                        await app.loadLocalData();
-                        
-                        utils.showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
-                        elements.inputs.existingUserId.value = '';
-                        
-                        setTimeout(() => {
-                            utils.hideFeedback('loadUser');
-                            app.showScreen('main');
-                            app.requestNotificationPermission();
-                        }, 1000);
-                    } else {
-                        utils.showFeedback('Usuário não encontrado', 'error', 'loadUser');
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar usuário:', error);
-                    utils.showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
-                } finally {
-                    utils.setButtonLoading(elements.buttons.loadUser, false);
-                }
-            },
-            
+                app.showScreen('main');
+                app.requestNotificationPermission();
+            }, 1000);
+        } else {
+            utils.showFeedback('Usuário não encontrado', 'error', 'loadUser');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar usuário:', error);
+        utils.showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
+    } finally {
+        utils.setButtonLoading(elements.buttons.loadUser, false);
+    }
+},            
+  
             showUserQRInfo: () => {
                 if (!state.currentUser) return;
                 elements.displays.userNameDisplay.textContent = state.currentUser.name;
