@@ -1010,8 +1010,7 @@
                 
                 const term = searchTerm.toLowerCase();
                 return contacts.filter(contact => 
-                    contact.name.toLowerCase().includes(term) || 
-                    contact.id.toLowerCase().includes(term)
+                    contact.name.toLowerCase().includes(term)
                 );
             }
         };
@@ -1733,7 +1732,6 @@
                             <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
                             <div style="flex: 1;">
                                 <div style="font-weight: bold;">${contact.name}</div>
-                                <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
                             </div>
                             <button class="call-contact-btn" title="Chamar" data-contact-id="${contact.id}">
                                 <i class="fas fa-video"></i>
