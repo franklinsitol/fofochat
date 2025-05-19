@@ -1136,15 +1136,21 @@
                 if (!state.currentUser || !state.currentContact || state.isInCall) return;
                 
                 try {
+                    // Primeiro verificamos as permissões antes de iniciar a chamada
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true, 
+                        video: true 
+                    }).catch(err => {
+                        console.error('Erro ao acessar mídia:', err);
+                        throw new Error('Permissões de câmera/microfone não concedidas');
+                    });
+
+                    // Se chegou aqui, as permissões foram concedidas
                     state.callId = Gun.text.random(16);
                     utils.setupCallUI(true);
                     webrtc.initPeerConnection();
                     
-                    state.localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true,
-                        video: true
-                    });
-                    
+                    state.localStream = stream;
                     state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                     elements.displays.localVideo.srcObject = state.localStream;
                     
@@ -1204,7 +1210,7 @@
                     }, 30000);
                 } catch (error) {
                     console.error('Erro ao iniciar chamada:', error);
-                    alert('Erro ao iniciar chamada. Verifique se você permitiu o acesso à câmera e ao microfone.');
+                    alert('Erro ao iniciar chamada: ' + (error.message || 'Verifique se você permitiu o acesso à câmera e ao microfone.'));
                     webrtc.endCall();
                 }
             },
@@ -1225,11 +1231,16 @@
                         webrtc.initPeerConnection();
                         
                         try {
-                            state.localStream = await navigator.mediaDevices.getUserMedia({
+                            // Verifica permissões antes de continuar
+                            const stream = await navigator.mediaDevices.getUserMedia({
                                 audio: true,
                                 video: true
+                            }).catch(err => {
+                                console.error('Erro ao acessar mídia:', err);
+                                throw new Error('Permissões de câmera/microfone não concedidas');
                             });
-                            
+
+                            state.localStream = stream;
                             state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                             elements.displays.localVideo.srcObject = state.localStream;
                             await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
@@ -1255,7 +1266,7 @@
                             });
                         } catch (error) {
                             console.error('Erro ao atender chamada:', error);
-                            alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
+                            alert('Erro ao atender chamada: ' + (error.message || 'Verifique as permissões de câmera e microfone.'));
                             webrtc.endCall();
                         }
                     }
@@ -1320,11 +1331,16 @@
                     webrtc.initPeerConnection();
                     
                     try {
-                        state.localStream = await navigator.mediaDevices.getUserMedia({
+                        // Verifica permissões antes de continuar
+                        const stream = await navigator.mediaDevices.getUserMedia({
                             audio: true,
                             video: true
+                        }).catch(err => {
+                            console.error('Erro ao acessar mídia:', err);
+                            throw new Error('Permissões de câmera/microfone não concedidas');
                         });
-                        
+
+                        state.localStream = stream;
                         state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
                         elements.displays.localVideo.srcObject = state.localStream;
                         await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
@@ -1352,7 +1368,7 @@
                         webrtc.acceptCall();
                     } catch (error) {
                         console.error('Erro ao entrar na chamada:', error);
-                        alert('Erro ao entrar na chamada. Verifique as permissões de câmera e microfone.');
+                        alert('Erro ao entrar na chamada: ' + (error.message || 'Verifique as permissões de câmera e microfone.'));
                         webrtc.endCall();
                     }
                 });
@@ -1794,6 +1810,7 @@
                     state.gunListeners.forEach(listener => listener.off());
                     state.gunListeners = [];
                     
+                    // Listener para novas mensagens em tempo real
                     const listener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
                         if (!message) return;
                         
@@ -1813,10 +1830,11 @@
                                 if (!state.messagesCache[contactId]) state.messagesCache[contactId] = [];
                                 state.messagesCache[contactId].push(message);
                                 
-                                const isNewMessage = !state.messagesCache[message.sender]?.some(msg => msg.id === id);
+                                // Verifica se é uma nova mensagem recebida (não enviada pelo usuário atual)
+                                const isNewMessage = message.sender !== state.currentUser.id;
                                 if (isNewMessage && Notification.permission === "granted") {
                                     const senderName = state.contactsCache[message.sender]?.name || "Contato";
-                                    new Notification(senderName, {
+                                    new Notification(`Nova mensagem de ${senderName}`, {
                                         body: message.text || "Você recebeu uma nova mensagem",
                                         icon: "/icon.png"
                                     });
@@ -1828,6 +1846,39 @@
                     });
                     
                     state.gunListeners.push(listener);
+                    
+                    // Listener global para todas as mensagens recebidas
+                    const globalMessageListener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
+                        if (!message || message.sender === state.currentUser.id) return;
+                        
+                        if (message.expiresAt && message.expiresAt < Date.now()) {
+                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
+                            return;
+                        }
+                        
+                        // Verifica se já temos o contato do remetente
+                        const senderContact = state.contactsCache[message.sender];
+                        if (!senderContact) return;
+                        
+                        // Verifica se a mensagem já existe no cache
+                        const messageExists = state.messagesCache[message.sender]?.some(msg => msg.id === id);
+                        if (messageExists) return;
+                        
+                        // Adiciona ao cache se não existir
+                        if (!state.messagesCache[message.sender]) state.messagesCache[message.sender] = [];
+                        state.messagesCache[message.sender].push(message);
+                        
+                        // Mostra notificação se não estiver na tela de chat com esse contato
+                        if (state.currentContact?.id !== message.sender && Notification.permission === "granted") {
+                            const senderName = senderContact.name;
+                            new Notification(`Nova mensagem de ${senderName}`, {
+                                body: message.text || "Você recebeu uma nova mensagem",
+                                icon: "/icon.png"
+                            });
+                        }
+                    });
+                    
+                    state.gunListeners.push(globalMessageListener);
                 } catch (error) {
                     console.error('Erro ao sincronizar mensagens:', error);
                 }
