@@ -815,7 +815,7 @@
             currentUser: null,
             currentContact: null,
             contactsCache: {},
-            messagesCache: {},
+            messagesCache: {}, // Agora armazena mensagens por conversa
             qrScannerActive: false,
             db: null,
             gunListeners: [],
@@ -1012,6 +1012,11 @@
                 return contacts.filter(contact => 
                     contact.name.toLowerCase().includes(term)
                 );
+            },
+            
+            // Função para gerar uma chave única para a conversa entre dois usuários
+            getConversationKey: (userId1, userId2) => {
+                return [userId1, userId2].sort().join('_');
             }
         };
 
@@ -1800,13 +1805,24 @@
                 try {
                     const now = Date.now();
                     const contactId = state.currentContact.id;
+                    const conversationKey = utils.getConversationKey(state.currentUser.id, contactId);
                     
+                    // Carrega mensagens do banco de dados local
                     const localMessages = await db.getMessages(state.currentUser.id, contactId);
                     const validMessages = localMessages.filter(msg => msg.expiresAt > now);
                     
-                    state.messagesCache[contactId] = validMessages;
+                    // Inicializa o cache de mensagens para esta conversa se não existir
+                    if (!state.messagesCache[conversationKey]) {
+                        state.messagesCache[conversationKey] = [];
+                    }
+                    
+                    // Atualiza o cache com as mensagens válidas
+                    state.messagesCache[conversationKey] = validMessages;
+                    
+                    // Renderiza as mensagens
                     app.renderMessages(validMessages);
                     
+                    // Remove listeners antigos
                     state.gunListeners.forEach(listener => listener.off());
                     state.gunListeners = [];
                     
@@ -1814,21 +1830,24 @@
                     const listener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
                         if (!message) return;
                         
+                        // Verifica se a mensagem expirou
                         if (message.expiresAt && message.expiresAt < now) {
                             gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
                             return;
                         }
                         
+                        // Verifica se a mensagem é relevante para a conversa atual
                         const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
                                            (message.sender === state.currentUser.id && message.receiver === contactId);
                         
                         if (isRelevant) {
-                            const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
+                            // Verifica se a mensagem já existe no cache
+                            const messageExists = state.messagesCache[conversationKey].some(msg => msg.id === id);
                             if (!messageExists) {
                                 await db.put('messages', message);
                                 
-                                if (!state.messagesCache[contactId]) state.messagesCache[contactId] = [];
-                                state.messagesCache[contactId].push(message);
+                                // Adiciona a mensagem ao cache
+                                state.messagesCache[conversationKey].push(message);
                                 
                                 // Verifica se é uma nova mensagem recebida (não enviada pelo usuário atual)
                                 const isNewMessage = message.sender !== state.currentUser.id;
@@ -1840,6 +1859,7 @@
                                     });
                                 }
                                 
+                                // Renderiza a nova mensagem
                                 app.renderMessages([message]);
                             }
                         }
@@ -1860,13 +1880,20 @@
                         const senderContact = state.contactsCache[message.sender];
                         if (!senderContact) return;
                         
+                        // Gera a chave da conversa para esta mensagem
+                        const msgConversationKey = utils.getConversationKey(message.sender, message.receiver);
+                        
                         // Verifica se a mensagem já existe no cache
-                        const messageExists = state.messagesCache[message.sender]?.some(msg => msg.id === id);
+                        const messageExists = state.messagesCache[msgConversationKey]?.some(msg => msg.id === id);
                         if (messageExists) return;
                         
+                        // Inicializa o cache para esta conversa se não existir
+                        if (!state.messagesCache[msgConversationKey]) {
+                            state.messagesCache[msgConversationKey] = [];
+                        }
+                        
                         // Adiciona ao cache se não existir
-                        if (!state.messagesCache[message.sender]) state.messagesCache[message.sender] = [];
-                        state.messagesCache[message.sender].push(message);
+                        state.messagesCache[msgConversationKey].push(message);
                         
                         // Mostra notificação se não estiver na tela de chat com esse contato
                         if (state.currentContact?.id !== message.sender && Notification.permission === "granted") {
@@ -1959,8 +1986,12 @@
                 try {
                     await db.put('messages', message);
                     
-                    if (!state.messagesCache[state.currentContact.id]) state.messagesCache[state.currentContact.id] = [];
-                    state.messagesCache[state.currentContact.id].push(message);
+                    const conversationKey = utils.getConversationKey(state.currentUser.id, state.currentContact.id);
+                    if (!state.messagesCache[conversationKey]) {
+                        state.messagesCache[conversationKey] = [];
+                    }
+                    
+                    state.messagesCache[conversationKey].push(message);
                     
                     app.renderMessages([message]);
                     
@@ -1992,8 +2023,9 @@
                             }
                         });
                         
-                        Object.keys(state.messagesCache).forEach(contactId => {
-                            state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
+                        // Limpa mensagens expiradas do cache
+                        Object.keys(state.messagesCache).forEach(conversationKey => {
+                            state.messagesCache[conversationKey] = state.messagesCache[conversationKey].filter(msg => msg.expiresAt > now);
                         });
                     } catch (error) {
                         console.error('Erro ao limpar mensagens expiradas:', error);
