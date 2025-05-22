@@ -1602,7 +1602,7 @@
                     // Se não encontrou localmente, busca no Gun.js
                     if (!user) {
                         user = await new Promise((resolve) => {
-                            const timeout = setTimeout(() => resolve(null), 5000); // Aumentei o timeout para 5 segundos
+                            const timeout = setTimeout(() => resolve(null), 5000); // Timeout de 5 segundos
                             
                             gun.get('users').get(userId).once((data, key) => {
                                 clearTimeout(timeout);
@@ -1836,11 +1836,12 @@
                             return;
                         }
                         
-                        // Verifica se a mensagem é relevante para a conversa atual
-                        const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
-                                           (message.sender === state.currentUser.id && message.receiver === contactId);
+                        // Verifica se a mensagem pertence à conversa atual
+                        const isCurrentConversation = 
+                            (message.sender === state.currentUser.id && message.receiver === contactId) ||
+                            (message.sender === contactId && message.receiver === state.currentUser.id);
                         
-                        if (isRelevant) {
+                        if (isCurrentConversation) {
                             // Verifica se a mensagem já existe no cache
                             const messageExists = state.messagesCache[conversationKey].some(msg => msg.id === id);
                             if (!messageExists) {
@@ -1866,46 +1867,6 @@
                     });
                     
                     state.gunListeners.push(listener);
-                    
-                    // Listener global para todas as mensagens recebidas
-                    const globalMessageListener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
-                        if (!message || message.sender === state.currentUser.id) return;
-                        
-                        if (message.expiresAt && message.expiresAt < Date.now()) {
-                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            return;
-                        }
-                        
-                        // Verifica se já temos o contato do remetente
-                        const senderContact = state.contactsCache[message.sender];
-                        if (!senderContact) return;
-                        
-                        // Gera a chave da conversa para esta mensagem
-                        const msgConversationKey = utils.getConversationKey(message.sender, message.receiver);
-                        
-                        // Verifica se a mensagem já existe no cache
-                        const messageExists = state.messagesCache[msgConversationKey]?.some(msg => msg.id === id);
-                        if (messageExists) return;
-                        
-                        // Inicializa o cache para esta conversa se não existir
-                        if (!state.messagesCache[msgConversationKey]) {
-                            state.messagesCache[msgConversationKey] = [];
-                        }
-                        
-                        // Adiciona ao cache se não existir
-                        state.messagesCache[msgConversationKey].push(message);
-                        
-                        // Mostra notificação se não estiver na tela de chat com esse contato
-                        if (state.currentContact?.id !== message.sender && Notification.permission === "granted") {
-                            const senderName = senderContact.name;
-                            new Notification(`Nova mensagem de ${senderName}`, {
-                                body: message.text || "Você recebeu uma nova mensagem",
-                                icon: "/icon.png"
-                            });
-                        }
-                    });
-                    
-                    state.gunListeners.push(globalMessageListener);
                 } catch (error) {
                     console.error('Erro ao sincronizar mensagens:', error);
                 }
