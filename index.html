@@ -1,2098 +1,1928 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BunnyChat - Mensagens e Chamadas Fofinhas</title>
-    
-    <!-- Fontes -->
-    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Short+Stack&display=swap" rel="stylesheet">
+    <title>Mensageiro Fofo</title>
+    <!-- Incluir bibliotecas necessárias -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/lib/webrtc.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         :root {
-            --primary: #FF9BB3;
-            --secondary: #FFD1DC;
-            --dark: #5A2A3E;
-            --light: #FFF2F5;
-            --success: #4CAF50;
-            --error: #F44336;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --border-radius: 15px;
+            --primary-color: #FF85A2;
+            --secondary-color: #FFC2D1;
+            --accent-color: #FFD7E5;
+            --text-color: #5D5D5D;
+            --light-color: #FFFFFF;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-radius: 20px;
+            --button-radius: 15px;
+            --message-radius: 18px;
         }
         
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Comic Neue', 'Short Stack', cursive, sans-serif;
+            font-family: 'Nunito', sans-serif;
         }
         
         body {
-            background-color: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        header {
-            background-color: var(--primary);
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            box-shadow: var(--shadow);
-        }
-        
-        header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .screen {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 30px;
-        }
-        
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
+            background-color: #F8F9FA;
+            color: var(--text-color);
+            height: 100vh;
             overflow: hidden;
-            box-shadow: var(--shadow);
         }
         
-        .btn:hover {
-            background-color: #ff85a2;
-            transform: translateY(-2px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn.btn-loading::after {
-            content: '';
-            position: absolute;
+        /* Tela de PIN */
+        #pin-screen {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.3);
-            animation: pulse 1.5s infinite;
+            background-color: var(--light-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
         
-        @keyframes pulse {
-            0% { opacity: 0.3; }
-            50% { opacity: 0.6; }
-            100% { opacity: 0.3; }
+        .app-logo {
+            width: 120px;
+            height: 120px;
+            background-color: var(--primary-color);
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px var(--shadow-color);
         }
         
-        .feedback-message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: var(--border-radius);
-            text-align: center;
+        .app-logo i {
+            font-size: 60px;
+            color: white;
         }
         
-        .feedback-success {
-            background-color: rgba(76, 175, 80, 0.2);
-            color: var(--success);
-            border: 1px solid var(--success);
+        .pin-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary-color);
         }
         
-        .feedback-error {
-            background-color: rgba(244, 67, 54, 0.2);
-            color: var(--error);
-            border: 1px solid var(--error);
+        .pin-container {
+            display: flex;
+            margin-bottom: 30px;
         }
         
-        input[type="text"] {
+        .pin-digit {
+            width: 50px;
+            height: 60px;
+            margin: 0 5px;
+            border: 2px solid var(--secondary-color);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            background-color: var(--light-color);
+        }
+        
+        .pin-filled {
+            background-color: var(--secondary-color);
+        }
+        
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 2px solid var(--primary);
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            background-color: white;
         }
         
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--dark);
+        .pin-key {
+            height: 60px;
+            background-color: var(--light-color);
+            border: 1px solid var(--secondary-color);
+            border-radius: var(--button-radius);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-color);
         }
         
-        .avatar {
+        .pin-key:hover {
+            background-color: var(--accent-color);
+        }
+        
+        .pin-key:active {
+            transform: scale(0.95);
+        }
+        
+        .pin-action {
+            grid-column: span 3;
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* Tela principal do app */
+        #app-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        .app-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+        
+        .app-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .header-actions {
+            display: flex;
+        }
+        
+        .header-btn {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: var(--primary);
-            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
             display: flex;
-            align-items: center;
             justify-content: center;
-            font-weight: bold;
-            margin-right: 10px;
+            align-items: center;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .header-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Navegação */
+        .nav-tabs {
+            display: flex;
+            padding: 10px 15px;
+            background-color: var(--light-color);
+            border-bottom: 1px solid #eee;
+        }
+        
+        .nav-tab {
+            padding: 10px 15px;
+            margin-right: 5px;
+            border-radius: var(--button-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        
+        .nav-tab.active {
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+        }
+        
+        /* Lista de contatos */
+        #contacts-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
         }
         
         .contact-item {
             display: flex;
             align-items: center;
-            padding: 12px;
+            padding: 15px;
             background-color: white;
             border-radius: var(--border-radius);
             margin-bottom: 10px;
+            box-shadow: 0 2px 5px var(--shadow-color);
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow);
+            transition: all 0.2s;
         }
         
         .contact-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px var(--shadow-color);
         }
         
-        .delete-contact-btn, .call-contact-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 5px;
-            margin-left: 10px;
-        }
-        
-        .delete-contact-btn { color: var(--error); }
-        .call-contact-btn { color: var(--success); }
-        
-        .user-info {
-            background-color: white;
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-        }
-        
-        .user-info-item {
-            margin-bottom: 10px;
-        }
-        
-        .user-info-label {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-        
-        .qr-code-container {
-            display: flex;
-            justify-content: center;
-            margin: 20px 0;
-        }
-        
-        .qr-code {
-            border: 10px solid white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-        
-        .user-id-container {
-            display: flex;
-            margin: 20px 0;
-        }
-        
-        .user-id-container input {
-            flex: 1;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-        
-        .user-id-container button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-top-right-radius: var(--border-radius);
-            border-bottom-right-radius: var(--border-radius);
-            padding: 0 15px;
-            cursor: pointer;
-        }
-        
-        .share-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .share-btn {
-            flex: 1;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .qr-scanner {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-        
-        .qr-scanner video {
-            width: 100%;
-            display: block;
-        }
-        
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-        }
-        
-        .scan-frame {
-            width: 70%;
-            height: 70%;
-            border: 4px solid var(--primary);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .scan-frame::before, .scan-frame::after {
-            content: '';
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 4px solid transparent;
-        }
-        
-        .scan-frame::before {
-            top: -4px;
-            left: -4px;
-            border-top-color: var(--primary);
-            border-left-color: var(--primary);
-        }
-        
-        .scan-frame::after {
-            bottom: -4px;
-            right: -4px;
-            border-bottom-color: var(--primary);
-            border-right-color: var(--primary);
-        }
-        
-        #chatScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--light);
-            z-index: 1000;
-            padding: 0;
-            margin: 0;
-            display: none;
-            flex-direction: column;
-        }
-        
-        #chatScreen.active {
-            display: flex;
-        }
-        
-        .chat-header {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background-color: var(--primary);
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            box-shadow: var(--shadow);
-        }
-        
-        .back-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        
-        .chat-messages {
-            padding: 15px;
-            background-color: white;
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 80px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 0;
-            color: #888;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--primary);
-        }
-        
-        .message-item {
-            margin-bottom: 15px;
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-        }
-        
-        .message-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        
-        .message-avatar {
-            width: 30px;
-            height: 30px;
-            font-size: 0.8rem;
-            margin-right: 8px;
-        }
-        
-        .message-sender {
-            font-weight: bold;
-            margin-right: 8px;
-        }
-        
-        .message-time {
-            font-size: 0.8rem;
-            opacity: 0.7;
-        }
-        
-        .message-content {
-            word-wrap: break-word;
-        }
-        
-        .message-expiry {
-            font-size: 0.7rem;
-            opacity: 0.6;
-            margin-top: 5px;
-            text-align: right;
-        }
-        
-        .call-button-container {
-            margin-top: 10px;
-            text-align: center;
-        }
-        
-        .call-button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            padding: 8px 15px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .message-input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            padding: 15px;
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 1010;
-        }
-        
-        .message-input-container input[type="text"] {
-            flex: 1;
-            margin: 0;
-        }
-        
-        .send-btn, .call-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-        
-        .floating-buttons {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
-        }
-        
-        .floating-buttons.visible {
-            display: flex;
-        }
-        
-        .floating-btn {
+        .contact-avatar {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background-color: var(--primary);
+            background-color: var(--secondary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 20px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .contact-info {
+            flex: 1;
+        }
+        
+        .contact-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .contact-status {
+            font-size: 14px;
+            color: #888;
+        }
+        
+        .add-contact-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
             color: white;
-            border: none;
-            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px var(--shadow-color);
             cursor: pointer;
-            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+        
+        .add-contact-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Tela de chat */
+        #chat-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .chat-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
             display: flex;
             align-items: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+        }
+        
+        .back-btn {
+            margin-right: 15px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
             justify-content: center;
-            transition: all 0.3s ease;
+            align-items: center;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
         }
         
-        .floating-btn:hover {
-            transform: scale(1.1);
+        .chat-contact-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
         }
         
-        .call-container {
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+            font-size: 16px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .chat-name {
+            font-weight: 600;
+        }
+        
+        .chat-actions {
+            display: flex;
+        }
+        
+        .chat-action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #F8F9FA;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 15px;
+            border-radius: var(--message-radius);
+            margin-bottom: 10px;
+            position: relative;
+            word-wrap: break-word;
+        }
+        
+        .message-sent {
+            align-self: flex-end;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border-bottom-right-radius: 5px;
+        }
+        
+        .message-received {
+            align-self: flex-start;
+            background-color: white;
+            color: var(--text-color);
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #888;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        .message-audio {
+            display: flex;
+            align-items: center;
+        }
+        
+        .audio-play-btn {
+            margin-right: 10px;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+        
+        .audio-waveform {
+            flex: 1;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .audio-progress {
+            height: 100%;
+            width: 0%;
+            background-color: rgba(255, 133, 162, 0.3);
+            transition: width 0.1s linear;
+        }
+        
+        .chat-input-container {
+            padding: 15px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #eee;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: var(--button-radius);
+            background-color: #F0F2F5;
+            font-size: 16px;
+            margin-right: 10px;
+            outline: none;
+        }
+        
+        .chat-input:focus {
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+        
+        .chat-send-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chat-send-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .chat-action-buttons {
+            display: flex;
+            margin-right: 10px;
+        }
+        
+        .chat-action-btn-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #F0F2F5;
+            color: #888;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chat-action-btn-small:hover {
+            background-color: #E4E6EB;
+            color: var(--primary-color);
+        }
+        
+        /* Modais */
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
             display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 20px;
+            color: #888;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: var(--button-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .modal-btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .modal-btn-secondary {
+            background-color: #F0F2F5;
+            color: var(--text-color);
+        }
+        
+        /* QR Code */
+        #qrcode-container {
+            display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        #qrcode {
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+        
+        .qrcode-text {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+        
+        /* Scanner de QR Code */
+        #qr-scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        #qr-scanner-video {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+        
+        .scanner-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary-color);
+            border-width: 4px;
+        }
+        
+        .corner-top-left {
+            top: 0;
+            left: 0;
+            border-top-style: solid;
+            border-left-style: solid;
+        }
+        
+        .corner-top-right {
+            top: 0;
+            right: 0;
+            border-top-style: solid;
+            border-right-style: solid;
+        }
+        
+        .corner-bottom-left {
+            bottom: 0;
+            left: 0;
+            border-bottom-style: solid;
+            border-left-style: solid;
+        }
+        
+        .corner-bottom-right {
+            bottom: 0;
+            right: 0;
+            border-bottom-style: solid;
+            border-right-style: solid;
+        }
+        
+        /* Tela de chamada */
+        #call-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-color);
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            padding: 40px 20px;
+        }
+        
+        .call-header {
+            text-align: center;
             color: white;
         }
         
-        .call-container.active {
-            display: flex;
-        }
-        
-        .call-video-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 20px;
-        }
-        
-        .call-video {
-            background-color: black;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            width: 100%;
-            max-width: 100%;
-            height: calc(100vh - 200px);
-        }
-        
-        .call-video.small {
-            position: absolute;
-            bottom: 100px;
-            right: 20px;
-            width: 120px;
-            height: 90px;
-            z-index: 10;
-        }
-        
-        .call-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
         .call-status {
-            margin-top: 20px;
-            font-size: 1.2rem;
+            font-size: 18px;
+            margin-bottom: 10px;
         }
         
-        .call-buttons {
+        .call-timer {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .call-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: white;
             display: flex;
-            gap: 20px;
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
             justify-content: center;
-            z-index: 20;
+            align-items: center;
+            font-size: 40px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
         }
         
-        .call-button {
+        .call-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .call-actions {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .call-action-btn {
             width: 60px;
             height: 60px;
             border-radius: 50%;
             display: flex;
-            align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            align-items: center;
+            margin: 0 10px;
             cursor: pointer;
-            border: none;
-            box-shadow: var(--shadow);
+            transition: all 0.2s;
         }
         
-        .call-accept { background-color: var(--success); color: white; }
-        .call-reject, .call-end { background-color: var(--error); color: white; }
-        .call-mute { background-color: var(--dark); color: white; }
+        .call-action-btn:hover {
+            transform: scale(1.05);
+        }
         
-        @media (max-width: 600px) {
-            .container {
-                padding: 10px;
+        .call-end-btn {
+            background-color: #FF4757;
+            color: white;
+        }
+        
+        .call-mute-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .call-speaker-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .call-muted {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Animações */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 480px) {
+            .pin-digit {
+                width: 40px;
+                height: 50px;
+                font-size: 20px;
             }
             
-            .floating-buttons {
-                bottom: 10px;
-                right: 10px;
+            .pin-key {
+                height: 50px;
+                font-size: 20px;
             }
             
-            .floating-btn {
-                width: 45px;
-                height: 45px;
-                font-size: 1rem;
-            }
-            
-            .chat-messages {
-                padding-bottom: 70px;
-            }
-            
-            .message-input-container {
-                padding: 10px;
-            }
-            
-            .call-button {
+            .call-action-btn {
                 width: 50px;
                 height: 50px;
-                font-size: 1.2rem;
             }
-            
-            .call-video {
-                max-width: 100%;
-                height: 200px;
-            }
-            
-            .call-video.small {
-                width: 80px;
-                height: 60px;
-                bottom: 80px;
-            }
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .search-container {
-            margin-bottom: 15px;
-            position: relative;
-        }
-        
-        .search-container i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary);
-        }
-        
-        .search-container input {
-            padding-left: 40px !important;
-        }
-        
-        .no-contacts {
-            text-align: center;
-            padding: 20px;
-            color: #888;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>BunnyChat</h1>
-    </header>
+    <!-- Tela de PIN -->
+    <div id="pin-screen">
+        <div class="app-logo">
+            <i class="fas fa-comment-dots"></i>
+        </div>
+        <div class="pin-title">Digite seu PIN</div>
+        <div class="pin-container">
+            <div class="pin-digit" id="pin-1"></div>
+            <div class="pin-digit" id="pin-2"></div>
+            <div class="pin-digit" id="pin-3"></div>
+            <div class="pin-digit" id="pin-4"></div>
+        </div>
+        <div class="pin-keypad">
+            <div class="pin-key" data-key="1">1</div>
+            <div class="pin-key" data-key="2">2</div>
+            <div class="pin-key" data-key="3">3</div>
+            <div class="pin-key" data-key="4">4</div>
+            <div class="pin-key" data-key="5">5</div>
+            <div class="pin-key" data-key="6">6</div>
+            <div class="pin-key" data-key="7">7</div>
+            <div class="pin-key" data-key="8">8</div>
+            <div class="pin-key" data-key="9">9</div>
+            <div class="pin-key" data-key="clear">
+                <i class="fas fa-backspace"></i>
+            </div>
+            <div class="pin-key" data-key="0">0</div>
+            <div class="pin-key" data-key="enter">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="pin-key pin-action" data-key="setup">Configurar PIN</div>
+        </div>
+    </div>
     
-    <div class="container">
-        <div id="userSelectScreen" class="screen active">
-            <div class="btn-group">
-                <button id="newUserBtn" class="btn"><span class="btn-text">Novo Usuário</span></button>
-                <button id="existingUserBtn" class="btn"><span class="btn-text">Usuário Existente</span></button>
+    <!-- Tela principal do app -->
+    <div id="app-container">
+        <div class="app-header">
+            <div class="app-title">Mensageiro Fofo</div>
+            <div class="header-actions">
+                <div class="header-btn" id="show-my-qr">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <div class="header-btn" id="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </div>
             </div>
         </div>
         
-        <div id="newUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;"><h2>Criar Novo Usuário</h2></div>
-            <div style="margin-bottom: 20px;">
-                <label for="newUserName">Seu Nome:</label>
-                <input type="text" id="newUserName" placeholder="Digite seu nome">
-            </div>
-            <button id="createUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Criar Usuário</span></button>
-            <div id="createUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromNew" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="contacts">Contatos</div>
+            <div class="nav-tab" data-tab="chats">Conversas</div>
         </div>
         
-        <div id="existingUserScreen" class="screen">
-            <div style="text-align: center; margin: 20px 0;"><h2>Usar Usuário Existente</h2></div>
-            <div style="margin-bottom: 20px;">
-                <label for="existingUserId">ID do Usuário:</label>
-                <input type="text" id="existingUserId" placeholder="Digite seu ID de usuário">
+        <div id="contacts-container">
+            <!-- Contatos serão adicionados aqui dinamicamente -->
+            <div class="empty-state" style="text-align: center; padding: 50px 20px;">
+                <i class="fas fa-user-friends" style="font-size: 50px; color: #ccc; margin-bottom: 20px;"></i>
+                <p>Você ainda não tem contatos.</p>
+                <p>Adicione um contato escaneando o QR Code.</p>
             </div>
-            <button id="loadUserBtn" class="btn" style="width: 100%;"><span class="btn-text">Carregar Usuário</span></button>
-            <div id="loadUserFeedback" class="feedback-message hidden"></div>
-            <button id="backToSelectFromExisting" class="btn" style="margin-top: 10px; width: 100%;"><span class="btn-text">Voltar</span></button>
         </div>
         
-        <div id="mainScreen" class="screen">
-            <div id="contactsSection" style="margin-top: 20px; display: block;">
-                <h3>Seus Contatos</h3>
-                <div class="search-container">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchContactsInput" placeholder="Buscar contatos...">
-                </div>
-                <div id="contactsList" style="margin-top: 10px;"></div>
-            </div>
-            
-            <div id="qrSection" class="hidden" style="margin-top: 20px;">
-                <div class="user-info">
-                    <div class="user-info-item">
-                        <span class="user-info-label">Seu Nome:</span>
-                        <span id="userNameDisplay"></span>
-                    </div>
-                    <div class="user-info-item">
-                        <span class="user-info-label">Seu ID:</span>
-                        <span id="userIdDisplayText"></span>
-                    </div>
-                </div>
-                <h3 style="text-align: center;">Meu QR Code</h3>
-                <div class="qr-code-container">
-                    <canvas id="qrCodeCanvas" class="qr-code"></canvas>
-                </div>
-                <div class="user-id-container">
-                    <input type="text" id="userIdInput" readonly>
-                    <button id="copyUserIdBtn" title="Copiar ID"><i class="fas fa-copy"></i></button>
-                </div>
-                <div class="share-buttons">
-                    <button id="shareQRBtn" class="share-btn"><i class="fas fa-share-alt"></i> Compartilhar</button>
-                    <button id="downloadQRBtn" class="share-btn"><i class="fas fa-download"></i> Baixar QR</button>
-                </div>
-            </div>
-            
-            <div id="scanSection" class="hidden" style="margin-top: 20px;">
-                <div class="qr-scanner">
-                    <video id="qrVideo" playsinline></video>
-                    <div class="scan-overlay">
-                        <div class="scan-frame"></div>
-                        <i class="fas fa-qrcode" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                        <p>Posicione o QR Code na área de leitura</p>
-                    </div>
-                </div>
-            </div>
+        <div class="add-contact-btn" id="add-contact-btn">
+            <i class="fas fa-plus"></i>
         </div>
     </div>
-
-    <div id="chatScreen" class="screen">
+    
+    <!-- Tela de chat -->
+    <div id="chat-container">
         <div class="chat-header">
-            <button id="backToMainBtn" class="back-button"><i class="fas fa-arrow-left"></i></button>
-            <div class="avatar" id="chatAvatar"></div>
-            <div id="chatContactName"></div>
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="empty-state">
-                <i class="fas fa-comment-dots"></i>
-                <p>Nenhuma mensagem ainda</p>
-                <p>Envie uma mensagem para começar a conversa!</p>
+            <div class="back-btn" id="back-to-contacts">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <div class="chat-contact-info">
+                <div class="chat-avatar" id="chat-avatar">A</div>
+                <div class="chat-name" id="chat-name">Amigo</div>
+            </div>
+            <div class="chat-actions">
+                <div class="chat-action-btn" id="start-call-btn">
+                    <i class="fas fa-phone"></i>
+                </div>
             </div>
         </div>
-        <div class="message-input-container">
-            <input type="text" id="messageInput" placeholder="Digite sua mensagem...">
-            <button id="callButton" class="call-btn" title="Chamada de vídeo"><i class="fas fa-video"></i></button>
-            <button id="sendMessageBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+        
+        <div class="messages-container" id="messages-container">
+            <!-- Mensagens serão adicionadas aqui dinamicamente -->
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-action-buttons">
+                <div class="chat-action-btn-small" id="record-audio-btn">
+                    <i class="fas fa-microphone"></i>
+                </div>
+            </div>
+            <input type="text" class="chat-input" id="message-input" placeholder="Digite uma mensagem...">
+            <div class="chat-send-btn" id="send-message-btn">
+                <i class="fas fa-paper-plane"></i>
+            </div>
         </div>
     </div>
-
-    <div id="callScreen" class="call-container">
-        <div class="call-video-container">
-            <video id="remoteVideo" class="call-video" autoplay playsinline></video>
-            <video id="localVideo" class="call-video small" autoplay muted playsinline></video>
-        </div>
-        <div class="call-info">
-            <h2 id="callContactName">Chamando...</h2>
-            <div id="callStatus" class="call-status">Conectando...</div>
-        </div>
-        <div class="call-buttons">
-            <button id="acceptCallBtn" class="call-button call-accept hidden" title="Atender"><i class="fas fa-phone"></i></button>
-            <button id="rejectCallBtn" class="call-button call-reject hidden" title="Recusar"><i class="fas fa-phone-slash"></i></button>
-            <button id="endCallBtn" class="call-button call-end hidden" title="Encerrar"><i class="fas fa-phone-slash"></i></button>
-            <button id="muteCallBtn" class="call-button call-mute hidden" title="Mutar"><i class="fas fa-microphone"></i></button>
+    
+    <!-- Modal de QR Code -->
+    <div class="modal" id="qrcode-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Meu QR Code</div>
+                <div class="modal-close" id="close-qrcode-modal">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="qrcode-container">
+                    <div id="qrcode"></div>
+                    <p class="qrcode-text">Peça para seu amigo escanear este QR Code para adicionar você como contato.</p>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="floating-buttons">
-        <button id="showContactsBtn" class="floating-btn" title="Contatos"><i class="fas fa-address-book"></i></button>
-        <button id="showQRBtn" class="floating-btn" title="Meu QR Code"><i class="fas fa-qrcode"></i></button>
-        <button id="scanQRBtn" class="floating-btn" title="Escanear QR"><i class="fas fa-camera"></i></button>
+    
+    <!-- Modal de Scanner de QR Code -->
+    <div class="modal" id="scanner-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Escanear QR Code</div>
+                <div class="modal-close" id="close-scanner-modal">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="qr-scanner-container">
+                    <video id="qr-scanner-video"></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-corner corner-top-left"></div>
+                        <div class="scanner-corner corner-top-right"></div>
+                        <div class="scanner-corner corner-bottom-left"></div>
+                        <div class="scanner-corner corner-bottom-right"></div>
+                    </div>
+                </div>
+                <p class="qrcode-text">Aponte a câmera para o QR Code do seu amigo.</p>
+            </div>
+        </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <!-- Modal de Gravação de Áudio -->
+    <div class="modal" id="audio-recording-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Gravando áudio</div>
+                <div class="modal-close" id="close-audio-modal">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div style="font-size: 60px; color: var(--primary-color); margin: 20px 0;" class="pulse">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <div id="audio-timer">00:00</div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-btn modal-btn-secondary" id="cancel-audio-btn">Cancelar</div>
+                <div class="modal-btn modal-btn-primary" id="send-audio-btn">Enviar</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tela de chamada -->
+    <div id="call-screen">
+        <div class="call-header">
+            <div class="call-status" id="call-status">Chamando...</div>
+            <div class="call-timer" id="call-timer">00:00</div>
+        </div>
+        
+        <div>
+            <div class="call-avatar" id="call-contact-avatar">A</div>
+            <div class="call-name" id="call-contact-name">Amigo</div>
+        </div>
+        
+        <div class="call-actions">
+            <div class="call-action-btn call-mute-btn" id="call-mute-btn">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <div class="call-action-btn call-end-btn" id="call-end-btn">
+                <i class="fas fa-phone-slash"></i>
+            </div>
+            <div class="call-action-btn call-speaker-btn" id="call-speaker-btn">
+                <i class="fas fa-volume-up"></i>
+            </div>
+        </div>
+        
+        <audio id="remote-audio" autoplay></audio>
+        <audio id="local-audio" muted autoplay></audio>
+    </div>
     
     <script>
-        // Configuração do Gun.js
-        const gun = Gun({
-            peers: [
-                'https://gun-manhattan.herokuapp.com/gun',
-                'https://gun-us.herokuapp.com/gun',
-                'https://gun-eu.herokuapp.com/gun'
-            ],
-            localStorage: false,
-            radisk: false,
-            retry: 3
-        });
-
-        // Estado da aplicação
-        const state = {
-            currentUser: null,
-            currentContact: null,
-            contactsCache: {},
-            messagesCache: {},
-            qrScannerActive: false,
-            db: null,
-            gunListeners: [],
-            peerConnection: null,
-            localStream: null,
-            remoteStream: null,
-            callDataChannel: null,
-            isCaller: false,
-            isInCall: false,
-            isMuted: false,
-            callId: null,
-            callListener: null,
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                {
-                    urls: 'turn:numb.viagenie.ca',
-                    credential: 'muazkh',
-                    username: 'webrtc@live.com'
-                }
-            ]
-        };
-
+        // Variáveis globais
+        let currentPin = '';
+        let storedPin = '';
+        let setupMode = false;
+        let confirmPin = '';
+        let gun;
+        let user;
+        let myPeerId = '';
+        let currentContact = null;
+        let contacts = [];
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingTimer;
+        let recordingSeconds = 0;
+        let peerConnection = null;
+        let localStream = null;
+        let remoteStream = null;
+        let callTimer;
+        let callSeconds = 0;
+        let isMuted = false;
+        let isSpeaker = false;
+        
         // Elementos DOM
-        const elements = {
-            screens: {
-                userSelect: document.getElementById('userSelectScreen'),
-                newUser: document.getElementById('newUserScreen'),
-                existingUser: document.getElementById('existingUserScreen'),
-                main: document.getElementById('mainScreen'),
-                chat: document.getElementById('chatScreen'),
-                call: document.getElementById('callScreen')
-            },
-            buttons: {
-                newUser: document.getElementById('newUserBtn'),
-                existingUser: document.getElementById('existingUserBtn'),
-                createUser: document.getElementById('createUserBtn'),
-                loadUser: document.getElementById('loadUserBtn'),
-                backToSelectFromNew: document.getElementById('backToSelectFromNew'),
-                backToSelectFromExisting: document.getElementById('backToSelectFromExisting'),
-                showContacts: document.getElementById('showContactsBtn'),
-                showQR: document.getElementById('showQRBtn'),
-                scanQR: document.getElementById('scanQRBtn'),
-                backToMain: document.getElementById('backToMainBtn'),
-                sendMessage: document.getElementById('sendMessageBtn'),
-                copyUserId: document.getElementById('copyUserIdBtn'),
-                shareQR: document.getElementById('shareQRBtn'),
-                downloadQR: document.getElementById('downloadQRBtn'),
-                callButton: document.getElementById('callButton'),
-                acceptCallBtn: document.getElementById('acceptCallBtn'),
-                rejectCallBtn: document.getElementById('rejectCallBtn'),
-                endCallBtn: document.getElementById('endCallBtn'),
-                muteCallBtn: document.getElementById('muteCallBtn')
-            },
-            inputs: {
-                newUserName: document.getElementById('newUserName'),
-                existingUserId: document.getElementById('existingUserId'),
-                message: document.getElementById('messageInput'),
-                userIdInput: document.getElementById('userIdInput'),
-                searchContacts: document.getElementById('searchContactsInput')
-            },
-            displays: {
-                contactsList: document.getElementById('contactsList'),
-                qrCode: document.getElementById('qrCodeCanvas'),
-                chatMessages: document.getElementById('chatMessages'),
-                chatAvatar: document.getElementById('chatAvatar'),
-                chatContactName: document.getElementById('chatContactName'),
-                qrVideo: document.getElementById('qrVideo'),
-                userNameDisplay: document.getElementById('userNameDisplay'),
-                userIdDisplayText: document.getElementById('userIdDisplayText'),
-                floatingButtons: document.querySelector('.floating-buttons'),
-                scanOverlay: document.querySelector('.scan-overlay'),
-                createUserFeedback: document.getElementById('createUserFeedback'),
-                loadUserFeedback: document.getElementById('loadUserFeedback'),
-                localVideo: document.getElementById('localVideo'),
-                remoteVideo: document.getElementById('remoteVideo'),
-                callContactName: document.getElementById('callContactName'),
-                callStatus: document.getElementById('callStatus')
-            },
-            sections: {
-                contacts: document.getElementById('contactsSection'),
-                qr: document.getElementById('qrSection'),
-                scan: document.getElementById('scanSection')
+        const pinScreen = document.getElementById('pin-screen');
+        const appContainer = document.getElementById('app-container');
+        const chatContainer = document.getElementById('chat-container');
+        const pinDigits = [
+            document.getElementById('pin-1'),
+            document.getElementById('pin-2'),
+            document.getElementById('pin-3'),
+            document.getElementById('pin-4')
+        ];
+        const pinKeys = document.querySelectorAll('.pin-key');
+        const contactsContainer = document.getElementById('contacts-container');
+        const addContactBtn = document.getElementById('add-contact-btn');
+        const showMyQrBtn = document.getElementById('show-my-qr');
+        const qrcodeModal = document.getElementById('qrcode-modal');
+        const closeQrcodeModal = document.getElementById('close-qrcode-modal');
+        const scannerModal = document.getElementById('scanner-modal');
+        const closeScannerModal = document.getElementById('close-scanner-modal');
+        const backToContactsBtn = document.getElementById('back-to-contacts');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInput = document.getElementById('message-input');
+        const sendMessageBtn = document.getElementById('send-message-btn');
+        const recordAudioBtn = document.getElementById('record-audio-btn');
+        const audioRecordingModal = document.getElementById('audio-recording-modal');
+        const closeAudioModal = document.getElementById('close-audio-modal');
+        const audioTimer = document.getElementById('audio-timer');
+        const cancelAudioBtn = document.getElementById('cancel-audio-btn');
+        const sendAudioBtn = document.getElementById('send-audio-btn');
+        const startCallBtn = document.getElementById('start-call-btn');
+        const callScreen = document.getElementById('call-screen');
+        const callStatusEl = document.getElementById('call-status');
+        const callTimerEl = document.getElementById('call-timer');
+        const callContactName = document.getElementById('call-contact-name');
+        const callContactAvatar = document.getElementById('call-contact-avatar');
+        const callMuteBtn = document.getElementById('call-mute-btn');
+        const callEndBtn = document.getElementById('call-end-btn');
+        const callSpeakerBtn = document.getElementById('call-speaker-btn');
+        const remoteAudio = document.getElementById('remote-audio');
+        const localAudio = document.getElementById('local-audio');
+        const navTabs = document.querySelectorAll('.nav-tab');
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar se já existe um PIN
+            storedPin = localStorage.getItem('userPin');
+            if (!storedPin) {
+                setupMode = true;
+                document.querySelector('.pin-title').textContent = 'Configure seu PIN';
+                document.querySelector('.pin-action').style.display = 'none';
             }
-        };
-
-        // Funções utilitárias
-        const utils = {
-            escapeHtml: (text) => {
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            },
             
-            formatTime: (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            // Inicializar Gun.js
+            gun = Gun({
+                peers: ['https://gun-manhattan.herokuapp.com/gun']
+            });
+            user = gun.user().recall({sessionStorage: true});
             
-            setButtonLoading: (button, isLoading) => {
-                button.classList.toggle('btn-loading', isLoading);
-                button.disabled = isLoading;
-            },
-            
-            showFeedback: (message, type, context) => {
-                const feedbackElement = elements.displays[`${context}Feedback`];
-                feedbackElement.textContent = message;
-                feedbackElement.className = `feedback-message feedback-${type}`;
-                feedbackElement.classList.remove('hidden');
-            },
-            
-            hideFeedback: (context) => elements.displays[`${context}Feedback`].classList.add('hidden'),
-            
-            copyToClipboard: (text) => {
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Copiado para a área de transferência!');
-                }).catch(() => {
-                    const input = document.createElement('input');
-                    input.value = text;
-                    document.body.appendChild(input);
-                    input.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(input);
-                    alert('Copiado para a área de transferência!');
-                });
-            },
-            
-            setupCallUI: (isCaller) => {
-                state.isInCall = true;
-                state.isCaller = isCaller;
-                elements.displays.callContactName.textContent = state.currentContact.name;
-                
-                if (isCaller) {
-                    elements.displays.callStatus.textContent = 'Chamando...';
-                    elements.buttons.acceptCallBtn.classList.add('hidden');
-                    elements.buttons.rejectCallBtn.classList.add('hidden');
-                    elements.buttons.endCallBtn.classList.remove('hidden');
-                    elements.buttons.muteCallBtn.classList.remove('hidden');
-                } else {
-                    elements.displays.callStatus.textContent = 'Chamada recebida';
-                    elements.buttons.acceptCallBtn.classList.remove('hidden');
-                    elements.buttons.rejectCallBtn.classList.remove('hidden');
-                    elements.buttons.endCallBtn.classList.add('hidden');
-                    elements.buttons.muteCallBtn.classList.add('hidden');
-                }
-                
-                elements.screens.call.classList.add('active');
-            },
-            
-            updateCallStatus: (status) => {
-                elements.displays.callStatus.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-            },
-            
-            resetCallUI: () => {
-                state.isInCall = false;
-                state.isCaller = false;
-                state.callId = null;
-                elements.screens.call.classList.remove('active');
-                elements.buttons.acceptCallBtn.classList.add('hidden');
-                elements.buttons.rejectCallBtn.classList.add('hidden');
-                elements.buttons.endCallBtn.classList.add('hidden');
-                elements.buttons.muteCallBtn.classList.add('hidden');
-                
-                [elements.displays.localVideo, elements.displays.remoteVideo].forEach(video => {
-                    if (video.srcObject) {
-                        video.srcObject.getTracks().forEach(track => track.stop());
-                        video.srcObject = null;
-                    }
-                });
-                
-                if (state.peerConnection) state.peerConnection.close();
-                state.peerConnection = null;
-                state.localStream = null;
-                state.remoteStream = null;
-                state.callDataChannel = null;
-                if (state.callListener) state.callListener.off();
-                state.callListener = null;
-            },
-            
-            toggleMute: () => {
-                if (!state.localStream) return;
-                state.isMuted = !state.isMuted;
-                state.localStream.getAudioTracks().forEach(track => track.enabled = !state.isMuted);
-                elements.buttons.muteCallBtn.innerHTML = state.isMuted ? 
-                    '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-                elements.buttons.muteCallBtn.title = state.isMuted ? 'Desmutar' : 'Mutar';
-            },
-            
-            filterContacts: (searchTerm) => {
-                const contacts = Object.values(state.contactsCache);
-                if (!searchTerm) return contacts;
-                
-                const term = searchTerm.toLowerCase();
-                return contacts.filter(contact => 
-                    contact.name.toLowerCase().includes(term) || 
-                    contact.id.toLowerCase().includes(term)
-                );
-            }
-        };
-
-        // Operações do IndexedDB
-        const db = {
-            put: async (storeName, data) => {
-                const transaction = state.db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-                return new Promise((resolve, reject) => {
-                    const request = store.put(data);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-            },
-            
-            get: async (storeName, key) => {
-                const transaction = state.db.transaction([storeName], 'readonly');
-                const store = transaction.objectStore(storeName);
-                return new Promise((resolve, reject) => {
-                    const request = store.get(key);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-            },
-            
-            getAll: async (storeName) => {
-                const transaction = state.db.transaction([storeName], 'readonly');
-                const store = transaction.objectStore(storeName);
-                return new Promise((resolve, reject) => {
-                    const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-            },
-            
-            getMessages: async (sender, receiver) => {
-                const transaction = state.db.transaction(['messages'], 'readonly');
-                const store = transaction.objectStore('messages');
-                const index = store.index('conversation');
-                
-                const range = IDBKeyRange.bound([sender, receiver], [sender, receiver]);
-                const range2 = IDBKeyRange.bound([receiver, sender], [receiver, sender]);
-                
-                const messages1 = await new Promise((resolve, reject) => {
-                    const request = index.getAll(range);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-                
-                const messages2 = await new Promise((resolve, reject) => {
-                    const request = index.getAll(range2);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-                
-                return [...messages1, ...messages2].sort((a, b) => a.timestamp - b.timestamp);
-            },
-            
-            delete: async (storeName, key) => {
-                const transaction = state.db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-                return new Promise((resolve, reject) => {
-                    const request = store.delete(key);
-                    request.onsuccess = () => resolve();
-                    request.onerror = () => reject(request.error);
-                });
-            }
-        };
-
-        // Funções para chamadas WebRTC
-        const webrtc = {
-            initPeerConnection: () => {
-                state.peerConnection = new RTCPeerConnection({ iceServers: state.iceServers });
-                
-                state.peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put({
-                            candidate: event.candidate,
-                            from: state.currentUser.id,
-                            to: state.currentContact.id,
-                            timestamp: Date.now()
-                        });
-                    }
-                };
-                
-                state.peerConnection.onconnectionstatechange = () => {
-                    const status = state.peerConnection.connectionState;
-                    utils.updateCallStatus(status);
-                    if (status === 'disconnected' || status === 'failed') webrtc.endCall();
-                };
-                
-                state.peerConnection.ontrack = (event) => {
-                    if (event.streams?.[0]) {
-                        state.remoteStream = event.streams[0];
-                        elements.displays.remoteVideo.srcObject = state.remoteStream;
-                        elements.displays.remoteVideo.classList.remove('small');
-                        utils.updateCallStatus('Chamada em andamento');
-                    }
-                };
-                
-                if (state.isCaller) {
-                    state.callDataChannel = state.peerConnection.createDataChannel('callControl');
-                    webrtc.setupDataChannel(state.callDataChannel);
-                } else {
-                    state.peerConnection.ondatachannel = (event) => {
-                        state.callDataChannel = event.channel;
-                        webrtc.setupDataChannel(state.callDataChannel);
-                    };
-                }
-            },
-            
-            setupDataChannel: (dataChannel) => {
-                dataChannel.onopen = () => console.log('Canal de dados aberto');
-                dataChannel.onclose = () => console.log('Canal de dados fechado');
-                dataChannel.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    if (message.type === 'end-call') webrtc.endCall();
-                };
-            },
-            
-            startCall: async () => {
-                if (!state.currentUser || !state.currentContact || state.isInCall) return;
-                
-                try {
-                    state.callId = Gun.text.random(16);
-                    utils.setupCallUI(true);
-                    webrtc.initPeerConnection();
+            // Configurar eventos
+            setupPinKeypad();
+            setupContactsEvents();
+            setupChatEvents();
+            setupQRCodeEvents();
+            setupAudioRecordingEvents();
+            setupCallEvents();
+            setupNavTabs();
+        });
+        
+        // Funções de PIN
+        function setupPinKeypad() {
+            pinKeys.forEach(key => {
+                key.addEventListener('click', () => {
+                    const keyValue = key.getAttribute('data-key');
                     
-                    state.localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true,
-                        video: true
-                    });
-                    
-                    state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
-                    elements.displays.localVideo.srcObject = state.localStream;
-                    
-                    const offer = await state.peerConnection.createOffer({
-                        offerToReceiveAudio: true,
-                        offerToReceiveVideo: true
-                    });
-                    
-                    await state.peerConnection.setLocalDescription(offer);
-                    
-                    gun.get('calls').get(state.callId).put({
-                        from: state.currentUser.id,
-                        to: state.currentContact.id,
-                        offer: offer,
-                        timestamp: Date.now()
-                    });
-                    
-                    const callMessage = {
-                        id: Gun.text.random(16),
-                        sender: state.currentUser.id,
-                        receiver: state.currentContact.id,
-                        text: `Chamada de vídeo recebida!`,
-                        timestamp: Date.now(),
-                        expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-                        callId: state.callId
-                    };
-                    
-                    gun.get('users').get(state.currentContact.id).get('messages').get(callMessage.id).put(callMessage);
-                    gun.get('users').get(state.currentUser.id).get('messages').get(callMessage.id).put(callMessage);
-                    
-                    gun.get('calls').get(state.callId).get('answer').on(async (answer) => {
-                        if (answer?.from === state.currentContact.id) {
-                            try {
-                                await state.peerConnection.setRemoteDescription(new RTCSessionDescription(answer.answer));
-                            } catch (error) {
-                                console.error('Erro ao configurar resposta remota:', error);
-                                webrtc.endCall();
+                    if (keyValue === 'clear') {
+                        // Limpar último dígito
+                        if (currentPin.length > 0) {
+                            currentPin = currentPin.slice(0, -1);
+                            updatePinDisplay();
+                        }
+                    } else if (keyValue === 'enter') {
+                        // Verificar PIN
+                        if (setupMode) {
+                            handleSetupPin();
+                        } else {
+                            verifyPin();
+                        }
+                    } else if (keyValue === 'setup') {
+                        // Entrar no modo de configuração
+                        setupMode = true;
+                        currentPin = '';
+                        document.querySelector('.pin-title').textContent = 'Configure seu PIN';
+                        document.querySelector('.pin-action').style.display = 'none';
+                        updatePinDisplay();
+                    } else if (currentPin.length < 4) {
+                        // Adicionar dígito
+                        currentPin += keyValue;
+                        updatePinDisplay();
+                        
+                        // Verificar automaticamente quando atingir 4 dígitos
+                        if (currentPin.length === 4) {
+                            if (setupMode) {
+                                handleSetupPin();
+                            } else {
+                                verifyPin();
                             }
                         }
-                    });
+                    }
+                });
+            });
+        }
+        
+        function updatePinDisplay() {
+            for (let i = 0; i < 4; i++) {
+                if (i < currentPin.length) {
+                    pinDigits[i].textContent = '•';
+                    pinDigits[i].classList.add('pin-filled');
+                } else {
+                    pinDigits[i].textContent = '';
+                    pinDigits[i].classList.remove('pin-filled');
+                }
+            }
+        }
+        
+        function handleSetupPin() {
+            if (currentPin.length !== 4) {
+                alert('O PIN deve ter 4 dígitos.');
+                return;
+            }
+            
+            if (!confirmPin) {
+                // Primeiro PIN digitado, pedir confirmação
+                confirmPin = currentPin;
+                currentPin = '';
+                document.querySelector('.pin-title').textContent = 'Confirme seu PIN';
+                updatePinDisplay();
+            } else {
+                // Confirmar PIN
+                if (currentPin === confirmPin) {
+                    // Salvar PIN
+                    localStorage.setItem('userPin', currentPin);
+                    storedPin = currentPin;
+                    setupMode = false;
                     
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).on(async (candidateData) => {
-                        if (candidateData?.candidate) {
-                            try {
-                                await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                            } catch (error) {
-                                console.error('Erro ao adicionar ICE candidate:', error);
+                    // Inicializar o app
+                    initializeApp();
+                } else {
+                    // PINs não coincidem
+                    alert('Os PINs não coincidem. Tente novamente.');
+                    confirmPin = '';
+                    currentPin = '';
+                    document.querySelector('.pin-title').textContent = 'Configure seu PIN';
+                    updatePinDisplay();
+                }
+            }
+        }
+        
+        function verifyPin() {
+            if (currentPin === storedPin) {
+                // PIN correto, inicializar o app
+                initializeApp();
+            } else {
+                // PIN incorreto
+                alert('PIN incorreto. Tente novamente.');
+                currentPin = '';
+                updatePinDisplay();
+            }
+        }
+        
+        function initializeApp() {
+            // Esconder tela de PIN e mostrar app
+            pinScreen.style.display = 'none';
+            appContainer.style.display = 'flex';
+            
+            // Inicializar usuário Gun.js se necessário
+            if (user.is) {
+                myPeerId = user.is.pub;
+                loadContacts();
+            } else {
+                // Criar novo usuário
+                user.create(Gun.text.random(10), Gun.text.random(10), (ack) => {
+                    if (ack.err) {
+                        console.error('Erro ao criar usuário:', ack.err);
+                        return;
+                    }
+                    
+                    myPeerId = ack.pub;
+                    user.auth(ack.put.alias, ack.put.pass);
+                    loadContacts();
+                });
+            }
+        }
+        
+        // Funções de contatos
+        function setupContactsEvents() {
+            addContactBtn.addEventListener('click', () => {
+                openQRScanner();
+            });
+            
+            backToContactsBtn.addEventListener('click', () => {
+                chatContainer.style.display = 'none';
+                appContainer.style.display = 'flex';
+                currentContact = null;
+            });
+        }
+        
+        function loadContacts() {
+            // Carregar contatos do localStorage
+            const savedContacts = localStorage.getItem('contacts');
+            if (savedContacts) {
+                contacts = JSON.parse(savedContacts);
+                renderContacts();
+            }
+            
+            // Configurar listener para mensagens
+            setupMessageListener();
+        }
+        
+        function renderContacts() {
+            // Limpar container
+            contactsContainer.innerHTML = '';
+            
+            if (contacts.length === 0) {
+                // Mostrar estado vazio
+                contactsContainer.innerHTML = `
+                    <div class="empty-state" style="text-align: center; padding: 50px 20px;">
+                        <i class="fas fa-user-friends" style="font-size: 50px; color: #ccc; margin-bottom: 20px;"></i>
+                        <p>Você ainda não tem contatos.</p>
+                        <p>Adicione um contato escaneando o QR Code.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Renderizar cada contato
+            contacts.forEach(contact => {
+                const contactElement = document.createElement('div');
+                contactElement.className = 'contact-item';
+                contactElement.innerHTML = `
+                    <div class="contact-avatar">${contact.name.charAt(0).toUpperCase()}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${contact.name}</div>
+                        <div class="contact-status">Toque para conversar</div>
+                    </div>
+                `;
+                
+                // Adicionar evento de clique
+                contactElement.addEventListener('click', () => {
+                    openChat(contact);
+                });
+                
+                contactsContainer.appendChild(contactElement);
+            });
+        }
+        
+        function addContact(contactId, contactName) {
+            // Verificar se o contato já existe
+            const existingContact = contacts.find(c => c.id === contactId);
+            if (existingContact) {
+                alert('Este contato já está na sua lista.');
+                return;
+            }
+            
+            // Adicionar novo contato
+            const newContact = {
+                id: contactId,
+                name: contactName
+            };
+            
+            contacts.push(newContact);
+            
+            // Salvar no localStorage
+            localStorage.setItem('contacts', JSON.stringify(contacts));
+            
+            // Atualizar a lista
+            renderContacts();
+        }
+        
+        // Funções de chat
+        function setupChatEvents() {
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendTextMessage();
+                }
+            });
+            
+            sendMessageBtn.addEventListener('click', sendTextMessage);
+        }
+        
+        function openChat(contact) {
+            currentContact = contact;
+            
+            // Atualizar informações do contato
+            document.getElementById('chat-name').textContent = contact.name;
+            document.getElementById('chat-avatar').textContent = contact.name.charAt(0).toUpperCase();
+            
+            // Limpar mensagens anteriores
+            messagesContainer.innerHTML = '';
+            
+            // Carregar histórico de mensagens
+            loadChatHistory(contact.id);
+            
+            // Mostrar tela de chat
+            appContainer.style.display = 'none';
+            chatContainer.style.display = 'flex';
+        }
+        
+        function loadChatHistory(contactId) {
+            // Carregar mensagens do Gun.js
+            gun.get('messages').get(myPeerId).get(contactId).map().once((data, key) => {
+                if (data) {
+                    try {
+                        const message = JSON.parse(data);
+                        displayMessage(message);
+                    } catch (e) {
+                        console.error('Erro ao processar mensagem:', e);
+                    }
+                }
+            });
+        }
+        
+        function setupMessageListener() {
+            // Ouvir mensagens direcionadas a mim
+            gun.get('messages').get(myPeerId).map().on((data, key) => {
+                if (data) {
+                    try {
+                        const message = JSON.parse(data);
+                        
+                        // Processar mensagem recebida
+                        if (message.to === myPeerId) {
+                            // Verificar se é uma mensagem de sinalização WebRTC
+                            if (message.type === 'signal') {
+                                handleSignalingData(message.content, message.from);
+                            } else if (currentContact && message.from === currentContact.id) {
+                                // Se estamos no chat com o remetente, exibir a mensagem
+                                displayMessage(message);
                             }
                         }
-                    });
-                    
-                    setTimeout(() => {
-                        if (state.isInCall && !state.peerConnection.remoteDescription) {
-                            alert('Chamada não atendida');
-                            webrtc.endCall();
-                        }
-                    }, 30000);
-                } catch (error) {
-                    console.error('Erro ao iniciar chamada:', error);
-                    alert('Erro ao iniciar chamada. Verifique se você permitiu o acesso à câmera e ao microfone.');
-                    webrtc.endCall();
+                    } catch (e) {
+                        console.error('Erro ao processar mensagem:', e);
+                    }
                 }
-            },
+            });
+        }
+        
+        function sendTextMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !currentContact) return;
             
-            listenForCalls: () => {
-                if (!state.currentUser || state.callListener) return;
+            sendMessage(text, 'text');
+            messageInput.value = '';
+        }
+        
+        function sendMessage(content, type) {
+            if (!currentContact) return;
+            
+            const message = {
+                from: myPeerId,
+                to: currentContact.id,
+                type: type,
+                content: content,
+                timestamp: Date.now()
+            };
+            
+            // Salvar no Gun.js
+            gun.get('messages').get(currentContact.id).get(myPeerId).put(JSON.stringify(message));
+            gun.get('messages').get(myPeerId).get(currentContact.id).put(JSON.stringify(message));
+            
+            // Exibir mensagem localmente
+            displayMessage(message);
+        }
+        
+        function displayMessage(message) {
+            if (!message) return;
+            
+            const isMe = message.from === myPeerId;
+            const messageElement = document.createElement('div');
+            messageElement.className = `message-bubble ${isMe ? 'message-sent' : 'message-received'}`;
+            
+            // Formatar data
+            const date = new Date(message.timestamp);
+            const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+            
+            // Conteúdo baseado no tipo
+            if (message.type === 'text') {
+                messageElement.innerHTML = `
+                    <div>${message.content}</div>
+                    <div class="message-time">${timeStr}</div>
+                `;
+            } else if (message.type === 'audio') {
+                // Decodificar base64 para blob
+                const byteString = atob(message.content);
+                const byteNumbers = new Array(byteString.length);
+                for (let i = 0; i < byteString.length; i++) {
+                    byteNumbers[i] = byteString.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'audio/webm;codecs=opus' });
+                const audioURL = URL.createObjectURL(blob);
                 
-                state.callListener = gun.get('users').get(state.currentUser.id).get('calls').map().on(async (call, callId) => {
-                    if (!call || state.isInCall || !call.from || call.from === state.currentUser.id) return;
+                messageElement.innerHTML = `
+                    <div class="message-audio">
+                        <div class="audio-play-btn">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="audio-waveform">
+                            <div class="audio-progress"></div>
+                        </div>
+                    </div>
+                    <audio src="${audioURL}" style="display:none;"></audio>
+                    <div class="message-time">${timeStr}</div>
+                `;
+                
+                // Configurar player de áudio
+                const audio = messageElement.querySelector('audio');
+                const playBtn = messageElement.querySelector('.audio-play-btn');
+                const progress = messageElement.querySelector('.audio-progress');
+                
+                playBtn.addEventListener('click', () => {
+                    if (audio.paused) {
+                        audio.play();
+                        playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    } else {
+                        audio.pause();
+                        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    }
+                });
+                
+                audio.addEventListener('timeupdate', () => {
+                    const percent = (audio.currentTime / audio.duration) * 100;
+                    progress.style.width = `${percent}%`;
+                });
+                
+                audio.addEventListener('ended', () => {
+                    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    progress.style.width = '0%';
+                });
+            }
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Funções de QR Code
+        function setupQRCodeEvents() {
+            showMyQrBtn.addEventListener('click', showMyQRCode);
+            closeQrcodeModal.addEventListener('click', () => {
+                qrcodeModal.style.display = 'none';
+            });
+            
+            closeScannerModal.addEventListener('click', () => {
+                closeQRScanner();
+            });
+        }
+        
+        function showMyQRCode() {
+            // Gerar QR Code com meu ID e nome
+            const qrData = JSON.stringify({
+                id: myPeerId,
+                name: 'Usuário' // Poderia ser um nome configurável
+            });
+            
+            const qrcodeElement = document.getElementById('qrcode');
+            qrcodeElement.innerHTML = '';
+            
+            QRCode.toCanvas(qrcodeElement, qrData, {
+                width: 200,
+                margin: 1,
+                color: {
+                    dark: '#FF85A2',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) console.error(error);
+            });
+            
+            // Mostrar modal
+            qrcodeModal.style.display = 'flex';
+        }
+        
+        function openQRScanner() {
+            // Configurar scanner de QR Code
+            const video = document.getElementById('qr-scanner-video');
+            let canvasElement;
+            let canvas;
+            let scanning = false;
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.setAttribute('playsinline', true);
+                    video.play();
                     
-                    if (call.to === state.currentUser.id) {
-                        const contact = state.contactsCache[call.from];
-                        if (!contact) return;
+                    // Mostrar modal
+                    scannerModal.style.display = 'flex';
+                    
+                    // Iniciar escaneamento
+                    scanning = true;
+                    canvasElement = document.createElement('canvas');
+                    canvas = canvasElement.getContext('2d');
+                    
+                    function tick() {
+                        if (!scanning) return;
                         
-                        state.callId = callId;
-                        state.currentContact = contact;
-                        utils.setupCallUI(false);
-                        webrtc.initPeerConnection();
-                        
-                        try {
-                            state.localStream = await navigator.mediaDevices.getUserMedia({
-                                audio: true,
-                                video: true
-                            });
+                        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                            canvasElement.height = video.videoHeight;
+                            canvasElement.width = video.videoWidth;
+                            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
                             
-                            state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
-                            elements.displays.localVideo.srcObject = state.localStream;
-                            await state.peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
-                            
-                            const answer = await state.peerConnection.createAnswer();
-                            await state.peerConnection.setLocalDescription(answer);
-                            
-                            gun.get('calls').get(callId).get('answer').put({
-                                from: state.currentUser.id,
-                                to: call.from,
-                                answer: answer,
-                                timestamp: Date.now()
-                            });
-                            
-                            gun.get('calls').get(callId).get('iceCandidates').get(call.from).on(async (candidateData) => {
-                                if (candidateData?.candidate) {
+                            try {
+                                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                    inversionAttempts: 'dontInvert',
+                                });
+                                
+                                if (code) {
+                                    // QR Code encontrado
                                     try {
-                                        await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                    } catch (error) {
-                                        console.error('Erro ao adicionar ICE candidate:', error);
-                                    }
-                                }
-                            });
-                        } catch (error) {
-                            console.error('Erro ao atender chamada:', error);
-                            alert('Erro ao atender chamada. Verifique as permissões de câmera e microfone.');
-                            webrtc.endCall();
-                        }
-                    }
-                });
-            },
-            
-            acceptCall: () => {
-                if (!state.isInCall || state.isCaller) return;
-                elements.buttons.acceptCallBtn.classList.add('hidden');
-                elements.buttons.rejectCallBtn.classList.add('hidden');
-                elements.buttons.endCallBtn.classList.remove('hidden');
-                elements.buttons.muteCallBtn.classList.remove('hidden');
-                utils.updateCallStatus('Chamada em andamento');
-            },
-            
-            endCall: () => {
-                if (!state.isInCall) return;
-                
-                if (state.callDataChannel?.readyState === 'open') {
-                    state.callDataChannel.send(JSON.stringify({ type: 'end-call' }));
-                }
-                
-                if (state.callId) {
-                    gun.get('calls').get(state.callId).put(null);
-                    gun.get('calls').get(state.callId).get('answer').put(null);
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentUser.id).put(null);
-                    gun.get('calls').get(state.callId).get('iceCandidates').get(state.currentContact.id).put(null);
-                }
-                
-                utils.resetCallUI();
-            },
-            
-            rejectCall: () => {
-                if (!state.isInCall || state.isCaller) return;
-                if (state.callId) gun.get('calls').get(state.callId).put(null);
-                utils.resetCallUI();
-            },
-            
-            joinCall: (callId) => {
-                if (!state.currentUser || state.isInCall) return;
-                
-                gun.get('calls').get(callId).once(async (callData) => {
-                    if (!callData?.from) {
-                        alert('Chamada não encontrada ou já encerrada.');
-                        return;
-                    }
-                    
-                    if (callData.to !== state.currentUser.id) {
-                        alert('Você não é o destinatário desta chamada.');
-                        return;
-                    }
-                    
-                    const contact = state.contactsCache[callData.from];
-                    if (!contact) {
-                        alert('Contato não encontrado em sua lista.');
-                        return;
-                    }
-                    
-                    state.currentContact = contact;
-                    state.callId = callId;
-                    utils.setupCallUI(false);
-                    webrtc.initPeerConnection();
-                    
-                    try {
-                        state.localStream = await navigator.mediaDevices.getUserMedia({
-                            audio: true,
-                            video: true
-                        });
-                        
-                        state.localStream.getTracks().forEach(track => state.peerConnection.addTrack(track, state.localStream));
-                        elements.displays.localVideo.srcObject = state.localStream;
-                        await state.peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-                        
-                        const answer = await state.peerConnection.createAnswer();
-                        await state.peerConnection.setLocalDescription(answer);
-                        
-                        gun.get('calls').get(callId).get('answer').put({
-                            from: state.currentUser.id,
-                            to: callData.from,
-                            answer: answer,
-                            timestamp: Date.now()
-                        });
-                        
-                        gun.get('calls').get(callId).get('iceCandidates').get(callData.from).on(async (candidateData) => {
-                            if (candidateData?.candidate) {
-                                try {
-                                    await state.peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
-                                } catch (error) {
-                                    console.error('Erro ao adicionar ICE candidate:', error);
-                                }
-                            }
-                        });
-                        
-                        webrtc.acceptCall();
-                    } catch (error) {
-                        console.error('Erro ao entrar na chamada:', error);
-                        alert('Erro ao entrar na chamada. Verifique as permissões de câmera e microfone.');
-                        webrtc.endCall();
-                    }
-                });
-            }
-        };
-
-        // Funções principais da aplicação
-        const app = {
-            init: async () => {
-                try {
-                    state.db = await app.initIndexedDB();
-                    app.setupEventListeners();
-                    await app.checkForExistingUser();
-                    app.startMessageCleanupInterval();
-                    webrtc.listenForCalls();
-                    app.requestNotificationPermission();
-                } catch (error) {
-                    console.error('Erro na inicialização:', error);
-                    alert('Erro ao inicializar o aplicativo. Por favor, recarregue a página.');
-                }
-            },
-            
-            requestNotificationPermission: () => {
-                if (!("Notification" in window)) return console.warn("Este navegador não suporta notificações!");
-                if (state.currentUser) Notification.requestPermission();
-            },
-            
-            initIndexedDB: () => new Promise((resolve, reject) => {
-                const request = indexedDB.open('BunnyChatDB', 3);
-                request.onerror = (event) => reject(event.target.error);
-                request.onsuccess = (event) => resolve(event.target.result);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'id' });
-                    if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'id' });
-                    if (!db.objectStoreNames.contains('messages')) {
-                        const messagesStore = db.createObjectStore('messages', { keyPath: 'id' });
-                        messagesStore.createIndex('conversation', ['sender', 'receiver'], { unique: false });
-                    }
-                };
-            }),
-            
-            setupEventListeners: () => {
-                // Navegação
-                elements.buttons.newUser.addEventListener('click', () => app.showScreen('newUser'));
-                elements.buttons.existingUser.addEventListener('click', () => app.showScreen('existingUser'));
-                elements.buttons.backToSelectFromNew.addEventListener('click', () => app.showScreen('userSelect'));
-                elements.buttons.backToSelectFromExisting.addEventListener('click', () => app.showScreen('userSelect'));
-                elements.buttons.backToMain.addEventListener('click', () => {
-                    app.stopQrScanner();
-                    app.showScreen('main');
-                });
-                
-                // Usuário
-                elements.buttons.createUser.addEventListener('click', app.createUser);
-                elements.buttons.loadUser.addEventListener('click', app.loadUser);
-                
-                // Ações principais
-                elements.buttons.showContacts.addEventListener('click', () => app.toggleSection('contacts'));
-                elements.buttons.showQR.addEventListener('click', () => {
-                    app.toggleSection('qr');
-                    app.showUserQRInfo();
-                    app.generateQrCode();
-                });
-                elements.buttons.scanQR.addEventListener('click', () => app.toggleSection('scan'));
-                
-                // Chat
-                elements.buttons.sendMessage.addEventListener('click', app.sendMessage);
-                elements.inputs.message.addEventListener('keypress', (e) => e.key === 'Enter' && app.sendMessage());
-                
-                // Chamadas WebRTC
-                elements.buttons.callButton.addEventListener('click', () => state.currentContact && webrtc.startCall());
-                elements.buttons.acceptCallBtn.addEventListener('click', webrtc.acceptCall);
-                elements.buttons.rejectCallBtn.addEventListener('click', webrtc.rejectCall);
-                elements.buttons.endCallBtn.addEventListener('click', webrtc.endCall);
-                elements.buttons.muteCallBtn.addEventListener('click', utils.toggleMute);
-                
-                // Utilitários
-                elements.buttons.copyUserId.addEventListener('click', app.copyUserId);
-                elements.buttons.shareQR.addEventListener('click', app.shareQRCode);
-                elements.buttons.downloadQR.addEventListener('click', app.downloadQRCode);
-                
-                // Busca de contatos
-                elements.inputs.searchContacts.addEventListener('input', () => {
-                    app.renderContacts(utils.filterContacts(elements.inputs.searchContacts.value.trim()));
-                });
-                
-                // Event delegation para botões de delete e call
-                elements.displays.contactsList.addEventListener('click', (e) => {
-                    const deleteBtn = e.target.closest('.delete-contact-btn');
-                    const callBtn = e.target.closest('.call-contact-btn');
-                    const contactItem = e.target.closest('.contact-item');
-                    
-                    if (deleteBtn) {
-                        e.stopPropagation();
-                        app.removeContact(deleteBtn.getAttribute('data-contact-id'));
-                    } else if (callBtn) {
-                        e.stopPropagation();
-                        const contact = state.contactsCache[callBtn.getAttribute('data-contact-id')];
-                        if (contact) {
-                            state.currentContact = contact;
-                            webrtc.startCall();
-                        }
-                    } else if (contactItem?.getAttribute('data-contact-id')) {
-                        const contactId = contactItem.getAttribute('data-contact-id');
-                        if (state.contactsCache[contactId]) {
-                            state.currentContact = state.contactsCache[contactId];
-                            app.showChatScreen();
-                        }
-                    }
-                });
-                
-                // Event delegation para botão de chamada nas mensagens
-                elements.displays.chatMessages.addEventListener('click', (e) => {
-                    const joinCallBtn = e.target.closest('.join-call-btn');
-                    if (joinCallBtn) {
-                        e.stopPropagation();
-                        webrtc.joinCall(joinCallBtn.getAttribute('data-call-id'));
-                    }
-                });
-            },
-            
-            checkForExistingUser: async () => {
-                try {
-                    const users = await db.getAll('users');
-                    if (users.length > 0) {
-                        state.currentUser = users[0];
-                        await app.loadLocalData();
-                        app.showScreen('main');
-                        await app.syncContacts();
-                    } else {
-                        app.showScreen('userSelect');
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar usuário:', error);
-                    app.showScreen('userSelect');
-                }
-            },
-            
-            loadLocalData: async () => {
-                try {
-                    const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => (acc[contact.id] = contact, acc), {});
-                    app.renderContacts(Object.values(state.contactsCache));
-                    
-                    if (state.currentUser && state.currentContact) {
-                        await app.syncMessages();
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar dados locais:', error);
-                }
-            },
-            
-            showScreen: (screenName) => {
-                Object.values(elements.screens).forEach(screen => screen.classList.remove('active'));
-                elements.screens[screenName].classList.add('active');
-                
-                const floatingButtons = document.querySelector('.floating-buttons');
-                floatingButtons.classList.toggle('visible', screenName === 'main' || screenName === 'chat');
-                
-                if (screenName === 'main') {
-                    elements.sections.contacts.style.display = 'block';
-                    app.syncContacts();
-                }
-            },
-            
-            toggleSection: (sectionName) => {
-                Object.values(elements.sections).forEach(section => section.classList.add('hidden'));
-                elements.sections[sectionName].classList.remove('hidden');
-                sectionName === 'scan' ? app.startQrScanner() : app.stopQrScanner();
-            },
-            
-            createUser: async () => {
-                const userName = elements.inputs.newUserName.value.trim();
-                if (!userName) return utils.showFeedback('Por favor, digite um nome de usuário', 'error', 'createUser');
-                
-                utils.setButtonLoading(elements.buttons.createUser, true);
-                
-                const userId = Gun.text.random(16);
-                const user = { 
-                    id: userId, 
-                    name: userName, 
-                    createdAt: Date.now(),
-                    lastSeen: Date.now()
-                };
-                
-                utils.hideFeedback('createUser');
-                
-                try {
-                    await db.put('users', user);
-                    gun.get('users').get(userId).put(user);
-                    
-                    state.currentUser = user;
-                    state.contactsCache = {};
-                    state.messagesCache = {};
-                    
-                    utils.showFeedback('Usuário criado com sucesso!', 'success', 'createUser');
-                    elements.inputs.newUserName.value = '';
-                    
-                    setTimeout(() => {
-                        utils.hideFeedback('createUser');
-                        app.showScreen('main');
-                        app.showUserQRInfo();
-                        app.generateQrCode();
-                        app.requestNotificationPermission();
-                    }, 800);
-                } catch (error) {
-                    console.error('Erro ao criar usuário:', error);
-                    utils.showFeedback('Erro ao criar usuário. Tente novamente.', 'error', 'createUser');
-                } finally {
-                    utils.setButtonLoading(elements.buttons.createUser, false);
-                }
-            },
-            
-            loadUser: async () => {
-                const userId = elements.inputs.existingUserId.value.trim();
-                if (!userId) return utils.showFeedback('Por favor, digite um ID de usuário', 'error', 'loadUser');
-
-                utils.setButtonLoading(elements.buttons.loadUser, true);
-                utils.hideFeedback('loadUser');
-
-                try {
-                    // Primeiro verifica no IndexedDB local
-                    let user = await db.get('users', userId);
-                    
-                    // Se não encontrou localmente, busca no Gun.js
-                    if (!user) {
-                        user = await new Promise((resolve) => {
-                            const timeout = setTimeout(() => resolve(null), 5000); // Aumentei o timeout para 5 segundos
-                            
-                            gun.get('users').get(userId).once((data, key) => {
-                                clearTimeout(timeout);
-                                // Verifica se os dados recebidos são válidos
-                                if (data && typeof data === 'object' && data.id === userId) {
-                                    resolve(data);
-                                } else {
-                                    resolve(null);
-                                }
-                            });
-                        });
-
-                        if (user) {
-                            // Atualiza lastSeen e salva o usuário no IndexedDB
-                            user.lastSeen = Date.now();
-                            await db.put('users', user);
-                        }
-                    }
-
-                    if (user?.id) {
-                        state.currentUser = user;
-                        await app.loadLocalData();
-
-                        utils.showFeedback('Usuário carregado com sucesso!', 'success', 'loadUser');
-                        elements.inputs.existingUserId.value = '';
-
-                        setTimeout(() => {
-                            utils.hideFeedback('loadUser');
-                            app.showScreen('main');
-                            app.showUserQRInfo();
-                            app.generateQrCode();
-                            app.requestNotificationPermission();
-                        }, 1000);
-                    } else {
-                        utils.showFeedback('Usuário não encontrado. Verifique o ID e tente novamente.', 'error', 'loadUser');
-                    }
-                } catch (error) {
-                    console.error('Erro ao carregar usuário:', error);
-                    utils.showFeedback('Erro ao carregar usuário. Tente novamente.', 'error', 'loadUser');
-                } finally {
-                    utils.setButtonLoading(elements.buttons.loadUser, false);
-                }
-            },
-            
-            showUserQRInfo: () => {
-                if (!state.currentUser) return;
-                elements.displays.userNameDisplay.textContent = state.currentUser.name;
-                elements.displays.userIdDisplayText.textContent = state.currentUser.id;
-                elements.inputs.userIdInput.value = state.currentUser.id;
-            },
-            
-            generateQrCode: () => {
-                if (!state.currentUser) return;
-                
-                const qrData = JSON.stringify({
-                    app: "BunnyChat",
-                    version: 1,
-                    userId: state.currentUser.id,
-                    userName: state.currentUser.name
-                });
-                
-                const canvas = elements.displays.qrCode;
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                canvas.width = canvas.height = 200;
-                
-                QRCode.toCanvas(canvas, qrData, {
-                    width: 200,
-                    margin: 2,
-                    color: { dark: '#5A2A3E', light: '#FFF2F5' }
-                }, (error) => error && console.error('Erro ao gerar QR Code:', error));
-                
-                elements.inputs.userIdInput.value = state.currentUser.id;
-            },
-            
-            copyUserId: () => utils.copyToClipboard(state.currentUser.id),
-            
-            shareQRCode: () => {
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Meu BunnyChat QR Code',
-                        text: `Adicione-me no BunnyChat! Meu nome: ${state.currentUser.name}`,
-                        url: `${window.location.href}?user=${state.currentUser.id}`
-                    }).catch(() => app.copyUserId());
-                } else {
-                    app.copyUserId();
-                }
-            },
-            
-            downloadQRCode: () => {
-                const link = document.createElement('a');
-                link.download = `BunnyChat-${state.currentUser.name}.png`;
-                link.href = elements.displays.qrCode.toDataURL();
-                link.click();
-            },
-            
-            syncContacts: async () => {
-                if (!state.currentUser) return;
-                
-                try {
-                    const contacts = await db.getAll('contacts');
-                    state.contactsCache = contacts.reduce((acc, contact) => (acc[contact.id] = contact, acc), {});
-                    app.renderContacts(Object.values(state.contactsCache));
-                    
-                    state.gunListeners.forEach(listener => listener.off());
-                    state.gunListeners = [];
-                    
-                    const listener = gun.get('users').get(state.currentUser.id).get('contacts').map().on(async (contact, id) => {
-                        if (!contact) {
-                            if (state.contactsCache[id]) {
-                                delete state.contactsCache[id];
-                                await db.delete('contacts', id);
-                                app.renderContacts(Object.values(state.contactsCache));
-                            }
-                            return;
-                        }
-                        
-                        state.contactsCache[id] = contact;
-                        await db.put('contacts', contact);
-                        app.renderContacts(Object.values(state.contactsCache));
-                    });
-                    
-                    state.gunListeners.push(listener);
-                } catch (error) {
-                    console.error('Erro ao sincronizar contatos:', error);
-                }
-            },
-            
-            renderContacts: (contacts) => {
-                elements.displays.contactsList.innerHTML = '';
-                
-                if (contacts.length === 0) {
-                    elements.displays.contactsList.innerHTML = `
-                        <div class="no-contacts">
-                            <i class="fas fa-user-friends" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
-                            <p>Nenhum contato encontrado</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                contacts.sort((a, b) => a.name.localeCompare(b.name))
-                    .forEach(contact => {
-                        const contactElement = document.createElement('div');
-                        contactElement.className = 'contact-item';
-                        contactElement.setAttribute('data-contact-id', contact.id);
-                        contactElement.innerHTML = `
-                            <div class="avatar">${contact.name.charAt(0).toUpperCase()}</div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: bold;">${contact.name}</div>
-                                <div style="font-size: 0.8rem; opacity: 0.7;">${contact.id}</div>
-                            </div>
-                            <button class="call-contact-btn" title="Chamar" data-contact-id="${contact.id}">
-                                <i class="fas fa-video"></i>
-                            </button>
-                            <button class="delete-contact-btn" title="Excluir contato" data-contact-id="${contact.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        `;
-                        elements.displays.contactsList.appendChild(contactElement);
-                    });
-            },
-            
-            removeContact: async (userId) => {
-                if (!state.currentUser || !userId || userId === state.currentUser.id) 
-                    return alert(userId === state.currentUser.id ? 'Você não pode se remover da sua lista de contatos!' : '');
-                
-                const contact = state.contactsCache[userId];
-                if (!contact) return;
-                
-                if (confirm(`Tem certeza que deseja remover ${contact.name} dos seus contatos?\nIsso não afetará as mensagens existentes.`)) {
-                    try {
-                        await db.delete('contacts', userId);
-                        delete state.contactsCache[userId];
-                        gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(null);
-                        
-                        app.renderContacts(Object.values(state.contactsCache));
-                        
-                        if (state.currentContact?.id === userId) {
-                            state.currentContact = null;
-                            app.showScreen('main');
-                        }
-                    } catch (error) {
-                        console.error('Erro ao remover contato:', error);
-                        alert('Erro ao remover contato. Tente novamente.');
-                    }
-                }
-            },
-            
-            showChatScreen: () => {
-                if (!state.currentContact) return;
-                elements.displays.chatAvatar.textContent = state.currentContact.name.charAt(0).toUpperCase();
-                elements.displays.chatContactName.textContent = state.currentContact.name;
-                app.showScreen('chat');
-                app.syncMessages();
-            },
-            
-            syncMessages: async () => {
-                if (!state.currentUser || !state.currentContact) return;
-                
-                try {
-                    const now = Date.now();
-                    const contactId = state.currentContact.id;
-                    
-                    const localMessages = await db.getMessages(state.currentUser.id, contactId);
-                    const validMessages = localMessages.filter(msg => msg.expiresAt > now);
-                    
-                    state.messagesCache[contactId] = validMessages;
-                    app.renderMessages(validMessages);
-                    
-                    state.gunListeners.forEach(listener => listener.off());
-                    state.gunListeners = [];
-                    
-                    const listener = gun.get('users').get(state.currentUser.id).get('messages').map().on(async (message, id) => {
-                        if (!message) return;
-                        
-                        if (message.expiresAt && message.expiresAt < now) {
-                            gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            return;
-                        }
-                        
-                        const isRelevant = (message.sender === contactId && message.receiver === state.currentUser.id) || 
-                                           (message.sender === state.currentUser.id && message.receiver === contactId);
-                        
-                        if (isRelevant) {
-                            const messageExists = state.messagesCache[contactId]?.some(msg => msg.id === id);
-                            if (!messageExists) {
-                                await db.put('messages', message);
-                                
-                                if (!state.messagesCache[contactId]) state.messagesCache[contactId] = [];
-                                state.messagesCache[contactId].push(message);
-                                
-                                const isNewMessage = !state.messagesCache[message.sender]?.some(msg => msg.id === id);
-                                if (isNewMessage && Notification.permission === "granted") {
-                                    const senderName = state.contactsCache[message.sender]?.name || "Contato";
-                                    new Notification(senderName, {
-                                        body: message.text || "Você recebeu uma nova mensagem",
-                                        icon: "/icon.png"
-                                    });
-                                }
-                                
-                                app.renderMessages([message]);
-                            }
-                        }
-                    });
-                    
-                    state.gunListeners.push(listener);
-                } catch (error) {
-                    console.error('Erro ao sincronizar mensagens:', error);
-                }
-            },
-            
-            renderMessages: (messages) => {
-                if (messages.length === 0 && elements.displays.chatMessages.children.length === 0) {
-                    elements.displays.chatMessages.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-comment-dots"></i>
-                            <p>Nenhuma mensagem ainda</p>
-                            <p>Envie uma mensagem para começar a conversa!</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                if (messages.length > 0 && elements.displays.chatMessages.querySelector('.empty-state')) {
-                    elements.displays.chatMessages.innerHTML = '';
-                }
-                
-                messages.forEach(message => {
-                    if (document.getElementById(`msg-${message.id}`)) return;
-                    
-                    const isSender = message.sender === state.currentUser.id;
-                    const expiryDate = new Date(message.expiresAt);
-                    const expiryTime = expiryDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const expiryDateStr = expiryDate.toLocaleDateString();
-                    
-                    const callButton = message.callId ? `
-                        <div class="call-button-container">
-                            <button class="call-button join-call-btn" data-call-id="${message.callId}">
-                                <i class="fas fa-video"></i>
-                            </button>
-                        </div>
-                    ` : '';
-                    
-                    const messageElement = document.createElement('div');
-                    messageElement.id = `msg-${message.id}`;
-                    messageElement.className = 'message-item';
-                    messageElement.style.alignItems = isSender ? 'flex-end' : 'flex-start';
-                    messageElement.style.backgroundColor = isSender ? 'var(--secondary)' : 'white';
-                    messageElement.innerHTML = `
-                        <div class="message-header">
-                            ${!isSender ? `<div class="avatar message-avatar">${state.currentContact.name.charAt(0).toUpperCase()}</div>` : ''}
-                            <div class="message-sender">${isSender ? 'Você' : state.currentContact.name}</div>
-                            <div class="message-time">${utils.formatTime(message.timestamp)}</div>
-                        </div>
-                        ${message.text ? `<div class="message-content">${utils.escapeHtml(message.text)}</div>` : ''}
-                        ${callButton}
-                        ${!isSender ? `<div class="message-expiry">Expira: ${expiryDateStr} às ${expiryTime}</div>` : ''}
-                    `;
-                    
-                    elements.displays.chatMessages.appendChild(messageElement);
-                    elements.displays.chatMessages.scrollTop = elements.displays.chatMessages.scrollHeight;
-                });
-            },
-            
-            sendMessage: async () => {
-                if (!state.currentUser || !state.currentContact) return;
-                
-                const messageText = elements.inputs.message.value.trim();
-                if (!messageText) return;
-                
-                const messageId = Gun.text.random(16);
-                const now = Date.now();
-                const expiresAt = now + (24 * 60 * 60 * 1000);
-                
-                const message = {
-                    id: messageId,
-                    sender: state.currentUser.id,
-                    receiver: state.currentContact.id,
-                    text: messageText,
-                    timestamp: now,
-                    expiresAt: expiresAt
-                };
-                
-                try {
-                    await db.put('messages', message);
-                    
-                    if (!state.messagesCache[state.currentContact.id]) state.messagesCache[state.currentContact.id] = [];
-                    state.messagesCache[state.currentContact.id].push(message);
-                    
-                    app.renderMessages([message]);
-                    
-                    gun.get('users').get(state.currentUser.id).get('messages').get(messageId).put(message);
-                    gun.get('users').get(state.currentContact.id).get('messages').get(messageId).put(message);
-                    
-                    elements.inputs.message.value = '';
-                } catch (error) {
-                    console.error('Erro ao enviar mensagem:', error);
-                    alert('Erro ao enviar mensagem. Tente novamente.');
-                }
-            },
-            
-            startMessageCleanupInterval: () => {
-                setInterval(async () => {
-                    if (!state.currentUser) return;
-                    
-                    const now = Date.now();
-                    
-                    try {
-                        const allMessages = await db.getAll('messages');
-                        const expiredMessages = allMessages.filter(msg => msg.expiresAt < now);
-                        
-                        for (const msg of expiredMessages) await db.delete('messages', msg.id);
-                        
-                        gun.get('users').get(state.currentUser.id).get('messages').map().once(async (message, id) => {
-                            if (message?.expiresAt < now) {
-                                gun.get('users').get(state.currentUser.id).get('messages').get(id).put(null);
-                            }
-                        });
-                        
-                        Object.keys(state.messagesCache).forEach(contactId => {
-                            state.messagesCache[contactId] = state.messagesCache[contactId].filter(msg => msg.expiresAt > now);
-                        });
-                    } catch (error) {
-                        console.error('Erro ao limpar mensagens expiradas:', error);
-                    }
-                }, 60 * 60 * 1000);
-            },
-            
-            startQrScanner: () => {
-                if (state.qrScannerActive) return;
-                state.qrScannerActive = true;
-                
-                if (elements.displays.qrVideo.srcObject) {
-                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
-                }
-
-                if (elements.displays.scanOverlay) {
-                    elements.displays.scanOverlay.style.display = 'none';
-                }
-
-                navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                }).then(stream => {
-                    elements.displays.qrVideo.srcObject = stream;
-                    elements.displays.qrVideo.setAttribute('playsinline', true);
-                    
-                    elements.displays.qrVideo.play()
-                        .then(() => {
-                            if (elements.displays.scanOverlay) {
-                                elements.displays.scanOverlay.style.display = 'flex';
-                            }
-
-                            const canvasElement = document.createElement('canvas');
-                            const canvas = canvasElement.getContext('2d', { willReadFrequently: true });
-                            canvasElement.width = elements.displays.qrVideo.videoWidth;
-                            canvasElement.height = elements.displays.qrVideo.videoHeight;
-
-                            function scanFrame() {
-                                if (!state.qrScannerActive || !elements.displays.qrVideo.srcObject) return;
-
-                                try {
-                                    if (elements.displays.qrVideo.readyState === elements.displays.qrVideo.HAVE_ENOUGH_DATA) {
-                                        canvasElement.width = elements.displays.qrVideo.videoWidth;
-                                        canvasElement.height = elements.displays.qrVideo.videoHeight;
-                                        canvas.drawImage(elements.displays.qrVideo, 0, 0, canvasElement.width, canvasElement.height);
-                                        
-                                        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                            inversionAttempts: "dontInvert",
-                                        });
-
-                                        if (code) {
-                                            try {
-                                                const qrData = JSON.parse(code.data);
-                                                if (qrData.app === "BunnyChat" && qrData.userId) {
-                                                    if (qrData.userId === state.currentUser.id) {
-                                                        alert('Você não pode adicionar a si mesmo!');
-                                                        return;
-                                                    }
-                                                    app.stopQrScanner();
-                                                    app.addContact(qrData.userId, qrData.userName || 'Novo Contato');
-                                                    return;
-                                                }
-                                            } catch (e) {
-                                                console.log('QR Code inválido:', e);
-                                            }
+                                        const contactData = JSON.parse(code.data);
+                                        if (contactData.id && contactData.name) {
+                                            // Adicionar contato
+                                            addContact(contactData.id, contactData.name);
+                                            closeQRScanner();
+                                            alert(`Contato ${contactData.name} adicionado com sucesso!`);
                                         }
+                                    } catch (e) {
+                                        console.error('QR Code inválido:', e);
                                     }
-                                    requestAnimationFrame(scanFrame);
-                                } catch (e) {
-                                    console.error('Erro no scanner:', e);
                                 }
+                            } catch (e) {
+                                console.error('Erro ao processar QR Code:', e);
                             }
-
-                            scanFrame();
-                        })
-                        .catch(err => {
-                            console.error('Erro ao reproduzir vídeo:', err);
-                            alert('Erro ao iniciar a câmera. Por favor, recarregue a página e tente novamente.');
-                            app.stopQrScanner();
-                        });
-                }).catch(err => {
-                    console.error('Erro ao acessar a câmera:', err);
-                    alert('Não foi possível acessar a câmera. Verifique as permissões.');
-                    app.stopQrScanner();
+                        }
+                        
+                        requestAnimationFrame(tick);
+                    }
+                    
+                    tick();
+                })
+                .catch(function(err) {
+                    console.error('Erro ao acessar câmera:', err);
+                    alert('Não foi possível acessar a câmera.');
                 });
-            },
-            
-            stopQrScanner: () => {
-                if (!state.qrScannerActive) return;
-                state.qrScannerActive = false;
                 
-                if (elements.displays.scanOverlay) {
-                    elements.displays.scanOverlay.style.display = 'flex';
+            // Função para fechar o scanner
+            window.closeQRScanner = function() {
+                scanning = false;
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
                 }
-
-                if (elements.displays.qrVideo.srcObject) {
-                    elements.displays.qrVideo.srcObject.getTracks().forEach(track => track.stop());
-                    elements.displays.qrVideo.srcObject = null;
-                }
-            },
+                scannerModal.style.display = 'none';
+            };
+        }
+        
+        function closeQRScanner() {
+            const video = document.getElementById('qr-scanner-video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            scannerModal.style.display = 'none';
+        }
+        
+        // Funções de gravação de áudio
+        function setupAudioRecordingEvents() {
+            recordAudioBtn.addEventListener('click', startAudioRecording);
+            closeAudioModal.addEventListener('click', cancelAudioRecording);
+            cancelAudioBtn.addEventListener('click', cancelAudioRecording);
+            sendAudioBtn.addEventListener('click', finishAudioRecording);
+        }
+        
+        function startAudioRecording() {
+            if (!currentContact) return;
             
-            addContact: async (userId, userName) => {
-                if (!state.currentUser || !userId || state.contactsCache[userId]) 
-                    return alert(state.contactsCache[userId] ? 'Este contato já está na sua lista!' : '');
-
-                const contact = { id: userId, name: userName, timestamp: Date.now() };
-                const myContact = { 
-                    id: state.currentUser.id, 
-                    name: state.currentUser.name, 
-                    timestamp: Date.now() 
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    audioRecordingModal.style.display = 'flex';
+                    
+                    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    // Iniciar timer
+                    recordingSeconds = 0;
+                    updateAudioTimer();
+                    recordingTimer = setInterval(updateAudioTimer, 1000);
+                })
+                .catch(err => {
+                    console.error('Erro ao acessar microfone:', err);
+                    alert('Não foi possível acessar o microfone.');
+                });
+        }
+        
+        function updateAudioTimer() {
+            recordingSeconds++;
+            const minutes = Math.floor(recordingSeconds / 60);
+            const seconds = recordingSeconds % 60;
+            audioTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function cancelAudioRecording() {
+            if (isRecording) {
+                clearInterval(recordingTimer);
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+            }
+            
+            audioRecordingModal.style.display = 'none';
+        }
+        
+        function finishAudioRecording() {
+            if (!isRecording) return;
+            
+            clearInterval(recordingTimer);
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+                const reader = new FileReader();
+                
+                reader.onloadend = function() {
+                    const base64data = reader.result.split(',')[1];
+                    sendMessage(base64data, 'audio');
+                    audioRecordingModal.style.display = 'none';
                 };
                 
-                try {
-                    await db.put('contacts', contact);
-                    state.contactsCache[userId] = contact;
-                    app.renderContacts(Object.values(state.contactsCache));
-                    gun.get('users').get(state.currentUser.id).get('contacts').get(userId).put(contact);
-                    
-                    const otherUserExists = await new Promise(resolve => {
-                        gun.get('users').get(userId).once(user => resolve(!!user), { wait: 2000 });
+                reader.readAsDataURL(audioBlob);
+            };
+            
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            isRecording = false;
+        }
+        
+        // Funções de chamada WebRTC
+        function setupCallEvents() {
+            startCallBtn.addEventListener('click', initiateCall);
+            callEndBtn.addEventListener('click', endCall);
+            callMuteBtn.addEventListener('click', toggleMute);
+            callSpeakerBtn.addEventListener('click', toggleSpeaker);
+        }
+        
+        function initiateCall() {
+            if (!currentContact) return;
+            
+            // Configurar tela de chamada
+            callContactName.textContent = currentContact.name;
+            callContactAvatar.textContent = currentContact.name.charAt(0).toUpperCase();
+            callStatusEl.textContent = 'Chamando...';
+            callTimerEl.textContent = '00:00';
+            callScreen.style.display = 'flex';
+            
+            // Iniciar conexão WebRTC
+            setupPeerConnection();
+        }
+        
+        function setupPeerConnection() {
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' }
+                ]
+            };
+            
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            // Configurar eventos de conexão
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    sendSignal({
+                        type: 'candidate',
+                        candidate: event.candidate
                     });
-
-                    if (otherUserExists) {
-                        gun.get('users').get(userId).get('contacts').get(state.currentUser.id).put(myContact);
-                        gun.get('users').get(userId).get('contacts').get(state.currentUser.id).once(updated => {
-                            if (updated) {
-                                console.log('Contato adicionado mutuamente com sucesso');
-                                alert(`Contato ${userName} adicionado com sucesso! Agora vocês podem conversar.`);
-                            }
-                        });
-                    } else {
-                        console.log('O outro usuário não foi encontrado no banco de dados');
-                        alert(`Contato ${userName} adicionado localmente. Quando o outro usuário entrar no app, ele será notificado.`);
-                    }
-                } catch (error) {
-                    console.error('Erro ao adicionar contato:', error);
-                    alert('Erro ao adicionar contato. Tente novamente.');
                 }
+            };
+            
+            peerConnection.ontrack = event => {
+                remoteStream = event.streams[0];
+                remoteAudio.srcObject = remoteStream;
+            };
+            
+            peerConnection.oniceconnectionstatechange = () => {
+                if (peerConnection.iceConnectionState === 'connected') {
+                    // Chamada conectada
+                    callStatusEl.textContent = 'Conectado';
+                    startCallTimer();
+                } else if (peerConnection.iceConnectionState === 'disconnected' || 
+                           peerConnection.iceConnectionState === 'failed' || 
+                           peerConnection.iceConnectionState === 'closed') {
+                    // Chamada desconectada
+                    endCall();
+                }
+            };
+            
+            // Obter stream local
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    localStream = stream;
+                    localAudio.srcObject = stream;
+                    
+                    // Adicionar tracks à conexão
+                    stream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, stream);
+                    });
+                    
+                    // Criar oferta
+                    return peerConnection.createOffer();
+                })
+                .then(offer => {
+                    return peerConnection.setLocalDescription(offer);
+                })
+                .then(() => {
+                    // Enviar oferta
+                    sendSignal({
+                        type: 'offer',
+                        offer: peerConnection.localDescription
+                    });
+                })
+                .catch(err => {
+                    console.error('Erro ao iniciar chamada:', err);
+                    alert('Não foi possível iniciar a chamada.');
+                    endCall();
+                });
+        }
+        
+        function handleSignalingData(data, senderId) {
+            // Verificar se é uma chamada para mim
+            if (data.type === 'offer') {
+                // Recebendo chamada
+                if (!currentContact) {
+                    // Encontrar contato pelo ID
+                    const caller = contacts.find(c => c.id === senderId);
+                    if (caller) {
+                        currentContact = caller;
+                    } else {
+                        // Contato desconhecido
+                        return;
+                    }
+                }
+                
+                // Configurar tela de chamada
+                callContactName.textContent = currentContact.name;
+                callContactAvatar.textContent = currentContact.name.charAt(0).toUpperCase();
+                callStatusEl.textContent = 'Chamada recebida...';
+                callTimerEl.textContent = '00:00';
+                callScreen.style.display = 'flex';
+                
+                // Criar conexão e responder
+                peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' }
+                    ]
+                });
+                
+                peerConnection.onicecandidate = event => {
+                    if (event.candidate) {
+                        sendSignal({
+                            type: 'candidate',
+                            candidate: event.candidate
+                        });
+                    }
+                };
+                
+                peerConnection.ontrack = event => {
+                    remoteStream = event.streams[0];
+                    remoteAudio.srcObject = remoteStream;
+                };
+                
+                peerConnection.oniceconnectionstatechange = () => {
+                    if (peerConnection.iceConnectionState === 'connected') {
+                        callStatusEl.textContent = 'Conectado';
+                        startCallTimer();
+                    } else if (peerConnection.iceConnectionState === 'disconnected' || 
+                               peerConnection.iceConnectionState === 'failed' || 
+                               peerConnection.iceConnectionState === 'closed') {
+                        endCall();
+                    }
+                };
+                
+                // Definir descrição remota (oferta)
+                peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
+                    .then(() => {
+                        return navigator.mediaDevices.getUserMedia({ audio: true });
+                    })
+                    .then(stream => {
+                        localStream = stream;
+                        localAudio.srcObject = stream;
+                        
+                        // Adicionar tracks à conexão
+                        stream.getTracks().forEach(track => {
+                            peerConnection.addTrack(track, stream);
+                        });
+                        
+                        // Criar resposta
+                        return peerConnection.createAnswer();
+                    })
+                    .then(answer => {
+                        return peerConnection.setLocalDescription(answer);
+                    })
+                    .then(() => {
+                        // Enviar resposta
+                        sendSignal({
+                            type: 'answer',
+                            answer: peerConnection.localDescription
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Erro ao responder chamada:', err);
+                        endCall();
+                    });
+            } else if (data.type === 'answer' && peerConnection) {
+                // Recebendo resposta
+                peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
+                    .catch(err => {
+                        console.error('Erro ao processar resposta:', err);
+                    });
+            } else if (data.type === 'candidate' && peerConnection) {
+                // Recebendo candidato ICE
+                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate))
+                    .catch(err => {
+                        console.error('Erro ao adicionar candidato ICE:', err);
+                    });
+            } else if (data.type === 'hangup') {
+                // Chamada encerrada pelo outro lado
+                endCall();
             }
-        };
-
-        if (!("Notification" in window)) console.warn("Este navegador não suporta notificações!");
-
-        window.addEventListener('DOMContentLoaded', app.init);
+        }
+        
+        function sendSignal(data) {
+            if (!currentContact) return;
+            
+            const signal = {
+                from: myPeerId,
+                to: currentContact.id,
+                type: 'signal',
+                content: data,
+                timestamp: Date.now()
+            };
+            
+            // Enviar sinal via Gun.js
+            gun.get('messages').get(currentContact.id).get(myPeerId).put(JSON.stringify(signal));
+        }
+        
+        function startCallTimer() {
+            callSeconds = 0;
+            updateCallTimer();
+            callTimer = setInterval(updateCallTimer, 1000);
+        }
+        
+        function updateCallTimer() {
+            callSeconds++;
+            const minutes = Math.floor(callSeconds / 60);
+            const seconds = callSeconds % 60;
+            callTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function endCall() {
+            // Enviar sinal de desligar
+            if (currentContact) {
+                sendSignal({
+                    type: 'hangup'
+                });
+            }
+            
+            // Parar timer
+            if (callTimer) {
+                clearInterval(callTimer);
+            }
+            
+            // Fechar conexão
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            // Parar streams
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            // Limpar áudio
+            remoteAudio.srcObject = null;
+            localAudio.srcObject = null;
+            
+            // Esconder tela de chamada
+            callScreen.style.display = 'none';
+            
+            // Resetar estado
+            isMuted = false;
+            isSpeaker = false;
+            callMuteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            callMuteBtn.classList.remove('call-muted');
+            callSpeakerBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            callSpeakerBtn.classList.remove('call-muted');
+        }
+        
+        function toggleMute() {
+            if (!localStream) return;
+            
+            isMuted = !isMuted;
+            localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isMuted;
+            });
+            
+            if (isMuted) {
+                callMuteBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                callMuteBtn.classList.add('call-muted');
+            } else {
+                callMuteBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                callMuteBtn.classList.remove('call-muted');
+            }
+        }
+        
+        function toggleSpeaker() {
+            isSpeaker = !isSpeaker;
+            
+            if (remoteAudio) {
+                // No navegador, não podemos controlar diretamente o alto-falante,
+                // mas podemos ajustar o volume
+                remoteAudio.volume = isSpeaker ? 1.0 : 0.5;
+            }
+            
+            if (isSpeaker) {
+                callSpeakerBtn.classList.add('call-muted');
+            } else {
+                callSpeakerBtn.classList.remove('call-muted');
+            }
+        }
+        
+        // Funções de navegação
+        function setupNavTabs() {
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remover classe ativa de todas as abas
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Adicionar classe ativa à aba clicada
+                    tab.classList.add('active');
+                    
+                    // Implementar lógica de mudança de aba aqui
+                    // Por enquanto, apenas mostra a lista de contatos
+                });
+            });
+        }
     </script>
 </body>
 </html>
